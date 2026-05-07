@@ -4,38 +4,18 @@ Sistema monolitico modular para gerenciamento e geracao automatica de escalas me
 
 ## Objetivo
 
-O projeto nasce para:
+O projeto foi definido para:
 
 - cadastrar e inativar segurancas;
 - cadastrar indisponibilidades;
 - gerar escala mensal automaticamente;
 - balancear finais de semana de forma justa;
 - preservar historico de escalas;
-- suportar ajustes manuais e evolucoes futuras.
+- manter base pronta para evolucao.
 
-## Escopo funcional (AGENTS.md)
+## Arquitetura e stack obrigatorias
 
-### Modulos obrigatorios
-
-- Segurancas (`SecurityGuard`)
-- Indisponibilidades (`UnavailableDay`)
-- Escalas mensais (`MonthlySchedule`)
-- Itens da escala (`ScheduleItem`)
-- Autenticacao e autorizacao por perfil
-
-### Regras obrigatorias de negocio
-
-1. Um seguranca nunca pode ser escalado em dia indisponivel.
-2. Sabados e domingos devem ser balanceados entre os segurancas.
-3. A distribuicao geral deve equilibrar:
-   - total de plantoes;
-   - total de finais de semana;
-   - intervalo entre plantoes.
-4. Segurancas inativos nao entram em novas escalas, mas permanecem no historico.
-
-## Arquitetura
-
-### Principios obrigatorios
+### Principios
 
 - Monolito modular
 - Clean Architecture
@@ -44,6 +24,19 @@ O projeto nasce para:
 - Repository Pattern
 - Result Pattern
 - TDD obrigatorio
+
+### Stack tecnica
+
+- .NET 10
+- ASP.NET Core Web API
+- Entity Framework Core
+- SQLite
+- ASP.NET Identity
+- JWT Bearer Authentication
+- FluentValidation
+- MediatR
+- Serilog
+- xUnit + FluentAssertions
 
 ### Estrutura do projeto
 
@@ -56,74 +49,48 @@ src/
  └── Tests
 ```
 
-### Responsabilidade por camada
+## Status de implementacao
 
-- `Api`: controllers, middlewares, configuracoes, autenticacao, swagger e DI.
-- `Application`: commands, queries, handlers, DTOs, validadores e casos de uso (via MediatR).
-- `Domain`: entidades e regras de negocio puras (sem dependencia externa).
-- `Infrastructure`: EF Core, SQLite, Identity, repositorios e servicos tecnicos.
-- `Tests`: testes unitarios, de integracao e cenarios de regras de negocio.
+### Fases concluidas
 
-## Stack tecnica
+- [x] Fase 0 - Bootstrap e padroes
+- [x] Fase 1 - Persistencia e identidade
 
-- .NET 10
-- ASP.NET Core Web API
-- Entity Framework Core
-- SQLite
-- ASP.NET Identity
-- JWT Bearer Authentication
-- FluentValidation
-- MediatR
-- Serilog
-- xUnit + FluentAssertions
-- Docker (obrigatorio no escopo)
+### Fases pendentes
 
-## Estado atual do repositorio
+- [ ] Fase 2 - Modulo de segurancas
+- [ ] Fase 3 - Modulo de indisponibilidades
+- [ ] Fase 4 - Motor de geracao de escala
+- [ ] Fase 5 - Consultas de escala e historico
+- [ ] Fase 6 - Endurecimento e entrega
 
-Implementado no momento:
+## O que ja esta funcionando
 
 - estrutura de camadas (`Api`, `Application`, `Domain`, `Infrastructure`, `Tests`);
-- configuracao de DI para Application/Infrastructure/Api;
-- Identity + JWT;
-- seed de perfis `Admin` e `Supervisor`;
-- seed de usuario administrador em desenvolvimento;
-- middleware global de tratamento de excecoes;
-- Serilog;
-- migrations aplicadas automaticamente no startup;
-- endpoints iniciais:
-  - `POST /api/auth/login`
-  - `GET /api/health` (requer role `Admin` ou `Supervisor`)
+- bootstrap de DI entre camadas;
+- middleware global de excecoes;
+- logging com Serilog;
+- EF Core com SQLite;
+- ASP.NET Identity com roles `Admin` e `Supervisor`;
+- autenticacao JWT;
+- seed automatico de roles no startup;
+- seed de admin em ambiente Development;
+- migration inicial criada e aplicada automaticamente no startup;
+- endpoint de login JWT e rota protegida por role.
 
-Itens ainda no roadmap obrigatorio:
+## Entidades implementadas
 
-- comandos/queries/endpoints completos de segurancas;
-- modulo de indisponibilidades;
-- motor `ScheduleGeneratorService`;
-- consultas historicas de escala;
-- Dockerfile e `docker-compose.yml`.
+- `SecurityGuard`
+- `UnavailableDay`
+- `MonthlySchedule`
+- `ScheduleItem`
 
-## Algoritmo de geracao de escala (especificacao)
+## Endpoints disponiveis atualmente
 
-Servico obrigatorio: `ScheduleGeneratorService`.
+- `POST /api/auth/login`
+- `GET /api/health` (requer role `Admin` ou `Supervisor`)
 
-### Estrategia inicial
-
-Abordagem greedy com criterios de desempate:
-
-1. menor quantidade de finais de semana;
-2. menor quantidade total de plantoes;
-3. maior intervalo desde o ultimo plantao.
-
-### Fluxo obrigatorio de geracao
-
-1. Carregar segurancas ativos e indisponibilidades.
-2. Separar dias uteis, sabados e domingos.
-3. Distribuir finais de semana primeiro.
-4. Distribuir dias uteis.
-5. Validar conflitos.
-6. Persistir escala.
-
-## Endpoints obrigatorios (alvo do projeto)
+## Endpoints alvo do projeto (roadmap)
 
 ### Security Guards
 
@@ -144,142 +111,125 @@ Abordagem greedy com criterios de desempate:
 - `GET /api/schedules/{id}`
 - `GET /api/schedules/month/{month}/year/{year}`
 
-## Requisitos para rodar localmente
+## Requisitos locais
 
 - .NET SDK 10
-- SQLite (opcionalmente via arquivo local, sem instalacao global)
 
-## Configuracao local
+## Configuracao
 
-As configuracoes de desenvolvimento ficam em `src/Api/appsettings.Development.json`:
+As principais configuracoes estao em `src/Api/appsettings.json` e `src/Api/appsettings.Development.json`:
 
-- connection string SQLite (`DefaultConnection`);
-- parametros JWT (`Issuer`, `Audience`, `Key`, `ExpiryMinutes`);
-- configuracao de logging/Serilog.
+- `ConnectionStrings:DefaultConnection`
+- `Jwt:Issuer`
+- `Jwt:Audience`
+- `Jwt:Key`
+- `Jwt:ExpiryMinutes`
 
-> Importante: a chave JWT atual e de desenvolvimento. Troque para ambiente produtivo.
+> Importante: a chave JWT atual e somente para desenvolvimento. Troque em ambiente real.
 
 ## Como executar
 
-### 1) Restaurar dependencias
+### 1) Restaurar e compilar
 
 ```bash
-dotnet restore src/Api/SafetyScale.Api.csproj
+dotnet restore SafetyScale.slnx
+dotnet build SafetyScale.slnx
 ```
 
-### 2) Subir API
+### 2) Subir a API
 
 ```bash
 dotnet run --project src/Api/SafetyScale.Api.csproj
 ```
 
-No startup da API:
+No startup da API, automaticamente:
 
-- migrations do EF Core sao aplicadas automaticamente;
-- roles sao criadas (`Admin`, `Supervisor`);
-- usuario admin de desenvolvimento e semeado (quando inexistente).
+- migrations sao aplicadas;
+- roles `Admin` e `Supervisor` sao garantidas;
+- usuario admin dev e criado se nao existir.
 
 ### 3) Swagger
 
-Em ambiente de desenvolvimento, o Swagger fica habilitado automaticamente.
+Swagger fica habilitado em ambiente de desenvolvimento.
 
-## Autenticacao
+## Autenticacao e autorizacao
 
-Fluxo atual:
+### Login
 
-1. `POST /api/auth/login` com email e senha.
-2. Receber token JWT.
-3. Enviar `Authorization: Bearer <token>` nas rotas protegidas.
+`POST /api/auth/login`
 
-Credenciais de desenvolvimento (seed):
+Payload:
+
+```json
+{
+  "email": "admin@safetyscale.local",
+  "password": "Admin@12345"
+}
+```
+
+Resposta de sucesso:
+
+```json
+{
+  "token": "<jwt>"
+}
+```
+
+### Uso do token
+
+Enviar no header:
+
+```text
+Authorization: Bearer <jwt>
+```
+
+### Credenciais de desenvolvimento (seed)
 
 - Email: `admin@safetyscale.local`
 - Senha: `Admin@12345`
 
 ## Banco de dados e migrations
 
-- Banco obrigatorio: SQLite.
-- ORM obrigatorio: EF Core.
-- Toda alteracao de banco deve ter migration correspondente.
+- Banco: SQLite
+- ORM: Entity Framework Core
+- Migration inicial: `InitialIdentityAndScheduleSchema`
 
-## Testes e qualidade
-
-### Diretriz principal
-
-TDD e obrigatorio: desenvolvimento guiado por testes.
-
-### Cobertura esperada
-
-- Unitarios:
-  - regras de negocio;
-  - validacoes;
-  - balanceamento;
-  - algoritmo de geracao.
-- Integracao:
-  - endpoints obrigatorios;
-  - persistencia;
-  - fluxo completo de geracao.
-- Casos extremos:
-  - poucos segurancas;
-  - todos indisponiveis;
-  - excesso de indisponibilidades;
-  - meses criticos com muitos finais de semana.
-
-### Executar testes
+Criar nova migration:
 
 ```bash
-dotnet test src/Tests/SafetyScale.Tests.csproj
+dotnet ef migrations add <NomeDaMigration> \
+  --project src/Infrastructure/SafetyScale.Infrastructure.csproj \
+  --startup-project src/Api/SafetyScale.Api.csproj \
+  --output-dir Persistence/Migrations
 ```
 
-## Logging e observabilidade
+Aplicar migrations:
 
-Serilog e obrigatorio. Eventos criticos previstos:
+```bash
+dotnet ef database update \
+  --project src/Infrastructure/SafetyScale.Infrastructure.csproj \
+  --startup-project src/Api/SafetyScale.Api.csproj
+```
 
-- autenticacao;
-- geracao de escala;
-- falhas e excecoes.
+## Testes
 
-## Convencoes do projeto
+Executar todos os testes:
 
-- `Command` termina com `Command`
-- `Query` termina com `Query`
-- `Validator` termina com `Validator`
-- `Handler` termina com `Handler`
+```bash
+dotnet test SafetyScale.slnx
+```
 
-### Proibicoes
+## Regras de qualidade
 
-- regra de negocio em controller;
-- acoplamento entre camadas;
-- dependencia da Domain em Infrastructure;
-- classes/metodos com multiplas responsabilidades.
+- TDD obrigatorio em todas as fases;
+- sem regra de negocio em controllers;
+- Domain nao depende de Infrastructure;
+- toda mudanca de banco com migration;
+- comandos/queries/validators/handlers seguindo convencoes de nomenclatura.
 
-## Perfis de acesso
+## Roadmap
 
-- `Admin`: gerencia segurancas, gera escala e visualiza escalas.
-- `Supervisor`: visualiza escalas e consulta segurancas.
-
-## Roadmap de implementacao
-
-Fases planejadas:
-
-1. Bootstrap e padroes
-2. Persistencia e identidade
-3. Modulo de segurancas
-4. Modulo de indisponibilidades
-5. Motor de geracao de escala
-6. Consultas de escala e historico
-7. Endurecimento, observabilidade e entrega (Docker, checklist final)
-
-## Evolucoes futuras previstas
-
-- multiempresa;
-- multiplos postos;
-- turnos;
-- dashboard;
-- exportacao PDF/Excel;
-- aplicativo mobile;
-- notificacoes;
-- IA para otimizacao de escala.
+Detalhamento completo de fases e criterios de pronto em `roadmap.md`.
 
 ## Licenca
 

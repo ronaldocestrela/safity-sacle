@@ -17,6 +17,16 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 - Primeiro base arquitetural e seguranca, depois dominio e algoritmo, por fim operacao e hardening.
 - Nenhuma feature avanca sem testes automatizados da propria fase.
 
+## Status atual
+
+- [x] Fase 0 - Bootstrap e padroes (concluida)
+- [x] Fase 1 - Persistencia e identidade (concluida)
+- [ ] Fase 2 - Modulo de Segurancas
+- [ ] Fase 3 - Modulo de indisponibilidades
+- [ ] Fase 4 - Motor de geracao de escala
+- [ ] Fase 5 - Consultas de escala e historico
+- [ ] Fase 6 - Endurecimento, observabilidade e entrega
+
 ## Fase 0 - Bootstrap e padroes (Fundacao)
 
 ### Entregaveis
