@@ -11,12 +11,16 @@ public class MonthlyScheduleRepository(ApplicationDbContext dbContext) : IMonthl
 
     public async Task<MonthlySchedule?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         => await dbContext.MonthlySchedules
+            .AsNoTracking()
             .Include(x => x.Items)
+            .ThenInclude(i => i.SecurityGuard)
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
     public async Task<MonthlySchedule?> GetByMonthYearAsync(int month, int year, CancellationToken cancellationToken = default)
         => await dbContext.MonthlySchedules
+            .AsNoTracking()
             .Include(x => x.Items)
+            .ThenInclude(i => i.SecurityGuard)
             .FirstOrDefaultAsync(x => x.Month == month && x.Year == year, cancellationToken);
 
     public Task<bool> ExistsByMonthYearAsync(int month, int year, CancellationToken cancellationToken = default)
