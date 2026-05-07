@@ -37,7 +37,7 @@ O projeto foi definido para:
 - MediatR
 - Serilog
 - xUnit + FluentAssertions
-- SPA em `src/Web`: React, TypeScript, Vite, React Router, Vitest, modulo de segurancas (UI) — ver `roadmap.md`
+- SPA em `src/Web`: React, TypeScript, Vite, React Router, Vitest, seguranças e **indisponibilidades** (UI) — ver `roadmap.md`
 
 ### Estrutura do projeto
 
@@ -67,10 +67,11 @@ src/
 - [x] Fase F0 - Bootstrap e convencoes (Vite, ESLint/Prettier, smoke API, CORS em Development)
 - [x] Fase F1 - Autenticacao JWT na UI, `sessionStorage`, rotas por perfil (`Admin` / `Supervisor`)
 - [x] Fase F2 - Seguranças na UI (`/app/security-guards`; `Admin` gerencia, `Supervisor` consulta)
+- [x] Fase F3 - Indisponibilidades na UI (`/app/unavailable-days`; `Admin`: CRUD via calendário + **SAVE RESTRICTIONS**; `Supervisor`: consulta)
 
 ### Fases pendentes (frontend)
 
-- [ ] Fases F3 a F5 — ver `roadmap.md` (indisponibilidades, escalas, qualidade)
+- [ ] Fases F4 e F5 — ver `roadmap.md` (escalas, qualidade)
 
 ### Fases pendentes (backend)
 
@@ -133,7 +134,7 @@ SPA **React + TypeScript + Vite** com **React Router**, **ESLint**, **Prettier**
 ### Fase F1 (auth na UI)
 
 - **Login:** `/login` → `POST /api/auth/login`, JWT em `sessionStorage` (expira → limpa sessão e volta ao login).
-- **Área autenticada:** `/app` com **barra inferior de navegação** (padrão do mock **Gestão de Seguranças** no Stitch: Dashboard, Guards, Availability, Rules), header com e-mail / perfil / logout; placeholders em `/app/unavailable-days` e `/app/schedules`.
+- **Área autenticada:** `/app` com **barra inferior de navegação** (padrão do mock **Gestão de Seguranças** no Stitch: Dashboard, Guards, Availability, Rules), header com e-mail / perfil / logout; placeholder em `/app/schedules` até a F4.
 - **Referências Google Stitch usadas como base:** tela **Login de Acesso** (`projects/9334796298126275303/screens/1837019a956541aabb147945bb4378ad`), shell desktop histórico **Shell Administrativo SafetyScale** (`projects/9334796298126275303/screens/7b68e9354acb499f835e008c52c21c57`), e **BottomNavBar** da tela MOBILE **Gestão de Seguranças** (`projects/9334796298126275303/screens/1a430c771b494c85baf12207c805be74`) — ícones **Material Symbols**.
 
 ### Fase F2 (seguranças na UI)
@@ -141,6 +142,11 @@ SPA **React + TypeScript + Vite** com **React Router**, **ESLint**, **Prettier**
 - **Rota:** `/app/security-guards` protegida — `Supervisor`: somente lista e filtro (`GET /api/security-guards`); `Admin`: criar, editar (`PUT`), inativar (`PATCH .../inactive`) e reativar (`PATCH .../active`).
 - Validacoes FluentValidation aparecem na API como HTTP **400** (corpo JSON com lista `errors`).
 - **Stitch (`user-stitch`, projeto SafetyScale Web, id `9334796298126275303`):** antes do merge/publicacao, gere ou revise uma tela de **listagem + formulario segurancas** no Stitch e cole o caminho da tela no PR (ex.: `projects/9334796298126275303/screens/<screenId>`), como ja feito na Fase F1. O codigo desta fase segue CSS Modules em `features/security-guards`. Referencia MOBILE de listagem: **Gestao de Segurancas** (`projects/9334796298126275303/screens/1a430c771b494c85baf12207c805be74`).
+
+### Fase F3 (indisponibilidades na UI)
+
+- **Rota:** `/app/unavailable-days` — `Supervisor`: `GET /api/security-guards/{id}/unavailable-days`; `Admin`: idem + `POST /api/security-guards/{id}/unavailable-days`, `DELETE /api/unavailable-days/{id}` (alterações só após **SAVE RESTRICTIONS**).
+- Layout alinhado ao mock MOBILE **Cadastro de Indisponibilidade**: `projects/9334796298126275303/screens/7e28e88d0da14a70b894a9586c58ee62`.
 
 ### Novas telas e Google Stitch (padrão)
 

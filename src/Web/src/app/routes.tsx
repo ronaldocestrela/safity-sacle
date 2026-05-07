@@ -4,6 +4,7 @@ import { LoginPage } from '../features/auth/LoginPage'
 import { WelcomePage } from '../features/app/WelcomePage'
 import { ModulePlaceholderPage } from '../features/app/ModulePlaceholderPage'
 import { SecurityGuardsPage } from '../features/security-guards/SecurityGuardsPage'
+import { UnavailableDaysPage } from '../features/unavailable-days/UnavailableDaysPage'
 import { AppLayout } from './AppLayout'
 import { ProtectedRoute } from './routes/ProtectedRoute'
 import { RoleRoute } from './routes/RoleRoute'
@@ -30,8 +31,8 @@ export function AppRoutes() {
           <Route
             path="unavailable-days"
             element={
-              <RoleRoute allowedRoles={['Admin']}>
-                <ModulePlaceholderPage title="Indisponibilidades" />
+              <RoleRoute allowedRoles={['Admin', 'Supervisor']}>
+                <UnavailableDaysPage />
               </RoleRoute>
             }
           />
