@@ -1,25 +1,631 @@
-.wrap {
-  max-width: 40rem;
+/* Sentinel Command — aligned to Stitch dashboard 973c4f6064054619a1742a14796ea5eb */
+
+.page {
+  min-height: 100%;
+  background: #f7fafc;
+  color: #181c1e;
 }
 
-.headline {
-  margin: 0 0 0.75rem;
+.topAppBar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: #ffffff;
+  border-bottom: 1px solid #c4c6cd;
+}
+
+.topAppBarInner {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  flex-wrap: wrap;
+}
+
+.topAppBarLeft {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.titleBlock {
+  min-width: 0;
+}
+
+.avatarRing {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: 2px solid #1a2b3c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ebeef0;
+  flex-shrink: 0;
+}
+
+.avatarInitials {
   font-family: 'IBM Plex Sans', system-ui, sans-serif;
-  font-size: 1.75rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #041627;
+}
+
+.topAppBarTitle {
+  margin: 0;
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #041627;
+  line-height: 1.2;
+}
+
+.emailChip {
+  margin: 0.125rem 0 0;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 0.6875rem;
+  color: #44474c;
+  max-width: min(14rem, 52vw);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topAppBarMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.roleBadge {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  background: #1a2b3c;
+  color: #ffffff;
+}
+
+.statusPill {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+  background: #ebeef0;
+  color: #38485a;
+  border: 1px solid #c4c6cd;
+}
+
+.iconGhost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  margin: -0.25rem;
+  padding: 0;
+  border: none;
+  border-radius: 0.25rem;
+  background: transparent;
+  color: #44474c;
+  cursor: pointer;
+}
+
+.iconGhost:hover {
+  background: #f1f4f6;
+  color: #041627;
+}
+
+.iconMd {
+  font-size: 1.375rem;
+}
+
+.main {
+  padding: 1rem;
+  padding-bottom: 2rem;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.sectionIntro {
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: #44474c;
+}
+
+.banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.25rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.bannerError {
+  background: #ffdad6;
+  color: #93000a;
+  border: 1px solid #ba1a1a;
+}
+
+.retryBtn {
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  padding: 0.4rem 0.75rem;
+  min-height: 40px;
+  border-radius: 0.25rem;
+  border: 1px solid #93000a;
+  background: #ffffff;
+  color: #93000a;
+  cursor: pointer;
+}
+
+.retryBtn:hover {
+  background: #93000a;
+  color: #ffffff;
+}
+
+.skeletonStack {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.skeletonCard {
+  height: 4.5rem;
+  border-radius: 0.25rem;
+  background: linear-gradient(90deg, #ebeef0 25%, #f1f4f6 50%, #ebeef0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s ease-in-out infinite;
+  border: 1px solid #c4c6cd;
+}
+
+.skeletonGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.skeletonKpi {
+  height: 5rem;
+  border-radius: 0.25rem;
+  background: linear-gradient(90deg, #ebeef0 25%, #f1f4f6 50%, #ebeef0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s ease-in-out infinite;
+  border: 1px solid #c4c6cd;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.kpiGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.kpiCard {
+  background: #ffffff;
+  border: 1px solid #c4c6cd;
+  border-radius: 0.25rem;
+  padding: 0.75rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.kpiLabel {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #44474c;
+}
+
+.kpiValue {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #041627;
+  line-height: 1.1;
+}
+
+.rosterSection,
+.shortcutsSection {
+  margin-bottom: 1.5rem;
+}
+
+.calendarCard {
+  background: #ffffff;
+  border: 1px solid #c4c6cd;
+  border-radius: 0.25rem;
+  padding: 0.85rem 0.65rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.calendarHint {
+  margin: 0 0 0.75rem;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: #44474c;
+}
+
+.weekdayRow {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.25rem;
+  margin-bottom: 0.35rem;
+}
+
+.weekdayCell {
+  text-align: center;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #74777d;
+  padding: 0.25rem 0;
+}
+
+.calendarGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.25rem;
+}
+
+.calPad {
+  min-height: 48px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 0.35rem;
+  pointer-events: none;
+}
+
+.calPadNum {
+  font-size: 0.75rem;
+  color: #c4c6cd;
+  font-weight: 500;
+}
+
+.calDay {
+  min-height: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0.35rem 0.15rem 0.25rem;
+  margin: 0;
+  border: 1px solid #e0e3e5;
+  border-radius: 0.25rem;
+  background: #ffffff;
+  cursor: pointer;
+  font-family: inherit;
+  color: #041627;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.calDay:hover {
+  background: #f1f4f6;
+  border-color: #74777d;
+}
+
+.calDayToday {
+  border-color: #fd8b00;
+  box-shadow: inset 0 0 0 1px #fd8b00;
+}
+
+.calDaySelected {
+  background: #1a2b3c;
+  border-color: #1a2b3c;
+  color: #ffffff;
+}
+
+.calDaySelected:hover {
+  background: #041627;
+  border-color: #041627;
+  color: #ffffff;
+}
+
+.calDaySelected .calDayNum {
+  color: #ffffff;
+}
+
+.calDayNum {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.calDayDotWrap {
+  margin-top: 0.2rem;
+  min-height: 0.35rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.calDayDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #fd8b00;
+}
+
+.calDaySelected .calDayDot {
+  background: #ffdea0;
+}
+
+.calDayDotSpacer {
+  min-height: 0.35rem;
+  margin-top: 0.2rem;
+}
+
+.dayDetail {
+  background: #ffffff;
+  border: 1px solid #c4c6cd;
+  border-radius: 0.25rem;
+  padding: 0.85rem 0.85rem 1rem;
+  margin-bottom: 0.65rem;
+}
+
+.dayDetailTitle {
+  margin: 0 0 0.5rem;
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  font-size: 1rem;
   font-weight: 600;
   color: #041627;
 }
 
-.sub {
-  margin: 0 0 1rem;
+.dayDetailWeekend {
+  margin: -0.25rem 0 0.65rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #603100;
+}
+
+.dayDetailEmpty {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #44474c;
+  line-height: 1.45;
+}
+
+.rosterFooter {
+  margin: 0;
+  font-size: 0.8125rem;
+}
+
+.rosterFooterLink {
+  font-weight: 700;
+  color: #904d00;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.rosterFooterLink:hover {
+  color: #041627;
+}
+
+.sectionTitle {
+  margin: 0 0 0.65rem;
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
   font-size: 1rem;
-  line-height: 1.5;
+  font-weight: 600;
+  color: #041627;
+}
+
+.emptyCard {
+  background: #ffffff;
+  border: 1px solid #c4c6cd;
+  border-radius: 0.25rem;
+  padding: 1.25rem 1rem;
+  text-align: center;
+}
+
+.emptyIcon {
+  font-size: 2.5rem;
+  color: #74777d;
+  margin-bottom: 0.5rem;
+}
+
+.emptyTitle {
+  margin: 0 0 0.35rem;
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.emptySub {
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+  line-height: 1.45;
   color: #44474c;
 }
 
-.hint {
-  margin: 0;
+.ctaPrimary,
+.ctaSecondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 1.25rem;
+  border-radius: 0.25rem;
   font-size: 0.875rem;
-  line-height: 1.45;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.ctaPrimary {
+  background: #fd8b00;
+  color: #ffffff;
+  border: 1px solid #904d00;
+}
+
+.ctaPrimary:hover {
+  background: #904d00;
+}
+
+.ctaSecondary {
+  background: #ffffff;
+  color: #904d00;
+  border: 1px solid #904d00;
+}
+
+.ctaSecondary:hover {
+  background: #ffdcc3;
+}
+
+.shiftList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.shiftCard {
+  display: flex;
+  background: #ffffff;
+  border: 1px solid #c4c6cd;
+  border-radius: 0.25rem;
+  overflow: hidden;
+  margin: 0;
+}
+
+.shiftStripe {
+  width: 4px;
+  flex-shrink: 0;
+  background: #1a2b3c;
+}
+
+.shiftBody {
+  padding: 0.65rem 0.85rem;
+  min-width: 0;
+}
+
+.shiftName {
+  margin: 0 0 0.2rem;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: #041627;
+}
+
+.shiftMeta {
+  margin: 0 0 0.35rem;
+  font-size: 0.75rem;
+  color: #44474c;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.mono {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.shiftDot {
   color: #74777d;
+}
+
+.shiftDate {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: #181c1e;
+}
+
+.weekendTag {
+  display: inline-block;
+  margin-left: 0.5rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.15rem 0.4rem;
+  border-radius: 999px;
+  background: #ffdea0;
+  color: #382700;
+  vertical-align: middle;
+}
+
+.shortcutsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.65rem;
+}
+
+.shortcut {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 88px;
+  padding: 0.65rem 0.35rem;
+  background: #ffffff;
+  border: 1px solid #c4c6cd;
+  border-radius: 0.25rem;
+  text-decoration: none;
+  color: #041627;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.shortcut:hover {
+  background: #f1f4f6;
+  border-color: #1a2b3c;
+}
+
+.shortcutIcon {
+  font-size: 1.5rem;
+  color: #1a2b3c;
+}
+
+.shortcutLabel {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  text-align: center;
+  color: #44474c;
+}
+
+@media (min-width: 640px) {
+  .main {
+    padding: 1.25rem 1.5rem;
+  }
+
+  .kpiGrid {
+    gap: 1rem;
+  }
 }

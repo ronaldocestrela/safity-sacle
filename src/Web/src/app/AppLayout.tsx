@@ -14,7 +14,10 @@ export function AppLayout() {
   const primaryRole = session?.roles.includes('Admin') ? 'Admin' : 'Supervisor'
   const { pathname } = useLocation()
   const hideShellHeader =
-    pathname === '/app/security-guards' || pathname === '/app/unavailable-days' || pathname === '/app/schedules'
+    pathname === '/app' ||
+    pathname === '/app/security-guards' ||
+    pathname === '/app/unavailable-days' ||
+    pathname === '/app/schedules'
 
   return (
     <div className={styles.shell}>
