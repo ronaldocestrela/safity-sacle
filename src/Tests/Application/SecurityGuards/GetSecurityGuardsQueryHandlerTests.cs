@@ -46,6 +46,9 @@ public class GetSecurityGuardsQueryHandlerTests
         public Task<IReadOnlyList<SecurityGuard>> GetAllAsync(CancellationToken cancellationToken = default)
             => Task.FromResult((IReadOnlyList<SecurityGuard>)_items.ToList());
 
+        public Task<IReadOnlyList<SecurityGuard>> GetActiveAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult((IReadOnlyList<SecurityGuard>)_items.Where(x => x.IsActive).OrderBy(x => x.Name).ToList());
+
         public void Update(SecurityGuard securityGuard)
         {
         }

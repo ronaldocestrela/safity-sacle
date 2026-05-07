@@ -129,6 +129,9 @@ public class SecurityGuardCommandHandlersTests
         public Task<IReadOnlyList<SecurityGuard>> GetAllAsync(CancellationToken cancellationToken = default)
             => Task.FromResult((IReadOnlyList<SecurityGuard>)Items.ToList());
 
+        public Task<IReadOnlyList<SecurityGuard>> GetActiveAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult((IReadOnlyList<SecurityGuard>)Items.Where(x => x.IsActive).OrderBy(x => x.Name).ToList());
+
         public void Update(SecurityGuard securityGuard)
         {
             var index = Items.FindIndex(x => x.Id == securityGuard.Id);

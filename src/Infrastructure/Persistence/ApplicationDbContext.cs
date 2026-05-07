@@ -47,7 +47,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.Property(x => x.Month).IsRequired();
             entity.Property(x => x.Year).IsRequired();
             entity.Property(x => x.GeneratedAt).IsRequired();
-            entity.HasIndex(x => new { x.Month, x.Year });
+            entity.HasIndex(x => new { x.Month, x.Year }).IsUnique();
         });
 
         builder.Entity<ScheduleItem>(entity =>

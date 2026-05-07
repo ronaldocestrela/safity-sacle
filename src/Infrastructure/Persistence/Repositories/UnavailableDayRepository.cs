@@ -21,6 +21,16 @@ public class UnavailableDayRepository(ApplicationDbContext dbContext) : IUnavail
             .OrderBy(x => x.Date)
             .ToListAsync(cancellationToken);
 
+    public async Task<IReadOnlyList<UnavailableDay>> GetByDateRangeAsync(
+        DateOnly startInclusive,
+        DateOnly endInclusive,
+        CancellationToken cancellationToken = default)
+        => await dbContext.UnavailableDays
+            .AsNoTracking()
+            .Where(x => x.Date >= startInclusive && x.Date <= endInclusive)
+            .OrderBy(x => x.Date)
+            .ToListAsync(cancellationToken);
+
     public Task<bool> ExistsForGuardAndDateAsync(
         Guid securityGuardId,
         DateOnly date,

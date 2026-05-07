@@ -7,5 +7,6 @@ public interface ISecurityGuardRepository
     Task AddAsync(SecurityGuard securityGuard, CancellationToken cancellationToken = default);
     Task<SecurityGuard?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<SecurityGuard>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<SecurityGuard>> GetActiveAsync(CancellationToken cancellationToken = default);
     void Update(SecurityGuard securityGuard);
 }

@@ -18,4 +18,7 @@ public class MonthlyScheduleRepository(ApplicationDbContext dbContext) : IMonthl
         => await dbContext.MonthlySchedules
             .Include(x => x.Items)
             .FirstOrDefaultAsync(x => x.Month == month && x.Year == year, cancellationToken);
+
+    public Task<bool> ExistsByMonthYearAsync(int month, int year, CancellationToken cancellationToken = default)
+        => dbContext.MonthlySchedules.AnyAsync(x => x.Month == month && x.Year == year, cancellationToken);
 }

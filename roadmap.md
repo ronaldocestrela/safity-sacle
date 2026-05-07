@@ -16,7 +16,7 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 
 - Incremental por fases, cada fase com criterio de pronto.
 - Primeiro base arquitetural e seguranca, depois dominio e algoritmo, por fim operacao e hardening.
-- **Frontend:** F0–F2 concluídas; F3–F5 pendentes. Backend **Fase 3** (indisponibilidades) concluída; a **Fase F3** (UI de indisponibilidades) e as telas de escalas dependem das Fases **4–5** do backend. **Novas telas (F3 em diante):** fluxo Stitch obrigatório por padrão antes do código React — ver `AGENTS.md` (MCP Google Stitch).
+- **Frontend:** F0–F2 concluídas; F3–F5 pendentes. Backend **Fase 3** (indisponibilidades) e **Fase 4** (geração de escala / `POST /api/schedules/generate`) concluídas; a **Fase F3** (UI de indisponibilidades) e consultas de escalas na UI dependem das Fases **5** do backend (queries/histórico). **Novas telas (F3 em diante):** fluxo Stitch obrigatório por padrão antes do código React — ver `AGENTS.md` (MCP Google Stitch).
 - Nenhuma feature avanca sem testes automatizados da propria fase.
 
 ## Status atual
@@ -27,7 +27,7 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 - [x] Fase 1 - Persistencia e identidade (concluida)
 - [x] Fase 2 - Modulo de Segurancas (concluida)
 - [x] Fase 3 - Modulo de indisponibilidades (concluida)
-- [ ] Fase 4 - Motor de geracao de escala
+- [x] Fase 4 - Motor de geracao de escala
 - [ ] Fase 5 - Consultas de escala e historico
 - [ ] Fase 6 - Endurecimento, observabilidade e entrega
 
@@ -196,6 +196,15 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 - Casos obrigatorios de escala validados por testes automatizados.
 - Geracao mensal funcional por comando, sem duplicidade no mesmo dia.
 - Logs de geracao e falhas auditaveis via Serilog.
+
+### Status de entrega da fase
+
+- [x] `ScheduleGeneratorService` no domínio (greedy: fins de semana primeiro; critérios de desempate agents.md)
+- [x] Command + validator: `GenerateMonthlyScheduleCommand` (`Month`/`Year`), FluentValidation 1–12 e ano 2000–2100
+- [x] Endpoint `POST /api/schedules/generate` (`Admin` apenas); `409` se mês/ano já gerado (índice único DB + checagem); `400` sem guardas ativos ou cobertura impossível
+- [x] Persistência: `MonthlySchedule` + `ScheduleItem` num único `SaveChanges`; `GetActiveAsync` em seguranças; `GetByDateRangeAsync` em indisponibilidades
+- [x] Migration: índice único `(Month, Year)` em `MonthlySchedules`
+- [x] Testes: domínio do gerador, handler CQRS, validator e integração API (`SchedulesGenerateEndpointsTests`)
 
 ## Fase 5 - Consultas de escala e historico
 

@@ -15,5 +15,12 @@ public class SecurityGuardRepository(ApplicationDbContext dbContext) : ISecurity
     public async Task<IReadOnlyList<SecurityGuard>> GetAllAsync(CancellationToken cancellationToken = default)
         => await dbContext.SecurityGuards.AsNoTracking().ToListAsync(cancellationToken);
 
+    public async Task<IReadOnlyList<SecurityGuard>> GetActiveAsync(CancellationToken cancellationToken = default)
+        => await dbContext.SecurityGuards
+            .AsNoTracking()
+            .Where(x => x.IsActive)
+            .OrderBy(x => x.Name)
+            .ToListAsync(cancellationToken);
+
     public void Update(SecurityGuard securityGuard) => dbContext.SecurityGuards.Update(securityGuard);
 }

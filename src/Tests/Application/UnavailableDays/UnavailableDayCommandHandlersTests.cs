@@ -159,6 +159,9 @@ public class UnavailableDayCommandHandlersTests
         public Task<IReadOnlyList<SecurityGuard>> GetAllAsync(CancellationToken cancellationToken = default)
             => Task.FromResult((IReadOnlyList<SecurityGuard>)_items.ToList());
 
+        public Task<IReadOnlyList<SecurityGuard>> GetActiveAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult((IReadOnlyList<SecurityGuard>)_items.Where(x => x.IsActive).OrderBy(x => x.Name).ToList());
+
         public void Update(SecurityGuard securityGuard)
         {
             var i = _items.FindIndex(x => x.Id == securityGuard.Id);
@@ -188,6 +191,18 @@ public class UnavailableDayCommandHandlersTests
         {
             var list = Items
                 .Where(x => x.SecurityGuardId == securityGuardId)
+                .OrderBy(x => x.Date)
+                .ToList();
+            return Task.FromResult((IReadOnlyList<UnavailableDay>)list);
+        }
+
+        public Task<IReadOnlyList<UnavailableDay>> GetByDateRangeAsync(
+            DateOnly startInclusive,
+            DateOnly endInclusive,
+            CancellationToken cancellationToken = default)
+        {
+            var list = Items
+                .Where(x => x.Date >= startInclusive && x.Date <= endInclusive)
                 .OrderBy(x => x.Date)
                 .ToList();
             return Task.FromResult((IReadOnlyList<UnavailableDay>)list);
