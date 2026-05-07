@@ -183,6 +183,8 @@ TDD é obrigatório.
 - **Indisponibilidades:** CRUD por segurança — alinhado a `/api/security-guards/{id}/unavailable-days` e `DELETE /api/unavailable-days/{id}`.
 - **Escalas:** geração mensal e consultas — alinhado a `POST /api/schedules/generate`, `GET /api/schedules/{id}` e `GET /api/schedules/month/{month}/year/{year}`.
 
+Novas telas que materializem estes fluxos devem seguir o **fluxo obrigatório** descrito em **MCP Google Stitch** antes da implementação em código.
+
 ## Qualidade (frontend)
 
 - Linter (ESLint) e formatter (Prettier) no `Web`.
@@ -191,9 +193,11 @@ TDD é obrigatório.
 
 ---
 
-# MCP Google Stitch
+# MCP Google Stitch (fluxo padrão para novas telas)
 
-Usar o MCP `user-stitch` como ferramenta auxiliar para criar, revisar e evoluir telas do frontend React (`src/Web`) antes da implementação em código.
+> **Regra deste repositório:** toda **nova tela** administrativa no `src/Web` deve passar pelo Stitch **antes** da implementação em React, exceto nos casos listados em **Onde é opcional**.
+
+O MCP `user-stitch` é a etapa padrão de descoberta visual e validação de UX; o código React deve **espelhar** a referência já aceita, adaptando-a aos padrões deste arquivo e aos contratos reais da API.
 
 ## Projeto Stitch de referência
 
@@ -202,18 +206,27 @@ Usar o MCP `user-stitch` como ferramenta auxiliar para criar, revisar e evoluir 
 - Project resource: `projects/9334796298126275303`
 - Project ID para chamadas MCP: `9334796298126275303`
 - Device type padrão: `DESKTOP`
-- Uso principal: gerar e evoluir telas administrativas do SafetyScale alinhadas aos fluxos de backend e ao frontend React planejado.
+- Uso principal: gerar e evoluir telas administrativas do SafetyScale alinhadas aos fluxos de backend e ao frontend React.
 
-## Quando usar
+## Fluxo obrigatório (nova tela)
 
-- Criar telas administrativas do sistema a partir de prompts.
-- Gerar variações visuais para validar layout e UX.
-- Criar, atualizar ou aplicar design system no projeto Stitch.
-- Revisar telas antes de implementar componentes React em `src/Web`.
+1. **Gerar ou revisar** a referência no projeto **SafetyScale Web** (`projectId = 9334796298126275303`).
+2. **Prompt** objetivo, citando: perfil (`Admin` / `Supervisor`), **endpoint(s)** da API envolvidos, estados de **loading**, **empty state**, **erro** (incl. 401/403/422 quando fizer sentido na UX), validações visíveis ao usuário e o que deve estar habilitado ou escondido por perfil.
+3. **Revisar** no Stitch; usar `generate_variants` / `edit_screens` quando precisar de alternativas ou ajustes.
+4. **Só então** implementar em `src/Web` (pastas `features/` / `shared/`, CSS Modules, tipos/DTOs alinhados à API).
+5. **Registrar** na descrição do PR ou do trabalho qual tela / nome / identificador Stitch foi usada como base, quando aplicável.
+
+## Onde é obrigatório
+
+- Novas telas administrativas **completas**: login, listagens, formulários (criar/editar), dashboards, detalhes, fluxos com mais de um passo ou composição nova de layout.
+
+## Onde é opcional
+
+- Ajustes pequenos em **componentes já existentes**, correções pontuais de texto ou estilo, **refactors** sem mudança de UX, correções de bug que **não** criem nova composição de tela.
 
 ## Ferramentas principais
 
-- `create_project`: criar novo projeto Stitch somente se o projeto de referência não existir ou se o usuário solicitar outro projeto.
+- `create_project`: criar novo projeto Stitch somente se o projeto de referência não existir ou se o time solicitar outro projeto.
 - `list_projects` / `get_project`: localizar e inspecionar o projeto Stitch.
 - `generate_screen_from_text`: gerar tela a partir de prompt usando `projectId = 9334796298126275303`.
 - `list_screens` / `get_screen`: consultar telas geradas.
@@ -223,11 +236,10 @@ Usar o MCP `user-stitch` como ferramenta auxiliar para criar, revisar e evoluir 
 
 ## Diretrizes de uso
 
-- Não usar Stitch como fonte de regra de negócio.
-- O backend continua sendo a fonte oficial de permissões, validações e contratos.
-- Prompts devem citar perfis `Admin` e `Supervisor`, estados de loading, empty state, mensagens de erro e endpoints relacionados.
-- As telas geradas devem ser adaptadas aos padrões React/TypeScript deste arquivo antes de virar código em `src/Web`.
-- Não incluir segredos, tokens ou credenciais em prompts ou documentação do Stitch.
+- **Não** usar Stitch como fonte de regra de negócio, autorização, validação de domínio ou contrato de API.
+- O **backend** continua sendo a fonte oficial de permissões, validações e contratos.
+- As saídas do Stitch devem ser **adaptadas** aos padrões React/TypeScript deste documento antes de virar código em `src/Web`.
+- **Não** incluir segredos, tokens, senhas reais ou dados sensíveis em prompts ou na documentação do Stitch.
 
 ---
 

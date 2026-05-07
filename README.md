@@ -138,16 +138,25 @@ src/
 
 SPA **React + TypeScript + Vite** com **React Router**, **ESLint**, **Prettier** e **Vitest** (testes em modo `node` por padrão; para RTL/componentes, use `/// <reference types="vitest" />` e `@vitest-environment jsdom` por arquivo quando necessário).
 
+### Novas telas e Google Stitch (padrão)
+
+1. **Antes de codar** uma tela administrativa nova (login, listagem, formulário, fluxo composto), gerar ou revisar a referência no MCP **`user-stitch`**, projeto Stitch **SafetyScale Web** (`projectId` e fluxo completo em [`agents.md`](agents.md)).
+2. O **prompt** deve citar perfil (`Admin` / `Supervisor`), endpoints da API, loading, empty state, erros e comportamento por perfil.
+3. Depois da referência aceita, implementar em `src/features/...` / `shared/` conforme [`agents.md`](agents.md).
+4. Na **descrição do PR**, indicar qual tela Stitch serviu de base, quando fizer sentido.
+
+Exceções (ex.: ajuste pontual em componente existente sem nova composição de tela) estão descritas em [`agents.md`](agents.md).
+
 ### Variáveis de ambiente
 
 Copie `src/Web/.env.example` para `src/Web/.env` e ajuste:
 
-- **`VITE_API_BASE_URL`**: em desenvolvimento, deixe **vazio** para o Vite fazer **proxy** de `/api` para a API (padrão `https://localhost:7104`).
+- **`VITE_API_BASE_URL`**: em desenvolvimento, deixe **vazio** para o browser chamar `/api/...` no mesmo host do Vite; o servidor de dev **encaminha** esses pedidos para a API (por padrão `http://localhost:5003`, perfil `http` do `dotnet run`). Se subir a API só em HTTPS local (`dotnet run --launch-profile https`), defina no `.env` do Web: `VITE_DEV_API_PROXY_TARGET=https://localhost:7104`.
 - **`VITE_SMOKE_LOGIN_EMAIL`** / **`VITE_SMOKE_LOGIN_PASSWORD`** (opcional): credenciais de smoke na home (ex.: usuário admin de desenvolvimento). Sem elas, a home ainda confirma que a API responde em `/api/health` com 401 (esperado sem token).
 
 ### Rodar o Web contra a API local
 
-1. Suba a API (porta HTTPS padrão **7104**, ver `src/Api/Properties/launchSettings.json`):
+1. Suba a API (por padrão `dotnet run` usa **HTTP** em `http://localhost:5003`; para HTTPS também em `https://localhost:7104`, use `dotnet run --project src/Api/SafetyScale.Api.csproj --launch-profile https` — ver `src/Api/Properties/launchSettings.json`):
 
    ```bash
    dotnet run --project src/Api/SafetyScale.Api.csproj

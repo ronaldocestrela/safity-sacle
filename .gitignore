@@ -45,3 +45,4 @@ appsettings.*.local.json
 Thumbs.db
 src/Api/safetyscale.dev.db-shm
 src/Api/safetyscale.dev.db
+src/Api/safetyscale.dev.db-wal

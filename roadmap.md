@@ -230,7 +230,7 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 
 ## Trilha Frontend React (F0 concluida; F1-F5 pendentes)
 
-> A **Fase F0** esta implementada no repositorio (`src/Web`, proxy Vite, CORS na API em Development, porta dev `4863` — ver `README.md`). **Fases F1 a F5** seguem a ordem abaixo, desbloqueando F2-F4 conforme endpoints backend correspondentes estiverem prontos.
+> A **Fase F0** esta implementada no repositorio (`src/Web`, proxy Vite, CORS na API em Development, porta dev `4863` — ver `README.md`). **Fases F1 a F5** seguem a ordem abaixo, desbloqueando F2-F4 conforme endpoints backend correspondentes estiverem prontos. **Novas telas (F1 em diante):** fluxo Stitch obrigatório por padrão antes do código React — ver `AGENTS.md` (MCP Google Stitch).
 
 ### Fase F0 - Bootstrap e convencoes do `Web`
 
@@ -269,12 +269,14 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 
 #### Tarefas principais
 
+- **Stitch (padrão):** antes de implementar em React a tela de login, shell de navegação e quaisquer telas novas desta fase, gerar ou revisar referência no MCP `user-stitch` (projeto `SafetyScale Web`; detalhes em `AGENTS.md`).
 - Tratar 401/403 com redirecionamento ou mensagens claras.
 - Mapear permissoes espelhando `AGENTS.md` (Admin: gestao + geracao + visualizacao; Supervisor: visualizacao e consulta).
 
 #### Criterio de pronto
 
 - Usuario consegue autenticar e acessar apenas rotas permitidas ao seu perfil; testes minimos nos guards/hooks de auth.
+- Referências Stitch das telas novas desta fase revisadas; citação da tela/base usada no PR quando aplicável.
 
 ### Fase F2 - Modulo de segurancas (UI)
 
@@ -288,12 +290,14 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 
 #### Tarefas principais
 
+- **Stitch (padrão):** antes de codar as telas de listagem, criação, edição e inativação, gerar ou revisar referências no MCP `user-stitch` (`AGENTS.md`).
 - Formularios com validacao de UX; feedback de erros da API (422, etc.).
 - Estado de lista coerente com backend (incl. seguranca inativo visivel conforme regra de produto).
 
 #### Criterio de pronto
 
 - Fluxo completo usavel por `Admin`; testes de componente nas telas criticas.
+- Referências Stitch revisadas e citadas no PR quando aplicável.
 
 ### Fase F3 - Modulo de indisponibilidades (UI)
 
@@ -306,11 +310,13 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 
 #### Tarefas principais
 
+- **Stitch (padrão):** antes das telas de indisponibilidades (listagem, cadastro, exclusão), gerar ou revisar referência no MCP `user-stitch` (`AGENTS.md`).
 - Evitar duplicidade de data na UX quando a API rejeitar; datas e motivo opcional alinhados ao contrato.
 
 #### Criterio de pronto
 
 - Integracao completa com Fase 3 backend; testes cobrindo happy path e erro de validacao.
+- Referências Stitch revisadas e citadas no PR quando aplicável.
 
 ### Fase F4 - Modulo de escalas (UI)
 
@@ -322,12 +328,14 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 
 #### Tarefas principais
 
+- **Stitch (padrão):** antes das telas de geração e consulta de escalas, gerar ou revisar referência no MCP `user-stitch` (`AGENTS.md`).
 - Parametros mes/ano, feedback de geracao (loading, sucesso, falha auditavel na UI).
 - Respeitar quem pode gerar (`Admin`) vs somente leitura (`Supervisor`) na interface.
 
 #### Criterio de pronto
 
 - Fluxo de geracao e consulta usavel; testes nos componentes de listagem/detalhe principais.
+- Referências Stitch revisadas e citadas no PR quando aplicável.
 
 ### Fase F5 - Qualidade, UX e integracao na entrega
 
@@ -339,12 +347,14 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 
 #### Tarefas principais
 
+- **Stitch:** qualquer **nova tela** ou revisão grande de layout nesta fase segue o fluxo padrão (`AGENTS.md`); manter consistência com design system / telas já validadas no projeto Stitch quando aplicável.
 - Revisar performance de listas e chamadas (TanStack Query).
 - Documentar no README o fluxo usuario final (login → cadastros → escala).
 
 #### Criterio de pronto
 
 - Checklist frontend do `AGENTS.md` atendido; build de producao do `Web` documentado.
+- Uso do Stitch documentado para telas novas introduzidas ou redesenhadas nesta fase (referência citada no PR quando aplicável).
 
 ## Plano de testes (obrigatorio por fase)
 
@@ -412,6 +422,7 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 
 - [x] Fase F0 da secao **Trilha Frontend React** concluida conforme `AGENTS.md` / `README.md`.
 - [ ] Trilha F1-F5 concluida (auth na UI, modulos de negocio, qualidade F5).
+- [ ] Fluxo **Stitch** (`AGENTS.md`) seguido para todas as telas novas; referências citadas nos PRs quando aplicável.
 - [ ] Autenticacao JWT e rotas por perfil (`Admin` / `Supervisor`) funcionando na UI.
 - [ ] Modulos de segurancas, indisponibilidades e escalas integrados aos endpoints documentados.
 - [ ] Testes Vitest + React Testing Library nas areas criticas (auth + pelo menos um fluxo de negocio).
