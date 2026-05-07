@@ -59,6 +59,8 @@ src/
 - [x] Fase 1 - Persistencia e identidade
 - [x] Fase 2 - Modulo de segurancas
 - [x] Fase 3 - Modulo de indisponibilidades
+- [x] Fase 4 - Motor de geracao de escala
+- [x] Fase 5 - Consultas de escala e historico
 
 ### Frontend (`src/Web`)
 
@@ -72,9 +74,7 @@ src/
 
 ### Fases pendentes (backend)
 
-- [ ] Fase 4 - Motor de geracao de escala
-- [ ] Fase 5 - Consultas de escala e historico
-- [ ] Fase 6 - Endurecimento e entrega
+- [ ] Fase 6 - Endurecimento e entrega (Docker, revisao final, documentacao operacional)
 
 ## O que ja esta funcionando
 
@@ -89,11 +89,12 @@ src/
 - seed de admin em ambiente Development (**e usuario `Supervisor` apenas em Development** para testes de permissao);
 - migration inicial criada e aplicada automaticamente no startup;
 - modulo de indisponibilidades (`UnavailableDays`) com CQRS + FluentValidation: `POST` / `GET` por seguranca, `DELETE` por id; `Admin` cadastra/remove, `Supervisor` consulta lista;
+- modulo de escalas mensais: geracao (`POST /api/schedules/generate`, apenas `Admin`; `409` se mes/ano ja existir; `400` sem guardas ativos ou cobertura impossivel) e **consultas/historico** (`GET /api/schedules/{id}` e `GET /api/schedules/month/{month}/year/{year}`, `Admin` ou `Supervisor`; `404` se nao existir); resposta com itens ordenados por data e dados do seguranca (nome e `IsActive` atual) para preservar leitura do historico;
 - integracao: `TestWebApplicationFactory` usa arquivo SQLite temporario unico por instancia (testes de API em paralelo sem colisao no seed);
 - tratamento de `ValidationException` com retorno HTTP `400`;
 - **CORS** configuravel (`Cors:Origins`); em Development inclui `http://localhost:4863` para o dev server do `Web`;
 - SPA em **`src/Web`** (React + Vite): `/login` com JWT em `sessionStorage`, área `/app` com shell e rotas por perfil; **`/app/security-guards`** com listagem/filtros, CRUD e inativação (UI) alinhados à API; placeholders em `/app/unavailable-days` e `/app/schedules`; proxy `/api` ou `VITE_API_BASE_URL`, home com smoke de `/api/health`, porta dev **4863**;
-- testes unitarios e de integracao das **Fases 2 e 3** (backend) passando.
+- testes unitarios e de integracao do backend (modulos de segurancas, indisponibilidades e escalas — geracao + consultas) passando.
 
 ## Entidades implementadas
 
@@ -114,16 +115,13 @@ src/
 - `POST /api/security-guards/{id}/unavailable-days` (requer role `Admin`; `201` em sucesso, `404` seguranca inexistente, `400` seguranca inativo, `409` data duplicada para o mesmo seguranca)
 - `GET /api/security-guards/{id}/unavailable-days` (requer role `Admin` ou `Supervisor`)
 - `DELETE /api/unavailable-days/{id}` (requer role `Admin`)
+- `POST /api/schedules/generate` (requer role `Admin`; `201` em sucesso com `Location` apontando para `GET .../{id}`; `409` mes/ano duplicado; `400` sem guardas ativos ou geracao impossivel)
+- `GET /api/schedules/{id}` (requer role `Admin` ou `Supervisor`; `404` se id inexistente)
+- `GET /api/schedules/month/{month}/year/{year}` (requer role `Admin` ou `Supervisor`; `404` se nao houver escala gerada para o periodo)
 
-## Endpoints planejados ainda sem implementação na API
+## Pendencias na API relacionadas ao roadmap
 
-### Schedules
-
-- `POST /api/schedules/generate`
-- `GET /api/schedules/{id}`
-- `GET /api/schedules/month/{month}/year/{year}`
-
-## Requisitos locais
+- **Fase 6 (backend):** entrega endurecida (Docker/`docker-compose`, padronizacao final de observabilidade, checklist operacional — ver [`roadmap.md`](roadmap.md)).
 
 - .NET SDK 10
 - Node.js **20.19+** ou **22.12+** (para `src/Web`: Vite 8 / Vitest 4)

@@ -673,7 +673,7 @@ NÃO fazer:
 
 O sistema deve nascer preparado para:
 
-* **SPA React em `src/Web`** (F0–F2 implementadas — ver `README.md` e `roadmap.md`; F3–F5 pendentes)
+* **SPA React em `src/Web`** (F0–F2 implementadas — ver `README.md` e `roadmap.md`; F3–F5 UI pendentes; backend já cobre até Fase 5 incluindo consultas de escala)
 * Multiempresa
 * Múltiplos postos
 * Turnos

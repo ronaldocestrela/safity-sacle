@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capaz de gerar escalas mensais confiaveis com balanceamento justo de finais de semana, respeitando indisponibilidades e historico, e uma **SPA React em `src/Web`** (especificada em `AGENTS.md`). **Bootstrap do frontend (Fase F0), auth na UI (Fase F1) e modulo de segurancas na UI (Fase F2) estão concluídos**; modulos de negocio restantes e hardening seguem nas fases F3–F5 (UI) e backend 3–6.
+Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capaz de gerar escalas mensais confiaveis com balanceamento justo de finais de semana, respeitando indisponibilidades e historico, e uma **SPA React em `src/Web`** (especificada em `AGENTS.md`). **Bootstrap do frontend (Fase F0), auth na UI (Fase F1) e modulo de segurancas na UI (Fase F2) estão concluídos**; modulos de negocio restantes e hardening seguem nas fases F3–F5 (UI); no backend, **Fases 0 a 5 estão concluídas** — falta apenas **Fase 6** (endurecimento e entrega).
 
 ## Premissas obrigatorias
 
@@ -16,7 +16,7 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 
 - Incremental por fases, cada fase com criterio de pronto.
 - Primeiro base arquitetural e seguranca, depois dominio e algoritmo, por fim operacao e hardening.
-- **Frontend:** F0–F2 concluídas; F3–F5 pendentes. Backend **Fase 3** (indisponibilidades) e **Fase 4** (geração de escala / `POST /api/schedules/generate`) concluídas; a **Fase F3** (UI de indisponibilidades) e consultas de escalas na UI dependem das Fases **5** do backend (queries/histórico). **Novas telas (F3 em diante):** fluxo Stitch obrigatório por padrão antes do código React — ver `AGENTS.md` (MCP Google Stitch).
+- **Frontend:** F0–F2 concluídas; F3–F5 pendentes. Backend **Fases 3 a 5** concluídas (indisponibilidades; motor de geração `POST /api/schedules/generate`; **consultas/histórico** `GET /api/schedules/{id}` e `GET /api/schedules/month/{month}/year/{year}`). A **Fase F4** (UI de escalas) pode integrar geração e leitura já expostas na API; **Fase F3** (UI de indisponibilidades) depende apenas da Fase 3 backend (já pronta). **Novas telas (F3 em diante):** fluxo Stitch obrigatório por padrão antes do código React — ver `AGENTS.md` (MCP Google Stitch).
 - Nenhuma feature avanca sem testes automatizados da propria fase.
 
 ## Status atual
@@ -28,7 +28,7 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 - [x] Fase 2 - Modulo de Segurancas (concluida)
 - [x] Fase 3 - Modulo de indisponibilidades (concluida)
 - [x] Fase 4 - Motor de geracao de escala
-- [ ] Fase 5 - Consultas de escala e historico
+- [x] Fase 5 - Consultas de escala e historico
 - [ ] Fase 6 - Endurecimento, observabilidade e entrega
 
 ### Frontend (React em `src/Web`) — **parcial (F0–F2 concluídas)**
@@ -229,6 +229,13 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 - Endpoints de consulta retornam historico completo e consistente.
 - Testes de integracao cobrindo consulta por id e por mes/ano.
 
+### Status de entrega da fase
+
+- [x] Queries implementadas: `GetMonthlyScheduleQuery`, `GetMonthlySchedulesQuery` (por mês/ano; sem listagem global de todas as escalas)
+- [x] Endpoints: `GET /api/schedules/{id}` e `GET /api/schedules/month/{month}/year/{year}` (`Admin` ou `Supervisor`; `404` quando não existir)
+- [x] Resposta com DTOs: cabeçalho da escala e itens ordenados por data, com dados do segurança (id, nome, `IsActive`), `Date` e `IsWeekend`; leitura EF com `Include` / `ThenInclude(SecurityGuard)` e `AsNoTracking`
+- [x] Testes de aplicação (handlers/validators) e de integração (`SchedulesQueryEndpointsTests`), incluindo histórico após inativação de segurança
+
 ## Fase 6 - Endurecimento, observabilidade e entrega
 
 ### Entregaveis
@@ -404,7 +411,8 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 - Integracao (backend):
   - endpoints obrigatorios;
   - persistencia;
-  - fluxo completo de geracao.
+  - fluxo completo de geracao;
+  - consultas `GET` de escala por id e por mes/ano (`SchedulesQueryEndpointsTests`).
 - Casos extremos:
   - poucos segurancas;
   - todos indisponiveis;
@@ -428,7 +436,7 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 
 1. **Fase F2:** modulo de segurancas na UI (concluída; backend Fase 2 já disponível).
 2. **Fase F3:** iniciar UI de indisponibilidades (backend Fase 3 disponível).
-3. **Fase F4** após Fases 4 e 5 backend (geracao + consultas).
+3. **Fase F4** UI de escalas (backend Fases 4 e 5 já entregues: geração + consultas).
 4. **Fase F5** alinhada a Fase 6 backend ou logo após F4 frontend.
 
 ## Riscos e mitigacoes
