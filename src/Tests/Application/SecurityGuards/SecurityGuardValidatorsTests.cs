@@ -1,5 +1,6 @@
 using FluentAssertions;
 using SafetyScale.Application.SecurityGuards.Commands.CreateSecurityGuard;
+using SafetyScale.Application.SecurityGuards.Commands.ActivateSecurityGuard;
 using SafetyScale.Application.SecurityGuards.Commands.InactivateSecurityGuard;
 using SafetyScale.Application.SecurityGuards.Commands.UpdateSecurityGuard;
 
@@ -33,6 +34,16 @@ public class SecurityGuardValidatorsTests
         var validator = new InactivateSecurityGuardCommandValidator();
 
         var result = validator.Validate(new InactivateSecurityGuardCommand(Guid.Empty));
+
+        result.IsValid.Should().BeFalse();
+    }
+
+    [Fact]
+    public void ActivateValidator_ShouldFail_WhenIdIsEmpty()
+    {
+        var validator = new ActivateSecurityGuardCommandValidator();
+
+        var result = validator.Validate(new ActivateSecurityGuardCommand(Guid.Empty));
 
         result.IsValid.Should().BeFalse();
     }

@@ -110,6 +110,7 @@ src/
 - `GET /api/security-guards` (requer role `Admin` ou `Supervisor`)
 - `PUT /api/security-guards/{id}` (requer role `Admin`)
 - `PATCH /api/security-guards/{id}/inactive` (requer role `Admin`)
+- `PATCH /api/security-guards/{id}/active` (requer role `Admin`)
 - `POST /api/security-guards/{id}/unavailable-days` (requer role `Admin`; `201` em sucesso, `404` seguranca inexistente, `400` seguranca inativo, `409` data duplicada para o mesmo seguranca)
 - `GET /api/security-guards/{id}/unavailable-days` (requer role `Admin` ou `Supervisor`)
 - `DELETE /api/unavailable-days/{id}` (requer role `Admin`)
@@ -134,14 +135,14 @@ SPA **React + TypeScript + Vite** com **React Router**, **ESLint**, **Prettier**
 ### Fase F1 (auth na UI)
 
 - **Login:** `/login` → `POST /api/auth/login`, JWT em `sessionStorage` (expira → limpa sessão e volta ao login).
-- **Área autenticada:** `/app` com shell (sidebar + header), logout, links condicionais por perfil; placeholders em `/app/unavailable-days` e `/app/schedules`.
-- **Referências Google Stitch usadas como base:** tela **Login de Acesso** (`projects/9334796298126275303/screens/1837019a956541aabb147945bb4378ad`) e shell desktop **Shell Administrativo SafetyScale** (`projects/9334796298126275303/screens/7b68e9354acb499f835e008c52c21c57`).
+- **Área autenticada:** `/app` com **barra inferior de navegação** (padrão do mock **Gestão de Seguranças** no Stitch: Dashboard, Guards, Availability, Rules), header com e-mail / perfil / logout; placeholders em `/app/unavailable-days` e `/app/schedules`.
+- **Referências Google Stitch usadas como base:** tela **Login de Acesso** (`projects/9334796298126275303/screens/1837019a956541aabb147945bb4378ad`), shell desktop histórico **Shell Administrativo SafetyScale** (`projects/9334796298126275303/screens/7b68e9354acb499f835e008c52c21c57`), e **BottomNavBar** da tela MOBILE **Gestão de Seguranças** (`projects/9334796298126275303/screens/1a430c771b494c85baf12207c805be74`) — ícones **Material Symbols**.
 
 ### Fase F2 (seguranças na UI)
 
-- **Rota:** `/app/security-guards` protegida — `Supervisor`: somente lista e filtro (`GET /api/security-guards`); `Admin`: criar, editar (`PUT`), inativar (`PATCH`).
+- **Rota:** `/app/security-guards` protegida — `Supervisor`: somente lista e filtro (`GET /api/security-guards`); `Admin`: criar, editar (`PUT`), inativar (`PATCH .../inactive`) e reativar (`PATCH .../active`).
 - Validacoes FluentValidation aparecem na API como HTTP **400** (corpo JSON com lista `errors`).
-- **Stitch (`user-stitch`, projeto SafetyScale Web, id `9334796298126275303`):** antes do merge/publicacao, gere ou revise uma tela de **listagem + formulario segurancas** no Stitch e cole o caminho da tela no PR (ex.: `projects/9334796298126275303/screens/<screenId>`), como ja feito na Fase F1. O codigo desta fase segue CSS Modules em `features/security-guards`.
+- **Stitch (`user-stitch`, projeto SafetyScale Web, id `9334796298126275303`):** antes do merge/publicacao, gere ou revise uma tela de **listagem + formulario segurancas** no Stitch e cole o caminho da tela no PR (ex.: `projects/9334796298126275303/screens/<screenId>`), como ja feito na Fase F1. O codigo desta fase segue CSS Modules em `features/security-guards`. Referencia MOBILE de listagem: **Gestao de Segurancas** (`projects/9334796298126275303/screens/1a430c771b494c85baf12207c805be74`).
 
 ### Novas telas e Google Stitch (padrão)
 

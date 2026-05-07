@@ -1,6 +1,7 @@
 using FluentAssertions;
 using SafetyScale.Application.Abstractions.Persistence;
 using SafetyScale.Application.SecurityGuards.Commands.CreateSecurityGuard;
+using SafetyScale.Application.SecurityGuards.Commands.ActivateSecurityGuard;
 using SafetyScale.Application.SecurityGuards.Commands.InactivateSecurityGuard;
 using SafetyScale.Application.SecurityGuards.Commands.UpdateSecurityGuard;
 using SafetyScale.Domain.Entities;
@@ -79,6 +80,36 @@ public class SecurityGuardCommandHandlersTests
 
         result.Should().BeTrue();
         repository.Items.Single().IsActive.Should().BeFalse();
+        unitOfWork.SaveChangesCalls.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task ActivateCommand_ShouldSetActive_WhenSecurityGuardIsInactive()
+    {
+        var guard = new SecurityGuard { Id = Guid.NewGuid(), Name = "Inativo", IsActive = false };
+        var repository = new InMemorySecurityGuardRepository(guard);
+        var unitOfWork = new FakeUnitOfWork();
+        var handler = new ActivateSecurityGuardCommandHandler(repository, unitOfWork);
+
+        var result = await handler.Handle(new ActivateSecurityGuardCommand(guard.Id), CancellationToken.None);
+
+        result.Should().BeTrue();
+        repository.Items.Single().IsActive.Should().BeTrue();
+        unitOfWork.SaveChangesCalls.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task ActivateCommand_ShouldBeIdempotent_WhenSecurityGuardIsAlreadyActive()
+    {
+        var guard = new SecurityGuard { Id = Guid.NewGuid(), Name = "Ativo", IsActive = true };
+        var repository = new InMemorySecurityGuardRepository(guard);
+        var unitOfWork = new FakeUnitOfWork();
+        var handler = new ActivateSecurityGuardCommandHandler(repository, unitOfWork);
+
+        var result = await handler.Handle(new ActivateSecurityGuardCommand(guard.Id), CancellationToken.None);
+
+        result.Should().BeTrue();
+        repository.Items.Single().IsActive.Should().BeTrue();
         unitOfWork.SaveChangesCalls.Should().Be(0);
     }
 

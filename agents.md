@@ -179,7 +179,7 @@ TDD é obrigatório.
 
 ## Telas e fluxos previstos (espelho dos endpoints)
 
-- **Seguranças:** listagem, criação, edição, inativação — alinhado a `/api/security-guards` e `PATCH .../inactive`.
+- **Seguranças:** listagem, criação, edição, inativação e **reativação** — alinhado a `/api/security-guards`, `PATCH .../inactive` e `PATCH .../active`.
 - **Indisponibilidades:** CRUD por segurança — alinhado a `/api/security-guards/{id}/unavailable-days` e `DELETE /api/unavailable-days/{id}`.
 - **Escalas:** geração mensal e consultas — alinhado a `POST /api/schedules/generate`, `GET /api/schedules/{id}` e `GET /api/schedules/month/{month}/year/{year}`.
 
@@ -205,7 +205,7 @@ O MCP `user-stitch` é a etapa padrão de descoberta visual e validação de UX;
 - Projeto Stitch: `SafetyScale Web`
 - Project resource: `projects/9334796298126275303`
 - Project ID para chamadas MCP: `9334796298126275303`
-- Device type padrão: `DESKTOP`
+- Device type padrão: `MOBILE`
 - Uso principal: gerar e evoluir telas administrativas do SafetyScale alinhadas aos fluxos de backend e ao frontend React.
 
 ## Fluxo obrigatório (nova tela)
@@ -461,6 +461,7 @@ POST   /api/security-guards
 GET    /api/security-guards
 PUT    /api/security-guards/{id}
 PATCH  /api/security-guards/{id}/inactive
+PATCH  /api/security-guards/{id}/active
 ```
 
 ---

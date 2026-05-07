@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SafetyScale.Api.Contracts.SecurityGuards;
 using SafetyScale.Application.SecurityGuards.Commands.CreateSecurityGuard;
+using SafetyScale.Application.SecurityGuards.Commands.ActivateSecurityGuard;
 using SafetyScale.Application.SecurityGuards.Commands.InactivateSecurityGuard;
 using SafetyScale.Application.SecurityGuards.Commands.UpdateSecurityGuard;
 using SafetyScale.Application.SecurityGuards.Queries.GetSecurityGuards;
@@ -52,5 +53,15 @@ public class SecurityGuardsController(ISender sender) : ControllerBase
     {
         var inactivated = await sender.Send(new InactivateSecurityGuardCommand(id), cancellationToken);
         return inactivated ? NoContent() : NotFound();
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpPatch("{id:guid}/active")]
+    public async Task<IActionResult> Activate(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken)
+    {
+        var activated = await sender.Send(new ActivateSecurityGuardCommand(id), cancellationToken);
+        return activated ? NoContent() : NotFound();
     }
 }

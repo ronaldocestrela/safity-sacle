@@ -59,23 +59,20 @@ describe('SecurityGuardsPage', () => {
       expect(securityGuardsApi.listSecurityGuards).toHaveBeenCalledWith(undefined)
     })
     expect(await screen.findByText('Ana Costa')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /nova segurança/i })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /editar/i })).not.toBeInTheDocument()
-    const table = screen.getByRole('table')
-    expect(within(table).queryByRole('columnheader', { name: /ações/i })).toBeNull()
+    expect(screen.queryByRole('button', { name: /add personnel/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Ana Costa' })).not.toBeInTheDocument()
   })
 
   it('shows admin actions for Admin user', async () => {
     renderPage('Admin')
-    expect(await screen.findByRole('button', { name: /nova segurança/i })).toBeInTheDocument()
-    expect(await screen.findByRole('button', { name: /editar/i })).toBeInTheDocument()
-    expect(within(screen.getByRole('table')).getByRole('columnheader', { name: /ações/i })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /add personnel/i })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Ana Costa' })).toBeInTheDocument()
   })
 
   it('shows empty message when nothing returned', async () => {
     vi.mocked(securityGuardsApi.listSecurityGuards).mockResolvedValueOnce([])
     renderPage('Supervisor')
-    expect(await screen.findByText(/nenhum registro encontrado/i)).toBeInTheDocument()
+    expect(await screen.findByText(/no personnel found/i)).toBeInTheDocument()
   })
 
   it('shows load error message from ApiError when fetch fails', async () => {
@@ -89,10 +86,10 @@ describe('SecurityGuardsPage', () => {
     renderPage('Admin')
     await screen.findByText('Ana Costa')
 
-    await user.click(screen.getByRole('button', { name: /nova segurança/i }))
-    await user.click(within(screen.getByRole('form')).getByRole('button', { name: /^criar$/i }))
+    await user.click(screen.getByRole('button', { name: /add personnel/i }))
+    await user.click(within(screen.getByRole('form')).getByRole('button', { name: /^create$/i }))
 
-    expect(await screen.findByText(/informe o nome/i)).toBeInTheDocument()
+    expect(await screen.findByText(/enter a name/i)).toBeInTheDocument()
     expect(securityGuardsApi.createSecurityGuard).not.toHaveBeenCalled()
   })
 
@@ -118,10 +115,10 @@ describe('SecurityGuardsPage', () => {
     renderPage('Admin')
     expect(await screen.findByText('Ana Costa')).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: /nova segurança/i }))
-    await user.type(screen.getByLabelText(/^nome$/i), 'Maria Souza')
+    await user.click(screen.getByRole('button', { name: /add personnel/i }))
+    await user.type(screen.getByLabelText(/^name$/i), 'Maria Souza')
 
-    await user.click(within(screen.getByRole('form')).getByRole('button', { name: /^criar$/i }))
+    await user.click(within(screen.getByRole('form')).getByRole('button', { name: /^create$/i }))
 
     await waitFor(() => {
       expect(securityGuardsApi.createSecurityGuard).toHaveBeenCalledWith('Maria Souza')

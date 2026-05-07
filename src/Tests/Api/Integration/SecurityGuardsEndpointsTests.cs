@@ -77,6 +77,28 @@ public class SecurityGuardsEndpointsTests
         items.Should().Contain(x => x.Id == created.Id && !x.IsActive);
     }
 
+    [Fact]
+    public async Task PatchActive_ShouldActivateSecurityGuard()
+    {
+        using var factory = new TestWebApplicationFactory();
+        using var client = CreateHttpsClient(factory);
+        await AuthTestHelper.AuthenticateAsAdminAsync(client);
+
+        var createResponse = await client.PostAsJsonAsync("/api/security-guards", new { name = "Guard E" });
+        var created = await createResponse.Content.ReadFromJsonAsync<CreateSecurityGuardResponse>();
+        created.Should().NotBeNull();
+
+        await client.PatchAsync($"/api/security-guards/{created!.Id}/inactive", content: null);
+
+        var patchResponse = await client.PatchAsync($"/api/security-guards/{created.Id}/active", content: null);
+
+        patchResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var listResponse = await client.GetAsync("/api/security-guards");
+        var items = await listResponse.Content.ReadFromJsonAsync<List<SecurityGuardResponse>>();
+        items.Should().Contain(x => x.Id == created.Id && x.IsActive);
+    }
+
     private sealed record CreateSecurityGuardResponse(Guid Id);
     private sealed record SecurityGuardResponse(Guid Id, string Name, bool IsActive, DateTime CreatedAt);
 

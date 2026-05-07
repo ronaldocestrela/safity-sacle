@@ -64,3 +64,10 @@ export async function inactivateSecurityGuard(id: string): Promise<void> {
   })
   await ensureOk(res, 'Não foi possível inativar.')
 }
+
+export async function activateSecurityGuard(id: string): Promise<void> {
+  const res = await apiFetch(`/api/security-guards/${encodeURIComponent(id)}/active`, {
+    method: 'PATCH',
+  })
+  await ensureOk(res, 'Não foi possível reativar.')
+}
