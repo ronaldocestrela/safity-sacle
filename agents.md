@@ -193,6 +193,46 @@ TDD é obrigatório.
 
 ---
 
+# MCP Google Stitch
+
+Usar o MCP `user-stitch` como ferramenta auxiliar para criar, revisar e evoluir telas do frontend React (`src/Web`) antes da implementação em código.
+
+## Projeto Stitch de referência
+
+- MCP server: `user-stitch`
+- Projeto Stitch: `SafetyScale Web`
+- Project resource: `projects/9334796298126275303`
+- Project ID para chamadas MCP: `9334796298126275303`
+- Device type padrão: `DESKTOP`
+- Uso principal: gerar e evoluir telas administrativas do SafetyScale alinhadas aos fluxos de backend e ao frontend React planejado.
+
+## Quando usar
+
+- Criar telas administrativas do sistema a partir de prompts.
+- Gerar variações visuais para validar layout e UX.
+- Criar, atualizar ou aplicar design system no projeto Stitch.
+- Revisar telas antes de implementar componentes React em `src/Web`.
+
+## Ferramentas principais
+
+- `create_project`: criar novo projeto Stitch somente se o projeto de referência não existir ou se o usuário solicitar outro projeto.
+- `list_projects` / `get_project`: localizar e inspecionar o projeto Stitch.
+- `generate_screen_from_text`: gerar tela a partir de prompt usando `projectId = 9334796298126275303`.
+- `list_screens` / `get_screen`: consultar telas geradas.
+- `create_design_system`, `update_design_system`, `list_design_systems`, `apply_design_system`: gerenciar e aplicar design system.
+- `generate_variants`: gerar alternativas visuais para uma tela.
+- `edit_screens`: ajustar telas existentes.
+
+## Diretrizes de uso
+
+- Não usar Stitch como fonte de regra de negócio.
+- O backend continua sendo a fonte oficial de permissões, validações e contratos.
+- Prompts devem citar perfis `Admin` e `Supervisor`, estados de loading, empty state, mensagens de erro e endpoints relacionados.
+- As telas geradas devem ser adaptadas aos padrões React/TypeScript deste arquivo antes de virar código em `src/Web`.
+- Não incluir segredos, tokens ou credenciais em prompts ou documentação do Stitch.
+
+---
+
 # Entidades Obrigatórias
 
 ## SecurityGuard
