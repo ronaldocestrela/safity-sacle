@@ -35,6 +35,26 @@ O sistema deve permitir:
 - FluentAssertions
 - Docker
 
+## Frontend (React)
+
+> **Status:** **não implementado.** A stack e as convenções abaixo são especificação de referência para quando o SPA for criado; o repositório pode conter apenas backend até lá.
+
+- React (18+)
+- TypeScript
+- Vite
+- React Router
+- Cliente HTTP tipado para a API (`fetch` nativo ou camada fina; **TanStack Query** recomendado para cache, estados de loading/erro e invalidação)
+- Estilização: CSS Modules ou biblioteca de componentes acordada pelo time (definir na abertura da Fase F0 do frontend)
+- Testes: Vitest + React Testing Library (padrão quando o frontend existir)
+
+**Condições e alinhamento com o backend:**
+
+- Autenticação **JWT Bearer** igual à API (`Authorization: Bearer <token>`); refresh/logout conforme política definida na implementação.
+- Autorização na UI espelhando perfis **`Admin`** e **`Supervisor`**: rotas, menus e ações condicionais; regras definitivas continuam no backend.
+- Formulários com validação de UX (campos obrigatórios, formatos); **validação de negócio permanece na API** (FluentValidation/handlers).
+- Tratamento padronizado de erros da API (401, 403, 422, 500) e mensagens ao usuário.
+- Base URL da API via variável de ambiente (ex.: `VITE_API_BASE_URL`).
+
 ---
 
 # Arquitetura Obrigatória
@@ -59,8 +79,20 @@ src/
  ├── Application
  ├── Domain
  ├── Infrastructure
- └── Tests
-````
+ ├── Tests
+ └── Web
+```
+
+> **`Web`:** aplicação React (SPA); pasta ausente ou vazia enquanto o frontend não for implementado.
+
+```text
+(Web — estrutura sugerida quando existir)
+src/Web/
+ ├── app/           # providers, router, layout raiz
+ ├── features/      # módulos por domínio (security-guards, unavailable-days, schedules)
+ ├── shared/        # componentes, hooks, utilitários, tipos API
+ └── assets/
+```
 
 ---
 
@@ -133,6 +165,31 @@ Responsável por:
 * Testes de regras de negócio
 
 TDD é obrigatório.
+
+---
+
+# Frontend (React) — Arquitetura e responsabilidades
+
+> Aplicável **quando** o projeto `Web` for criado. Até lá, esta seção serve apenas como contrato.
+
+## Organização
+
+- **Por features** (`features/security-guards`, `features/schedules`, etc.), não por tipo de arquivo isolado em todo o projeto.
+- **Camada de API**: módulos que chamam os endpoints documentados neste arquivo; DTOs/tipos alinhados aos contratos da API.
+- **Componentes apresentacionais** versus **containers/hooks** com lógica de dados quando necessário.
+- Sem duplicar regras de negócio complexas no cliente; confiar no servidor para decisões finais.
+
+## Telas e fluxos previstos (espelho dos endpoints)
+
+- **Seguranças:** listagem, criação, edição, inativação — alinhado a `/api/security-guards` e `PATCH .../inactive`.
+- **Indisponibilidades:** CRUD por segurança — alinhado a `/api/security-guards/{id}/unavailable-days` e `DELETE /api/unavailable-days/{id}`.
+- **Escalas:** geração mensal e consultas — alinhado a `POST /api/schedules/generate`, `GET /api/schedules/{id}` e `GET /api/schedules/month/{month}/year/{year}`.
+
+## Qualidade (frontend)
+
+- Linter (ESLint) e formatter (Prettier) no `Web`.
+- Testes de componentes e hooks nas regras críticas de UI (permissões, formulários, estados de erro).
+- Opcional: E2E (Playwright) após fluxos principais estáveis.
 
 ---
 
@@ -510,6 +567,8 @@ Deve possuir:
 * Dockerfile
 * docker-compose.yml
 
+Quando o frontend `Web` existir, o `docker-compose.yml` **pode** incluir serviço da SPA em build multi-stage (opcional até a trilha frontend avançar).
+
 ---
 
 # Swagger Obrigatório
@@ -538,6 +597,14 @@ Swagger deve estar habilitado em ambiente de desenvolvimento.
 
 ---
 
+## Frontend (quando implementado)
+
+* Pastas e features com nomes estáveis e alinhados ao domínio (inglês ou PT-BR consistente com o restante do repo).
+* Componentes com responsabilidade única; evitar arquivos “catch-all”.
+* Não embutir tokens ou lógica sensível no código cliente além do necessário; preferir env e boas práticas de JWT.
+
+---
+
 # Proibições
 
 NÃO fazer:
@@ -555,6 +622,7 @@ NÃO fazer:
 
 O sistema deve nascer preparado para:
 
+* **SPA React em `src/Web`** (especificado neste documento; implementação pendente — ver também `roadmap.md`, trilha Frontend)
 * Multiempresa
 * Múltiplos postos
 * Turnos
@@ -576,5 +644,4 @@ O foco principal do sistema é:
 * Facilidade de evolução
 * Alta testabilidade
 
-```
-```
+````
