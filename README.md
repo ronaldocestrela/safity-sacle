@@ -37,7 +37,7 @@ O projeto foi definido para:
 - MediatR
 - Serilog
 - xUnit + FluentAssertions
-- SPA em `src/Web`: React, TypeScript, Vite, React Router, Vitest (Fase F0 do frontend concluida; ver `roadmap.md`)
+- SPA em `src/Web`: React, TypeScript, Vite, React Router, Vitest, modulo de segurancas (UI) — ver `roadmap.md`
 
 ### Estrutura do projeto
 
@@ -58,19 +58,20 @@ src/
 - [x] Fase 0 - Bootstrap e padroes
 - [x] Fase 1 - Persistencia e identidade
 - [x] Fase 2 - Modulo de segurancas
+- [x] Fase 3 - Modulo de indisponibilidades
 
 ### Frontend (`src/Web`)
 
 - [x] Fase F0 - Bootstrap e convencoes (Vite, ESLint/Prettier, smoke API, CORS em Development)
 - [x] Fase F1 - Autenticacao JWT na UI, `sessionStorage`, rotas por perfil (`Admin` / `Supervisor`)
+- [x] Fase F2 - Seguranças na UI (`/app/security-guards`; `Admin` gerencia, `Supervisor` consulta)
 
 ### Fases pendentes (frontend)
 
-- [ ] Fases F2 a F5 — ver `roadmap.md` (modulos de negocio, qualidade)
+- [ ] Fases F3 a F5 — ver `roadmap.md` (indisponibilidades, escalas, qualidade)
 
 ### Fases pendentes (backend)
 
-- [ ] Fase 3 - Modulo de indisponibilidades
 - [ ] Fase 4 - Motor de geracao de escala
 - [ ] Fase 5 - Consultas de escala e historico
 - [ ] Fase 6 - Endurecimento e entrega
@@ -85,13 +86,14 @@ src/
 - ASP.NET Identity com roles `Admin` e `Supervisor`;
 - autenticacao JWT;
 - seed automatico de roles no startup;
-- seed de admin em ambiente Development;
+- seed de admin em ambiente Development (**e usuario `Supervisor` apenas em Development** para testes de permissao);
 - migration inicial criada e aplicada automaticamente no startup;
-- modulo de segurancas com CQRS + FluentValidation;
+- modulo de indisponibilidades (`UnavailableDays`) com CQRS + FluentValidation: `POST` / `GET` por seguranca, `DELETE` por id; `Admin` cadastra/remove, `Supervisor` consulta lista;
+- integracao: `TestWebApplicationFactory` usa arquivo SQLite temporario unico por instancia (testes de API em paralelo sem colisao no seed);
 - tratamento de `ValidationException` com retorno HTTP `400`;
 - **CORS** configuravel (`Cors:Origins`); em Development inclui `http://localhost:4863` para o dev server do `Web`;
-- SPA em **`src/Web`** (React + Vite): `/login` com JWT em `sessionStorage`, área `/app` com shell e rotas por perfil, proxy `/api` ou `VITE_API_BASE_URL`, home com smoke de `/api/health`, porta dev **4863**;
-- testes unitarios e de integracao da Fase 2 (backend) passando.
+- SPA em **`src/Web`** (React + Vite): `/login` com JWT em `sessionStorage`, área `/app` com shell e rotas por perfil; **`/app/security-guards`** com listagem/filtros, CRUD e inativação (UI) alinhados à API; placeholders em `/app/unavailable-days` e `/app/schedules`; proxy `/api` ou `VITE_API_BASE_URL`, home com smoke de `/api/health`, porta dev **4863**;
+- testes unitarios e de integracao das **Fases 2 e 3** (backend) passando.
 
 ## Entidades implementadas
 
@@ -108,21 +110,11 @@ src/
 - `GET /api/security-guards` (requer role `Admin` ou `Supervisor`)
 - `PUT /api/security-guards/{id}` (requer role `Admin`)
 - `PATCH /api/security-guards/{id}/inactive` (requer role `Admin`)
+- `POST /api/security-guards/{id}/unavailable-days` (requer role `Admin`; `201` em sucesso, `404` seguranca inexistente, `400` seguranca inativo, `409` data duplicada para o mesmo seguranca)
+- `GET /api/security-guards/{id}/unavailable-days` (requer role `Admin` ou `Supervisor`)
+- `DELETE /api/unavailable-days/{id}` (requer role `Admin`)
 
-## Endpoints alvo do projeto (roadmap)
-
-### Security Guards
-
-- `POST /api/security-guards`
-- `GET /api/security-guards`
-- `PUT /api/security-guards/{id}`
-- `PATCH /api/security-guards/{id}/inactive`
-
-### Unavailable Days
-
-- `POST /api/security-guards/{id}/unavailable-days`
-- `DELETE /api/unavailable-days/{id}`
-- `GET /api/security-guards/{id}/unavailable-days`
+## Endpoints planejados ainda sem implementação na API
 
 ### Schedules
 
@@ -142,8 +134,14 @@ SPA **React + TypeScript + Vite** com **React Router**, **ESLint**, **Prettier**
 ### Fase F1 (auth na UI)
 
 - **Login:** `/login` → `POST /api/auth/login`, JWT em `sessionStorage` (expira → limpa sessão e volta ao login).
-- **Área autenticada:** `/app` com shell (sidebar + header), logout, links condicionais por perfil; placeholders em `/app/security-guards`, `/app/unavailable-days`, `/app/schedules`.
+- **Área autenticada:** `/app` com shell (sidebar + header), logout, links condicionais por perfil; placeholders em `/app/unavailable-days` e `/app/schedules`.
 - **Referências Google Stitch usadas como base:** tela **Login de Acesso** (`projects/9334796298126275303/screens/1837019a956541aabb147945bb4378ad`) e shell desktop **Shell Administrativo SafetyScale** (`projects/9334796298126275303/screens/7b68e9354acb499f835e008c52c21c57`).
+
+### Fase F2 (seguranças na UI)
+
+- **Rota:** `/app/security-guards` protegida — `Supervisor`: somente lista e filtro (`GET /api/security-guards`); `Admin`: criar, editar (`PUT`), inativar (`PATCH`).
+- Validacoes FluentValidation aparecem na API como HTTP **400** (corpo JSON com lista `errors`).
+- **Stitch (`user-stitch`, projeto SafetyScale Web, id `9334796298126275303`):** antes do merge/publicacao, gere ou revise uma tela de **listagem + formulario segurancas** no Stitch e cole o caminho da tela no PR (ex.: `projects/9334796298126275303/screens/<screenId>`), como ja feito na Fase F1. O codigo desta fase segue CSS Modules em `features/security-guards`.
 
 ### Novas telas e Google Stitch (padrão)
 
@@ -269,6 +267,11 @@ Usuario adicional legado:
 
 - Email: `admin@safetyscale.local`
 - Senha: `Admin@12345`
+
+Usuario **Supervisor** (apenas Development — role `Supervisor` para testes e integracao):
+
+- Email: `supervisor@safetyscale.local`
+- Senha: `Supervisor@12345`
 
 ## Banco de dados e migrations
 

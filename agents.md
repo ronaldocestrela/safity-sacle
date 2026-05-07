@@ -36,7 +36,7 @@ O sistema deve permitir:
 
 ## Frontend (React)
 
-> **Status:** **Fases F0–F1 concluídas** — o projeto `src/Web` inclui Vite, React, TypeScript, Router, ESLint, Prettier, Vitest, CSS Modules, **login JWT (`sessionStorage`)**, shell e rotas por perfil. **Fases F2–F5** (módulos de negócio e hardening) **ainda pendentes**.
+> **Status:** **Fases F0–F2 concluídas** — o projeto `src/Web` inclui Vite, React, TypeScript, Router, ESLint, Prettier, Vitest, CSS Modules, **login JWT (`sessionStorage`)**, shell, rotas por perfil e **módulo de seguranças** (`features/security-guards`). **Fases F3–F5** (indisponibilidades, escalas e hardening UX) **ainda pendentes**.
 
 - React (18+)
 - TypeScript
@@ -168,7 +168,7 @@ TDD é obrigatório.
 
 # Frontend (React) — Arquitetura e responsabilidades
 
-> **Bootstrap (F0) e auth na UI (F1)** atendidos no repositório. Esta seção permanece como contrato para **F2 em diante** (telas de domínio, qualidade ampliada).
+> **Bootstrap (F0), auth na UI (F1)** e **módulo de Seguranças (F2)** atendidos no repositório. Esta seção permanece como contrato para **F3 em diante** (indisponibilidades, escalas, qualidade ampliada).
 
 ## Organização
 
@@ -672,7 +672,7 @@ NÃO fazer:
 
 O sistema deve nascer preparado para:
 
-* **SPA React em `src/Web`** (F0–F1 implementadas — ver `README.md` e `roadmap.md`; F2–F5 pendentes)
+* **SPA React em `src/Web`** (F0–F2 implementadas — ver `README.md` e `roadmap.md`; F3–F5 pendentes)
 * Multiempresa
 * Múltiplos postos
 * Turnos

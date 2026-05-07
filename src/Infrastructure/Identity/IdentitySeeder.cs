@@ -72,5 +72,40 @@ public class IdentitySeeder(
 
             await userManager.AddToRoleAsync(user, Roles.Admin);
         }
+
+        await EnsureSupervisorUserAsync();
+    }
+
+    private async Task EnsureSupervisorUserAsync()
+    {
+        const string email = "supervisor@safetyscale.local";
+        const string password = "Supervisor@12345";
+
+        var existing = await userManager.FindByEmailAsync(email);
+        if (existing is not null)
+        {
+            if (!await userManager.IsInRoleAsync(existing, Roles.Supervisor))
+            {
+                await userManager.AddToRoleAsync(existing, Roles.Supervisor);
+            }
+
+            return;
+        }
+
+        var user = new AppUser
+        {
+            Email = email,
+            UserName = email,
+            EmailConfirmed = true,
+        };
+
+        var createResult = await userManager.CreateAsync(user, password);
+        if (!createResult.Succeeded)
+        {
+            logger.LogWarning("Failed to create development supervisor user {Email}.", email);
+            return;
+        }
+
+        await userManager.AddToRoleAsync(user, Roles.Supervisor);
     }
 }

@@ -18,7 +18,16 @@ public class UnavailableDayRepository(ApplicationDbContext dbContext) : IUnavail
         => await dbContext.UnavailableDays
             .Where(x => x.SecurityGuardId == securityGuardId)
             .AsNoTracking()
+            .OrderBy(x => x.Date)
             .ToListAsync(cancellationToken);
+
+    public Task<bool> ExistsForGuardAndDateAsync(
+        Guid securityGuardId,
+        DateOnly date,
+        CancellationToken cancellationToken = default)
+        => dbContext.UnavailableDays.AnyAsync(
+            x => x.SecurityGuardId == securityGuardId && x.Date == date,
+            cancellationToken);
 
     public void Remove(UnavailableDay unavailableDay) => dbContext.UnavailableDays.Remove(unavailableDay);
 }

@@ -15,25 +15,20 @@ export function AppLayout() {
           <NavLink className={navClass} to="/app" end>
             Início
           </NavLink>
-          {isAdmin ? (
-            <>
-              <NavLink className={navClass} to="/app/security-guards">
-                Seguranças
-              </NavLink>
+          <>
+            <NavLink className={navClass} to="/app/security-guards">
+              Seguranças
+            </NavLink>
+            {isAdmin ? (
               <NavLink className={navClass} to="/app/unavailable-days">
                 Indisponibilidades
               </NavLink>
-            </>
-          ) : (
-            <>
-              <span className={`${styles.navItem} ${styles.navItemLocked}`} title="Requer perfil Admin">
-                Seguranças
-              </span>
+            ) : (
               <span className={`${styles.navItem} ${styles.navItemLocked}`} title="Requer perfil Admin">
                 Indisponibilidades
               </span>
-            </>
-          )}
+            )}
+          </>
           <NavLink className={navClass} to="/app/schedules">
             Escalas
           </NavLink>

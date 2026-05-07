@@ -3,6 +3,7 @@ import { HomePage } from '../features/home/HomePage'
 import { LoginPage } from '../features/auth/LoginPage'
 import { WelcomePage } from '../features/app/WelcomePage'
 import { ModulePlaceholderPage } from '../features/app/ModulePlaceholderPage'
+import { SecurityGuardsPage } from '../features/security-guards/SecurityGuardsPage'
 import { AppLayout } from './AppLayout'
 import { ProtectedRoute } from './routes/ProtectedRoute'
 import { RoleRoute } from './routes/RoleRoute'
@@ -21,8 +22,8 @@ export function AppRoutes() {
           <Route
             path="security-guards"
             element={
-              <RoleRoute allowedRoles={['Admin']}>
-                <ModulePlaceholderPage title="Seguranças" />
+              <RoleRoute allowedRoles={['Admin', 'Supervisor']}>
+                <SecurityGuardsPage />
               </RoleRoute>
             }
           />
