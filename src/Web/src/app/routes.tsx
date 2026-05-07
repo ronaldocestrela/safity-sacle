@@ -2,7 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { HomePage } from '../features/home/HomePage'
 import { LoginPage } from '../features/auth/LoginPage'
 import { WelcomePage } from '../features/app/WelcomePage'
-import { ModulePlaceholderPage } from '../features/app/ModulePlaceholderPage'
+import { SchedulesPage } from '../features/schedules/SchedulesPage'
 import { SecurityGuardsPage } from '../features/security-guards/SecurityGuardsPage'
 import { UnavailableDaysPage } from '../features/unavailable-days/UnavailableDaysPage'
 import { AppLayout } from './AppLayout'
@@ -39,7 +39,9 @@ export function AppRoutes() {
           <Route
             path="schedules"
             element={
-              <ModulePlaceholderPage title="Escalas" description="Geração e consultas de escala chegam na Fase F4 (UI)." />
+              <RoleRoute allowedRoles={['Admin', 'Supervisor']}>
+                <SchedulesPage />
+              </RoleRoute>
             }
           />
         </Route>

@@ -68,10 +68,11 @@ src/
 - [x] Fase F1 - Autenticacao JWT na UI, `sessionStorage`, rotas por perfil (`Admin` / `Supervisor`)
 - [x] Fase F2 - Seguranças na UI (`/app/security-guards`; `Admin` gerencia, `Supervisor` consulta)
 - [x] Fase F3 - Indisponibilidades na UI (`/app/unavailable-days`; `Admin`: CRUD via calendário + **SAVE RESTRICTIONS**; `Supervisor`: consulta)
+- [x] Fase F4 - Escalas na UI (`/app/schedules`; consulta mês/ano; `Admin`: geração mensal)
 
 ### Fases pendentes (frontend)
 
-- [ ] Fases F4 e F5 — ver `roadmap.md` (escalas, qualidade)
+- [ ] Fase F5 — ver `roadmap.md` (qualidade, UX)
 
 ### Fases pendentes (backend)
 
@@ -94,7 +95,7 @@ src/
 - integracao: `TestWebApplicationFactory` usa arquivo SQLite temporario unico por instancia (testes de API em paralelo sem colisao no seed);
 - tratamento de `ValidationException` com retorno HTTP `400`;
 - **CORS** configuravel (`Cors:Origins`); em Development inclui `http://localhost:4863` para o dev server do `Web`;
-- SPA em **`src/Web`** (React + Vite): `/login` com JWT em `sessionStorage`, área `/app` com shell e rotas por perfil; **`/app/security-guards`** com listagem/filtros, CRUD e inativação (UI) alinhados à API; placeholders em `/app/unavailable-days` e `/app/schedules`; proxy `/api` ou `VITE_API_BASE_URL`, home com smoke de `/api/health`, porta dev **4863**;
+- SPA em **`src/Web`** (React + Vite): `/login` com JWT em `sessionStorage`, área `/app` com shell e rotas por perfil; **`/app/security-guards`**, **`/app/unavailable-days`** e **`/app/schedules`** (Fase F4: regras/escala alinhada ao Stitch **Regras de Escala**); proxy `/api` ou `VITE_API_BASE_URL`, home com smoke de `/api/health`, porta dev **4863**;
 - testes unitarios e de integracao do backend (modulos de segurancas, indisponibilidades e escalas — geracao + consultas) passando.
 
 ## Entidades implementadas
@@ -134,8 +135,8 @@ SPA **React + TypeScript + Vite** com **React Router**, **ESLint**, **Prettier**
 ### Fase F1 (auth na UI)
 
 - **Login:** `/login` → `POST /api/auth/login`, JWT em `sessionStorage` (expira → limpa sessão e volta ao login).
-- **Área autenticada:** `/app` com **barra inferior de navegação** (padrão do mock **Gestão de Seguranças** no Stitch: Dashboard, Guards, Availability, Rules), header com e-mail / perfil / logout; placeholder em `/app/schedules` até a F4.
-- **Referências Google Stitch usadas como base:** tela **Login de Acesso** (`projects/9334796298126275303/screens/1837019a956541aabb147945bb4378ad`), shell desktop histórico **Shell Administrativo SafetyScale** (`projects/9334796298126275303/screens/7b68e9354acb499f835e008c52c21c57`), e **BottomNavBar** da tela MOBILE **Gestão de Seguranças** (`projects/9334796298126275303/screens/1a430c771b494c85baf12207c805be74`) — ícones **Material Symbols**.
+- **Área autenticada:** `/app` com **barra inferior de navegação** (Dashboard, Guards, Availability, Schedules), header com e-mail / perfil / logout nas telas shell; telas **Guards**, **Availability** e **Schedules** (`/app/schedules`) usam header próprio estilo Stitch.
+- **Referências Google Stitch usadas como base:** tela **Login de Acesso** (`projects/9334796298126275303/screens/1837019a956541aabb147945bb4378ad`), shell desktop histórico **Shell Administrativo SafetyScale** (`projects/9334796298126275303/screens/7b68e9354acb499f835e008c52c21c57`), **BottomNavBar** da tela MOBILE **Gestão de Seguranças** (`projects/9334796298126275303/screens/1a430c771b494c85baf12207c805be74`), e **Regras de Escala** / aba Schedules (`projects/9334796298126275303/screens/e1026c6a3524415ca5f749c9496b2f5e`) — ícones **Material Symbols**.
 
 ### Fase F2 (seguranças na UI)
 
@@ -147,6 +148,11 @@ SPA **React + TypeScript + Vite** com **React Router**, **ESLint**, **Prettier**
 
 - **Rota:** `/app/unavailable-days` — `Supervisor`: `GET /api/security-guards/{id}/unavailable-days`; `Admin`: idem + `POST /api/security-guards/{id}/unavailable-days`, `DELETE /api/unavailable-days/{id}` (alterações só após **SAVE RESTRICTIONS**).
 - Layout alinhado ao mock MOBILE **Cadastro de Indisponibilidade**: `projects/9334796298126275303/screens/7e28e88d0da14a70b894a9586c58ee62`.
+
+### Fase F4 (escalas na UI)
+
+- **Rota:** `/app/schedules` — `Supervisor` e `Admin`: `GET /api/schedules/month/{month}/year/{year}`; `Admin`: `POST /api/schedules/generate`.
+- Layout alinhado ao mock MOBILE **Regras de Escala**: `projects/9334796298126275303/screens/e1026c6a3524415ca5f749c9496b2f5e` (tokens Sentinel Command; lista de plantões integrada à API).
 
 ### Novas telas e Google Stitch (padrão)
 

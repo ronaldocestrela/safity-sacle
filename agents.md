@@ -36,7 +36,7 @@ O sistema deve permitir:
 
 ## Frontend (React)
 
-> **Status:** **Fases F0–F3 concluídas** — o projeto `src/Web` inclui Vite, React, TypeScript, Router, ESLint, Prettier, Vitest, CSS Modules, **login JWT (`sessionStorage`)**, shell, rotas por perfil e **módulos security-guards e unavailable-days**. **Fases F4–F5** (escalas e hardening UX) **ainda pendentes**.
+> **Status:** **Fases F0–F4 concluídas** — o projeto `src/Web` inclui Vite, React, TypeScript, Router, ESLint, Prettier, Vitest, CSS Modules, **login JWT (`sessionStorage`)**, shell, rotas por perfil e **módulos security-guards, unavailable-days e schedules**. **Fase F5** (hardening UX e qualidade) **ainda pendente**.
 
 - React (18+)
 - TypeScript

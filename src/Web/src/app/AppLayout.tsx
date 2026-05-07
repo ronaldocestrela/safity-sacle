@@ -6,14 +6,15 @@ const bottomNav = [
   { to: '/app', end: true, label: 'Dashboard', icon: 'calendar_month' as const },
   { to: '/app/security-guards', end: false, label: 'Guards', icon: 'shield_person' as const },
   { to: '/app/unavailable-days', end: false, label: 'Availability', icon: 'event_available' as const },
-  { to: '/app/schedules', end: false, label: 'Rules', icon: 'settings_suggest' as const },
+  { to: '/app/schedules', end: false, label: 'Schedules', icon: 'settings_suggest' as const },
 ]
 
 export function AppLayout() {
   const { session, logout } = useAuth()
   const primaryRole = session?.roles.includes('Admin') ? 'Admin' : 'Supervisor'
   const { pathname } = useLocation()
-  const hideShellHeader = pathname === '/app/security-guards' || pathname === '/app/unavailable-days'
+  const hideShellHeader =
+    pathname === '/app/security-guards' || pathname === '/app/unavailable-days' || pathname === '/app/schedules'
 
   return (
     <div className={styles.shell}>

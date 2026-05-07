@@ -2,12 +2,12 @@
 
 ## Objetivo
 
-Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capaz de gerar escalas mensais confiaveis com balanceamento justo de finais de semana, respeitando indisponibilidades e historico, e uma **SPA React em `src/Web`** (especificada em `AGENTS.md`). **Bootstrap do frontend (Fase F0), auth na UI (Fase F1), modulo de segurancas na UI (Fase F2) e modulo de indisponibilidades na UI (Fase F3) estão concluídos**; modulos de escalas na UI e hardening seguem nas fases **F4–F5** (UI); no backend, **Fases 0 a 5 estão concluídas** — falta apenas **Fase 6** (endurecimento e entrega).
+Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capaz de gerar escalas mensais confiaveis com balanceamento justo de finais de semana, respeitando indisponibilidades e historico, e uma **SPA React em `src/Web`** (especificada em `AGENTS.md`). **Bootstrap do frontend (Fase F0), auth na UI (Fase F1), modulo de segurancas na UI (Fase F2), modulo de indisponibilidades na UI (Fase F3) e modulo de escalas na UI (Fase F4) estão concluídos**; hardening de UX e qualidade segue na **Fase F5** (UI); no backend, **Fases 0 a 5 estão concluídas** — falta apenas **Fase 6** (endurecimento e entrega).
 
 ## Premissas obrigatorias
 
 - Stack backend: ASP.NET Core Web API, EF Core, SQLite, Identity + JWT, MediatR, FluentValidation, Serilog, xUnit, FluentAssertions, Docker.
-- **Stack frontend em andamento:** React 18+, TypeScript, Vite, React Router, cliente HTTP tipado (TanStack Query recomendado nas fases seguintes); testes com Vitest + React Testing Library — detalhes em `AGENTS.md`. **Fases F0–F3** do `Web` concluídas (bootstrap, auth, seguranças UI, indisponibilidades UI).
+- **Stack frontend em andamento:** React 18+, TypeScript, Vite, React Router, cliente HTTP tipado (TanStack Query recomendado nas fases seguintes); testes com Vitest + React Testing Library — detalhes em `AGENTS.md`. **Fases F0–F4** do `Web` concluídas (bootstrap, auth, seguranças UI, indisponibilidades UI, escalas UI).
 - Estrutura backend: `src/Api`, `src/Application`, `src/Domain`, `src/Infrastructure`, `src/Tests`; **frontend previsto em `src/Web`**.
 - Regras: sem logica de negocio em controller, Domain sem dependencia externa, migrations para toda mudanca de banco.
 - Qualidade: TDD como fluxo padrao no backend; no frontend, testes obrigatorios nas partes criticas quando a trilha for iniciada.
@@ -16,7 +16,7 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 
 - Incremental por fases, cada fase com criterio de pronto.
 - Primeiro base arquitetural e seguranca, depois dominio e algoritmo, por fim operacao e hardening.
-- **Frontend:** F0–F3 concluídas; **F4–F5** pendentes na UI. Backend **Fases 3 a 5** concluídas (indisponibilidades; motor de geração `POST /api/schedules/generate`; **consultas/histórico** `GET /api/schedules/{id}` e `GET /api/schedules/month/{month}/year/{year}`). A **Fase F4** (UI de escalas) pode integrar geração e leitura já expostas na API. **Novas telas (F4 em diante):** fluxo Stitch obrigatório por padrão antes do código React — ver `AGENTS.md` (MCP Google Stitch).
+- **Frontend:** F0–F4 concluídas na UI; **F5** pendente (qualidade, UX). Backend **Fases 3 a 5** concluídas (indisponibilidades; motor de geração `POST /api/schedules/generate`; **consultas/histórico** `GET /api/schedules/{id}` e `GET /api/schedules/month/{month}/year/{year}`). **Novas telas:** fluxo Stitch obrigatório por padrão antes do código React — ver `AGENTS.md` (MCP Google Stitch).
 - Nenhuma feature avanca sem testes automatizados da propria fase.
 
 ## Status atual
@@ -31,13 +31,13 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 - [x] Fase 5 - Consultas de escala e historico
 - [ ] Fase 6 - Endurecimento, observabilidade e entrega
 
-### Frontend (React em `src/Web`) — **parcial (F0–F3 concluídas)**
+### Frontend (React em `src/Web`) — **parcial (F0–F4 concluídas; F5 pendente)**
 
 - [x] Fase F0 - Bootstrap e convencoes do `Web`
 - [x] Fase F1 - Autenticacao, sessao JWT e autorizacao por perfil na UI
 - [x] Fase F2 - Modulo de segurancas (telas alinhadas aos endpoints da Fase 2 backend)
 - [x] Fase F3 - Modulo de indisponibilidades
-- [ ] Fase F4 - Modulo de escalas (geracao e consultas)
+- [x] Fase F4 - Modulo de escalas (geracao e consultas)
 - [ ] Fase F5 - Qualidade, UX e integracao na entrega (testes, Docker opcional multi-servico)
 
 > Detalhamento da trilha F1-F5: secao **Trilha Frontend React**. Stack, CORS e execucao local: `README.md` e `AGENTS.md` (secao Frontend).
@@ -257,9 +257,9 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 - Pipeline local de testes verde.
 - Checklist de conformidade do `AGENTS.md` atendido.
 
-## Trilha Frontend React (F0–F3 concluídas; F4–F5 pendentes)
+## Trilha Frontend React (F0–F4 concluídas; F5 pendente)
 
-> A **Fase F0** está implementada no repositório (`src/Web`, proxy Vite, CORS na API em Development, porta dev `4863` — ver `README.md`). As **Fases F1, F2 e F3** (auth JWT na UI; modulo de seguranças; modulo de indisponibilidades em `/app/unavailable-days`) estão implementadas. **Fases F4 e F5** seguem a ordem abaixo.
+> A **Fase F0** está implementada no repositório (`src/Web`, proxy Vite, CORS na API em Development, porta dev `4863` — ver `README.md`). As **Fases F1 a F4** (auth JWT na UI; seguranças; indisponibilidades; escalas em `/app/schedules`) estão implementadas. **Fase F5** segue abaixo.
 
 ### Fase F0 - Bootstrap e convencoes do `Web`
 
@@ -370,6 +370,8 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 - [x] Referência Stitch: **Cadastro de Indisponibilidade** (`projects/9334796298126275303/screens/7e28e88d0da14a70b894a9586c58ee62`)
 - [x] Testes Vitest + RTL em `features/unavailable-days`
 
+### Fase F4 - Modulo de escalas (UI)
+
 #### Entregaveis
 
 - Acionar geracao: `POST /api/schedules/generate`.
@@ -386,6 +388,12 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 
 - Fluxo de geracao e consulta usavel; testes nos componentes de listagem/detalhe principais.
 - Referências Stitch revisadas e citadas no PR quando aplicável.
+
+#### Status de entrega da fase
+
+- [x] Rota `/app/schedules` com consulta por mês/ano e lista de itens; `Admin`: geração (`POST /api/schedules/generate`); `Supervisor`: sem geração
+- [x] Referência Stitch: **Regras de Escala** (`projects/9334796298126275303/screens/e1026c6a3524415ca5f749c9496b2f5e`)
+- [x] Testes Vitest + RTL em `features/schedules`
 
 ### Fase F5 - Qualidade, UX e integracao na entrega
 
@@ -423,7 +431,7 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
   - todos indisponiveis;
   - excesso de indisponibilidades;
   - mes com muitos finais de semana.
-- **Frontend:** Fases **F0–F3** concluídas (`Web`); Vitest + React Testing Library em guards/login, `security-guards` e `unavailable-days`; módulo de escalas na F4+; opcional E2E (Playwright) na Fase F5.
+- **Frontend:** Fases **F0–F4** concluídas (`Web`); Vitest + React Testing Library em guards/login, `security-guards`, `unavailable-days` e `schedules`; opcional E2E (Playwright) na Fase F5.
 
 ## Ordem sugerida de execucao
 
@@ -437,12 +445,12 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 6. Fase 5
 7. Fase 6
 
-### Frontend (F0–F3 concluídas; **F4–F5** em aberto)
+### Frontend (F0–F4 concluídas; **F5** em aberto)
 
 1. **Fase F2:** modulo de segurancas na UI (concluída; backend Fase 2 já disponível).
 2. **Fase F3:** modulo de indisponibilidades na UI (concluída; backend Fase 3 disponível).
-3. **Fase F4** UI de escalas (backend Fases 4 e 5 já entregues: geração + consultas).
-4. **Fase F5** alinhada a Fase 6 backend ou logo após F4 frontend.
+3. **Fase F4** UI de escalas (concluída; backend Fases 4 e 5: geração + consultas).
+4. **Fase F5** alinhada a Fase 6 backend ou como hardening imediato da UI.
 
 ## Riscos e mitigacoes
 
@@ -468,15 +476,16 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 - [ ] Docker pronto para execucao.
 - [ ] Swagger habilitado em desenvolvimento.
 
-### Frontend (`src/Web`) — **parcial (F0–F3 ok; F4–F5 pendentes)**
+### Frontend (`src/Web`) — **parcial (F0–F4 ok; F5 pendente)**
 
 - [x] Fase F0 da secao **Trilha Frontend React** concluida conforme `AGENTS.md` / `README.md`.
 - [x] Fase F1: autenticação JWT, `sessionStorage`, rotas e shell por perfil; testes de auth; referências Stitch no `README.md`.
 - [x] Fase F2: modulo de segurancas em `/app/security-guards`; testes RTL do fluxo principal de listagem/criacao mockada; referencia Stitch a documentar ao validar no MCP (vide `README.md`).
 - [x] Fase F3: indisponibilidades em `/app/unavailable-days`; testes RTL; referência Stitch no `README.md`.
-- [ ] Fases **F4–F5** concluídas (escalas e qualidade).
+- [x] Fase F4: escalas em `/app/schedules`; testes RTL; referência Stitch no `README.md`.
+- [ ] Fase **F5** concluída (qualidade global UX e integração na entrega).
 - [x] Fluxo **Stitch** para telas novas da F1; F2+ segue `AGENTS.md`; referências citadas no README/PR quando aplicável.
 - [x] Autenticacao JWT e rotas por perfil (`Admin` / `Supervisor`) funcionando na UI.
-- [ ] Modulo de escalas integrado aos endpoints documentados (**F4** UI).
+- [x] Modulo de escalas integrado aos endpoints documentados (**F4** UI).
 - [x] Modulo de indisponibilidades integrado (`F3` UI).
-- [x] Testes Vitest + React Testing Library: **auth**, **segurancas** e **unavailable-days**; falta modulo de escalas (F4+).
+- [x] Testes Vitest + React Testing Library: **auth**, **segurancas**, **unavailable-days** e **schedules**.
