@@ -1,5 +1,7 @@
 import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AppHeader } from '../../shared/components/AppHeader/AppHeader'
+import { MonthCalendar } from '../../shared/components/calendar/MonthCalendar'
+import { WEEKDAY_LABELS_SMTWTFS, buildMonthGrid } from '../../shared/components/calendar/monthGrid'
 import { useAuth } from '../../shared/auth/useAuth'
 import { ApiError as GuardsApiError, listSecurityGuards } from '../security-guards/securityGuardsApi'
 import type { SecurityGuardDto } from '../security-guards/types'
@@ -13,48 +15,6 @@ import type { UnavailableDayDto } from './types'
 import styles from './UnavailableDaysPage.module.css'
 
 type PendingMap = Record<string, 'add' | 'remove'>
-
-type CalCell = { key: string; label: number; inMonth: boolean }
-
-function pad2(n: number): string {
-  return String(n).padStart(2, '0')
-}
-
-function dateKeyFromLocal(d: Date): string {
-  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
-}
-
-function buildMonthGrid(viewYear: number, viewMonth0: number): CalCell[] {
-  const first = new Date(viewYear, viewMonth0, 1)
-  const startPad = first.getDay()
-  const daysInMonth = new Date(viewYear, viewMonth0 + 1, 0).getDate()
-  const cells: CalCell[] = []
-
-  const prevLast = new Date(viewYear, viewMonth0, 0).getDate()
-  for (let i = 0; i < startPad; i++) {
-    const dayNum = prevLast - startPad + i + 1
-    const d = new Date(viewYear, viewMonth0 - 1, dayNum)
-    cells.push({ key: dateKeyFromLocal(d), label: dayNum, inMonth: false })
-  }
-
-  for (let day = 1; day <= daysInMonth; day++) {
-    const d = new Date(viewYear, viewMonth0, day)
-    cells.push({ key: dateKeyFromLocal(d), label: day, inMonth: true })
-  }
-
-  const rem = cells.length % 7
-  const tail = rem === 0 ? 0 : 7 - rem
-  let n = 1
-  const ny = viewMonth0 === 11 ? viewYear + 1 : viewYear
-  const nm = viewMonth0 === 11 ? 0 : viewMonth0 + 1
-  for (let i = 0; i < tail; i++) {
-    const d = new Date(ny, nm, n)
-    cells.push({ key: dateKeyFromLocal(d), label: n, inMonth: false })
-    n++
-  }
-
-  return cells
-}
 
 function displayGuardHandle(id: string): string {
   const alnum = id.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
@@ -103,8 +63,6 @@ function togglePending(key: string, base: Map<string, string>, pending: PendingM
 
   return next
 }
-
-const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'] as const
 
 export function UnavailableDaysPage() {
   const { session } = useAuth()
@@ -362,85 +320,75 @@ export function UnavailableDaysPage() {
 
           {showCalendar ? (
             <>
-              <div className={styles.calendarCard}>
-                <div className={styles.calendarHead}>
-                  <button
-                    type="button"
-                    className={styles.calNavBtn}
-                    aria-label="Previous month"
-                    onClick={() => shiftMonth(-1)}
-                  >
-                    <span className={`${styles.materialIcon} material-symbols-outlined`}>chevron_left</span>
-                  </button>
-                  <h2 className={styles.monthTitle}>{monthTitle}</h2>
-                  <button
-                    type="button"
-                    className={styles.calNavBtn}
-                    aria-label="Next month"
-                    onClick={() => shiftMonth(1)}
-                  >
-                    <span className={`${styles.materialIcon} material-symbols-outlined`}>chevron_right</span>
-                  </button>
-                </div>
-                <div className={styles.weekdayRow}>
-                  {WEEKDAYS.map((w, i) => (
-                    <span key={`${w}-${i}`} className={styles.weekday}>
-                      {w}
-                    </span>
-                  ))}
-                </div>
-                {daysLoading ? (
-                  <p className={styles.spinnerText} style={{ padding: '1rem' }}>
-                    Loading calendar…
-                  </p>
-                ) : daysError ? (
-                  <div className={styles.empty} role="alert">
-                    {daysError}
-                    <div>
-                      <button
-                        type="button"
-                        className={styles.retryBtn}
-                        onClick={() => void refreshDays(selectedGuardId)}
-                      >
-                        Retry
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className={styles.grid}>
-                    {grid.map((cell) => {
-                      const unav = effectiveUnavailable(cell.key, base, pending)
-                      const focused = focusKey === cell.key && !unav
-
-                      const className = [
-                        styles.cell,
-                        !cell.inMonth && styles.cellMuted,
-                        cell.inMonth && isAdmin && !daysLoading && !daysError && styles.cellClickable,
-                        unav && styles.cellUnavailable,
-                        focused && styles.cellFocus,
-                      ]
-                        .filter(Boolean)
-                        .join(' ')
-
-                      return (
+              <MonthCalendar
+                cells={grid}
+                weekdays={WEEKDAY_LABELS_SMTWTFS}
+                cardClassName={styles.calendarCard}
+                weekdayRowClassName={styles.weekdayRow}
+                weekdayCellClassName={styles.weekday}
+                gridClassName={styles.grid}
+                monthNav={{
+                  title: monthTitle,
+                  onPrevMonth: () => shiftMonth(-1),
+                  onNextMonth: () => shiftMonth(1),
+                  headClassName: styles.calendarHead,
+                  titleClassName: styles.monthTitle,
+                  navButtonClassName: styles.calNavBtn,
+                  navIconClassName: styles.materialIcon,
+                  prevAriaLabel: 'Previous month',
+                  nextAriaLabel: 'Next month',
+                }}
+                gridReplacement={
+                  daysLoading ? (
+                    <p className={styles.spinnerText} style={{ padding: '1rem' }}>
+                      Loading calendar…
+                    </p>
+                  ) : daysError ? (
+                    <div className={styles.empty} role="alert">
+                      {daysError}
+                      <div>
                         <button
-                          key={`${cell.key}-${cell.label}-${cell.inMonth}`}
                           type="button"
-                          className={className}
-                          disabled={!isAdmin || daysLoading || Boolean(daysError)}
-                          aria-pressed={unav}
-                          aria-label={cell.key}
-                          onClick={() => handleDayClick(cell.key)}
+                          className={styles.retryBtn}
+                          onClick={() => void refreshDays(selectedGuardId)}
                         >
-                          <span className={styles.dayNum}>{cell.label}</span>
-                          {unav ? <span className={styles.unavailTag}>UNAVAIL</span> : null}
-                          {focused ? <span className={styles.focusDot} aria-hidden /> : null}
+                          Retry
                         </button>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
+                      </div>
+                    </div>
+                  ) : undefined
+                }
+                renderCell={(cell) => {
+                  const unav = effectiveUnavailable(cell.key, base, pending)
+                  const focused = focusKey === cell.key && !unav
+
+                  const className = [
+                    styles.cell,
+                    !cell.inMonth && styles.cellMuted,
+                    cell.inMonth && isAdmin && !daysLoading && !daysError && styles.cellClickable,
+                    unav && styles.cellUnavailable,
+                    focused && styles.cellFocus,
+                  ]
+                    .filter(Boolean)
+                    .join(' ')
+
+                  return (
+                    <button
+                      key={`${cell.key}-${cell.label}-${cell.inMonth}`}
+                      type="button"
+                      className={className}
+                      disabled={!isAdmin || daysLoading || Boolean(daysError)}
+                      aria-pressed={unav}
+                      aria-label={cell.key}
+                      onClick={() => handleDayClick(cell.key)}
+                    >
+                      <span className={styles.dayNum}>{cell.label}</span>
+                      {unav ? <span className={styles.unavailTag}>UNAVAIL</span> : null}
+                      {focused ? <span className={styles.focusDot} aria-hidden /> : null}
+                    </button>
+                  )
+                }}
+              />
 
               <div className={styles.infoBox}>
                 <span className={`${styles.materialIcon} ${styles.infoIcon} material-symbols-outlined`}>

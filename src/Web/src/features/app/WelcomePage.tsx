@@ -6,6 +6,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AppHeader } from '../../shared/components/AppHeader/AppHeader'
+import { MonthCalendar } from '../../shared/components/calendar/MonthCalendar'
+import { WEEKDAY_LABELS_SMTWTFS, buildMonthGrid, todayKeyLocal } from '../../shared/components/calendar/monthGrid'
 import { useAuth } from '../../shared/auth/useAuth'
 import { ApiError as GuardsApiError, listSecurityGuards } from '../security-guards/securityGuardsApi'
 import type { SecurityGuardDto } from '../security-guards/types'
@@ -15,48 +17,6 @@ import styles from './WelcomePage.module.css'
 
 function pad2(n: number): string {
   return String(n).padStart(2, '0')
-}
-
-function dateKeyFromLocal(d: Date): string {
-  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
-}
-
-function todayKeyLocal(): string {
-  return dateKeyFromLocal(new Date())
-}
-
-type CalCell = { key: string; label: number; inMonth: boolean }
-
-function buildMonthGrid(viewYear: number, viewMonth0: number): CalCell[] {
-  const first = new Date(viewYear, viewMonth0, 1)
-  const startPad = first.getDay()
-  const daysInMonth = new Date(viewYear, viewMonth0 + 1, 0).getDate()
-  const cells: CalCell[] = []
-
-  const prevLast = new Date(viewYear, viewMonth0, 0).getDate()
-  for (let i = 0; i < startPad; i++) {
-    const dayNum = prevLast - startPad + i + 1
-    const d = new Date(viewYear, viewMonth0 - 1, dayNum)
-    cells.push({ key: dateKeyFromLocal(d), label: dayNum, inMonth: false })
-  }
-
-  for (let day = 1; day <= daysInMonth; day++) {
-    const d = new Date(viewYear, viewMonth0, day)
-    cells.push({ key: dateKeyFromLocal(d), label: day, inMonth: true })
-  }
-
-  const rem = cells.length % 7
-  const tail = rem === 0 ? 0 : 7 - rem
-  let n = 1
-  const ny = viewMonth0 === 11 ? viewYear + 1 : viewYear
-  const nm = viewMonth0 === 11 ? 0 : viewMonth0 + 1
-  for (let i = 0; i < tail; i++) {
-    const d = new Date(ny, nm, n)
-    cells.push({ key: dateKeyFromLocal(d), label: n, inMonth: false })
-    n++
-  }
-
-  return cells
 }
 
 function currentMonthYear(): { month: number; year: number } {
@@ -129,8 +89,6 @@ function calendarAriaLabel(dateKey: string, count: number): string {
   }
   return `${label}, ${count} assignments`
 }
-
-const WEEKDAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'] as const
 
 function initialSelectedDateKey(schedule: MonthlyScheduleDto | null, month: number, year: number): string | null {
   if (!schedule) {
@@ -326,51 +284,50 @@ export function WelcomePage() {
                 </div>
               ) : (
                 <>
-                  <div className={styles.calendarCard}>
-                    <p className={styles.calendarHint}>
-                      Tap a date to see who is assigned. Dots mark days with coverage.
-                    </p>
-                    <div className={styles.weekdayRow}>
-                      {WEEKDAY_LABELS.map((w, i) => (
-                        <span key={`w-${i.toString()}`} className={styles.weekdayCell}>
-                          {w}
-                        </span>
-                      ))}
-                    </div>
-                    <div className={styles.calendarGrid}>
-                      {calendarCells.map((cell) => {
-                        const count = cell.inMonth ? (assignmentCountByDate.get(cell.key) ?? 0) : 0
-                        if (!cell.inMonth) {
-                          return (
-                            <span key={cell.key} className={styles.calPad} aria-hidden>
-                              <span className={styles.calPadNum}>{cell.label}</span>
-                            </span>
-                          )
-                        }
-                        const selected = cell.key === selectedDateKey
-                        const isToday = cell.key === todayKey
+                  <MonthCalendar
+                    cells={calendarCells}
+                    weekdays={WEEKDAY_LABELS_SMTWTFS}
+                    cardClassName={styles.calendarCard}
+                    weekdayRowClassName={styles.weekdayRow}
+                    weekdayCellClassName={styles.weekdayCell}
+                    gridClassName={styles.calendarGrid}
+                    topContent={
+                      <p className={styles.calendarHint}>
+                        Tap a date to see who is assigned. Dots mark days with coverage.
+                      </p>
+                    }
+                    renderCell={(cell) => {
+                      const count = cell.inMonth ? (assignmentCountByDate.get(cell.key) ?? 0) : 0
+                      if (!cell.inMonth) {
                         return (
-                          <button
-                            key={cell.key}
-                            type="button"
-                            className={`${styles.calDay} ${selected ? styles.calDaySelected : ''} ${isToday ? styles.calDayToday : ''}`}
-                            onClick={() => setSelectedDateKey(cell.key)}
-                            aria-label={calendarAriaLabel(cell.key, count)}
-                            aria-pressed={selected}
-                          >
-                            <span className={styles.calDayNum}>{cell.label}</span>
-                            {count > 0 ? (
-                              <span className={styles.calDayDotWrap} aria-hidden>
-                                <span className={styles.calDayDot} />
-                              </span>
-                            ) : (
-                              <span className={styles.calDayDotSpacer} aria-hidden />
-                            )}
-                          </button>
+                          <span key={cell.key} className={styles.calPad} aria-hidden>
+                            <span className={styles.calPadNum}>{cell.label}</span>
+                          </span>
                         )
-                      })}
-                    </div>
-                  </div>
+                      }
+                      const selected = cell.key === selectedDateKey
+                      const isToday = cell.key === todayKey
+                      return (
+                        <button
+                          key={cell.key}
+                          type="button"
+                          className={`${styles.calDay} ${selected ? styles.calDaySelected : ''} ${isToday ? styles.calDayToday : ''}`}
+                          onClick={() => setSelectedDateKey(cell.key)}
+                          aria-label={calendarAriaLabel(cell.key, count)}
+                          aria-pressed={selected}
+                        >
+                          <span className={styles.calDayNum}>{cell.label}</span>
+                          {count > 0 ? (
+                            <span className={styles.calDayDotWrap} aria-hidden>
+                              <span className={styles.calDayDot} />
+                            </span>
+                          ) : (
+                            <span className={styles.calDayDotSpacer} aria-hidden />
+                          )}
+                        </button>
+                      )
+                    }}
+                  />
 
                   <div
                     className={styles.dayDetail}
