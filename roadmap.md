@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capaz de gerar escalas mensais confiaveis com balanceamento justo de finais de semana, respeitando indisponibilidades e historico, e uma **SPA React em `src/Web`** (especificada em `AGENTS.md`). **Bootstrap do frontend (Fase F0) esta concluido**; telas de negocio e auth na UI seguem nas fases F1-F5.
+Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capaz de gerar escalas mensais confiaveis com balanceamento justo de finais de semana, respeitando indisponibilidades e historico, e uma **SPA React em `src/Web`** (especificada em `AGENTS.md`). **Bootstrap do frontend (Fase F0) e auth na UI (Fase F1) estão concluídos**; telas de negócio seguem nas fases F2–F5.
 
 ## Premissas obrigatorias
 
@@ -16,7 +16,7 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 
 - Incremental por fases, cada fase com criterio de pronto.
 - Primeiro base arquitetural e seguranca, depois dominio e algoritmo, por fim operacao e hardening.
-- **Frontend:** F0 concluida; F1-F5 pendentes. Telas de negocio dependem das Fases 2-5 do backend. A trilha **F1-F5** em `Trilha Frontend React` abaixo permanece em execucao conforme o backend avanca.
+- **Frontend:** F0–F1 concluídas; F2–F5 pendentes. Telas de negócio dependem das Fases 2–5 do backend. A trilha **F2–F5** em `Trilha Frontend React` abaixo permanece em execução conforme o backend avança.
 - Nenhuma feature avanca sem testes automatizados da propria fase.
 
 ## Status atual
@@ -31,10 +31,10 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 - [ ] Fase 5 - Consultas de escala e historico
 - [ ] Fase 6 - Endurecimento, observabilidade e entrega
 
-### Frontend (React em `src/Web`) — **parcial (F0 concluida)**
+### Frontend (React em `src/Web`) — **parcial (F0–F1 concluídas)**
 
 - [x] Fase F0 - Bootstrap e convencoes do `Web`
-- [ ] Fase F1 - Autenticacao, sessao JWT e autorizacao por perfil na UI
+- [x] Fase F1 - Autenticacao, sessao JWT e autorizacao por perfil na UI
 - [ ] Fase F2 - Modulo de segurancas (telas alinhadas aos endpoints da Fase 2 backend)
 - [ ] Fase F3 - Modulo de indisponibilidades
 - [ ] Fase F4 - Modulo de escalas (geracao e consultas)
@@ -228,9 +228,9 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 - Pipeline local de testes verde.
 - Checklist de conformidade do `AGENTS.md` atendido.
 
-## Trilha Frontend React (F0 concluida; F1-F5 pendentes)
+## Trilha Frontend React (F0–F1 concluídas; F2–F5 pendentes)
 
-> A **Fase F0** esta implementada no repositorio (`src/Web`, proxy Vite, CORS na API em Development, porta dev `4863` — ver `README.md`). **Fases F1 a F5** seguem a ordem abaixo, desbloqueando F2-F4 conforme endpoints backend correspondentes estiverem prontos. **Novas telas (F1 em diante):** fluxo Stitch obrigatório por padrão antes do código React — ver `AGENTS.md` (MCP Google Stitch).
+> A **Fase F0** está implementada no repositório (`src/Web`, proxy Vite, CORS na API em Development, porta dev `4863` — ver `README.md`). A **Fase F1** (auth JWT na UI, `sessionStorage`, rotas por perfil) está implementada. **Fases F2 a F5** seguem a ordem abaixo, desbloqueando F2–F4 conforme os endpoints backend correspondentes estiverem prontos. **Novas telas (F2 em diante):** fluxo Stitch obrigatório por padrão antes do código React — ver `AGENTS.md` (MCP Google Stitch).
 
 ### Fase F0 - Bootstrap e convencoes do `Web`
 
@@ -277,6 +277,13 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 
 - Usuario consegue autenticar e acessar apenas rotas permitidas ao seu perfil; testes minimos nos guards/hooks de auth.
 - Referências Stitch das telas novas desta fase revisadas; citação da tela/base usada no PR quando aplicável.
+
+#### Status de entrega da fase
+
+- [x] Tela de login + shell + rotas protegidas e por perfil
+- [x] Token em `sessionStorage` + `Authorization: Bearer` via `apiFetch`
+- [x] Referências Stitch: Login de Acesso (`1837019a956541aabb147945bb4378ad`) e Shell Administrativo desktop (`7b68e9354acb499f835e008c52c21c57`)
+- [x] Testes Vitest + RTL dos guards e login
 
 ### Fase F2 - Modulo de segurancas (UI)
 
@@ -386,13 +393,12 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 6. Fase 5
 7. Fase 6
 
-### Frontend (F0 concluida; **F1-F5** em aberto)
+### Frontend (F0–F1 concluídas; **F2–F5** em aberto)
 
-1. **Fase F1** (JWT e perfis na UI) — proxima da trilha frontend.
-2. **Fase F2** quando Fase 2 backend estiver disponivel (ja concluida no backend).
-3. Fase F3 apos Fase 3 backend.
-4. Fase F4 apos Fases 4 e 5 backend (geracao + consultas).
-5. Fase F5 alinhada a Fase 6 backend ou logo apos F4 frontend.
+1. **Fase F2** quando a Fase 2 backend estiver disponível (já concluída no backend).
+2. Fase F3 após Fase 3 backend.
+3. Fase F4 após Fases 4 e 5 backend (geracao + consultas).
+4. Fase F5 alinhada a Fase 6 backend ou logo após F4 frontend.
 
 ## Riscos e mitigacoes
 
@@ -418,11 +424,12 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 - [ ] Docker pronto para execucao.
 - [ ] Swagger habilitado em desenvolvimento.
 
-### Frontend (`src/Web`) — **parcial (F0 ok; F1-F5 pendentes)**
+### Frontend (`src/Web`) — **parcial (F0–F1 ok; F2–F5 pendentes)**
 
 - [x] Fase F0 da secao **Trilha Frontend React** concluida conforme `AGENTS.md` / `README.md`.
-- [ ] Trilha F1-F5 concluida (auth na UI, modulos de negocio, qualidade F5).
-- [ ] Fluxo **Stitch** (`AGENTS.md`) seguido para todas as telas novas; referências citadas nos PRs quando aplicável.
-- [ ] Autenticacao JWT e rotas por perfil (`Admin` / `Supervisor`) funcionando na UI.
+- [x] Fase F1: autenticação JWT, `sessionStorage`, rotas e shell por perfil; testes de auth; referências Stitch no `README.md`.
+- [ ] Fases **F2–F5** concluídas (módulos de negócio e qualidade).
+- [x] Fluxo **Stitch** para telas novas da F1; próximas fases seguem `AGENTS.md`; referências citadas no README/PR quando aplicável.
+- [x] Autenticacao JWT e rotas por perfil (`Admin` / `Supervisor`) funcionando na UI.
 - [ ] Modulos de segurancas, indisponibilidades e escalas integrados aos endpoints documentados.
-- [ ] Testes Vitest + React Testing Library nas areas criticas (auth + pelo menos um fluxo de negocio).
+- [ ] Testes Vitest + React Testing Library: **auth** coberto; falta fluxo de negócio principal (F2+).

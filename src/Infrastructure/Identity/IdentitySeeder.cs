@@ -37,29 +37,40 @@ public class IdentitySeeder(
             return;
         }
 
-        const string adminEmail = "admin@safetyscale.local";
-        const string adminPassword = "Admin@12345";
-
-        var existingAdmin = await userManager.FindByEmailAsync(adminEmail);
-        if (existingAdmin is not null)
+        var developmentAdmins = new[]
         {
-            return;
-        }
-
-        var user = new AppUser
-        {
-            Email = adminEmail,
-            UserName = adminEmail,
-            EmailConfirmed = true
+            (Email: "admin@safetyscale.local", Password: "Admin@12345"),
+            (Email: "admin@local.com", Password: "Mudar@13")
         };
 
-        var createResult = await userManager.CreateAsync(user, adminPassword);
-        if (!createResult.Succeeded)
+        foreach (var (email, password) in developmentAdmins)
         {
-            logger.LogWarning("Failed to create development admin user.");
-            return;
-        }
+            var existingAdmin = await userManager.FindByEmailAsync(email);
+            if (existingAdmin is not null)
+            {
+                if (!await userManager.IsInRoleAsync(existingAdmin, Roles.Admin))
+                {
+                    await userManager.AddToRoleAsync(existingAdmin, Roles.Admin);
+                }
 
-        await userManager.AddToRoleAsync(user, Roles.Admin);
+                continue;
+            }
+
+            var user = new AppUser
+            {
+                Email = email,
+                UserName = email,
+                EmailConfirmed = true
+            };
+
+            var createResult = await userManager.CreateAsync(user, password);
+            if (!createResult.Succeeded)
+            {
+                logger.LogWarning("Failed to create development admin user {Email}.", email);
+                continue;
+            }
+
+            await userManager.AddToRoleAsync(user, Roles.Admin);
+        }
     }
 }

@@ -62,10 +62,11 @@ src/
 ### Frontend (`src/Web`)
 
 - [x] Fase F0 - Bootstrap e convencoes (Vite, ESLint/Prettier, smoke API, CORS em Development)
+- [x] Fase F1 - Autenticacao JWT na UI, `sessionStorage`, rotas por perfil (`Admin` / `Supervisor`)
 
 ### Fases pendentes (frontend)
 
-- [ ] Fases F1 a F5 — ver `roadmap.md` (auth na UI, modulos de negocio, qualidade)
+- [ ] Fases F2 a F5 — ver `roadmap.md` (modulos de negocio, qualidade)
 
 ### Fases pendentes (backend)
 
@@ -89,7 +90,7 @@ src/
 - modulo de segurancas com CQRS + FluentValidation;
 - tratamento de `ValidationException` com retorno HTTP `400`;
 - **CORS** configuravel (`Cors:Origins`); em Development inclui `http://localhost:4863` para o dev server do `Web`;
-- SPA em **`src/Web`** (React + Vite): router base, proxy `/api` ou URL absoluta via `VITE_API_BASE_URL`, home com smoke de `/api/health` e login opcional, porta dev **4863**;
+- SPA em **`src/Web`** (React + Vite): `/login` com JWT em `sessionStorage`, área `/app` com shell e rotas por perfil, proxy `/api` ou `VITE_API_BASE_URL`, home com smoke de `/api/health`, porta dev **4863**;
 - testes unitarios e de integracao da Fase 2 (backend) passando.
 
 ## Entidades implementadas
@@ -136,7 +137,13 @@ src/
 
 ## Frontend (`src/Web`)
 
-SPA **React + TypeScript + Vite** com **React Router**, **ESLint**, **Prettier** e **Vitest** (testes em modo `node` por padrão; para RTL/componentes, use `/// <reference types="vitest" />` e `@vitest-environment jsdom` por arquivo quando necessário).
+SPA **React + TypeScript + Vite** com **React Router**, **ESLint**, **Prettier** e **Vitest** com **happy-dom** (evita conflitos ESM com a cadeia `jsdom` + CSS nos testes).
+
+### Fase F1 (auth na UI)
+
+- **Login:** `/login` → `POST /api/auth/login`, JWT em `sessionStorage` (expira → limpa sessão e volta ao login).
+- **Área autenticada:** `/app` com shell (sidebar + header), logout, links condicionais por perfil; placeholders em `/app/security-guards`, `/app/unavailable-days`, `/app/schedules`.
+- **Referências Google Stitch usadas como base:** tela **Login de Acesso** (`projects/9334796298126275303/screens/1837019a956541aabb147945bb4378ad`) e shell desktop **Shell Administrativo SafetyScale** (`projects/9334796298126275303/screens/7b68e9354acb499f835e008c52c21c57`).
 
 ### Novas telas e Google Stitch (padrão)
 
@@ -170,7 +177,7 @@ Copie `src/Web/.env.example` para `src/Web/.env` e ajuste:
    npm run dev
    ```
 
-3. Abra `http://localhost:4863` (porta fixa do Vite neste repositório). A página inicial executa o smoke da API (health e, se configurado, login).
+3. Abra `http://localhost:4863` (porta fixa do Vite neste repositório). A página inicial executa o smoke da API (health e, se configurado, login). Use **Ir para login** ou acesse `/login` para autenticar (Fase F1).
 
 ### Scripts úteis (`src/Web`)
 
@@ -232,8 +239,8 @@ Payload:
 
 ```json
 {
-  "email": "admin@safetyscale.local",
-  "password": "Admin@12345"
+  "email": "admin@local.com",
+  "password": "Mudar@13"
 }
 ```
 
@@ -254,6 +261,11 @@ Authorization: Bearer <jwt>
 ```
 
 ### Credenciais de desenvolvimento (seed)
+
+- Email: `admin@local.com`
+- Senha: `Mudar@13`
+
+Usuario adicional legado:
 
 - Email: `admin@safetyscale.local`
 - Senha: `Admin@12345`

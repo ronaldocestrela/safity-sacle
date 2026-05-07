@@ -1,0 +1,28 @@
+.wrap {
+  max-width: 32rem;
+  padding: 2rem 1.5rem;
+}
+
+.title {
+  margin: 0 0 0.75rem;
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #041627;
+}
+
+.text {
+  margin: 0 0 1.5rem;
+  line-height: 1.5;
+  color: #44474c;
+}
+
+.link {
+  color: #904d00;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.link:hover {
+  text-decoration: underline;
+}

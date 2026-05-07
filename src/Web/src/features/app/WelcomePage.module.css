@@ -1,0 +1,25 @@
+.wrap {
+  max-width: 40rem;
+}
+
+.headline {
+  margin: 0 0 0.75rem;
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: #041627;
+}
+
+.sub {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: #44474c;
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: #74777d;
+}
