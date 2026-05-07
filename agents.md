@@ -1,4 +1,3 @@
-````markdown
 # AGENTS.md — Sistema de Escala de Seguranças
 
 ## Visão Geral
@@ -37,15 +36,15 @@ O sistema deve permitir:
 
 ## Frontend (React)
 
-> **Status:** **não implementado.** A stack e as convenções abaixo são especificação de referência para quando o SPA for criado; o repositório pode conter apenas backend até lá.
+> **Status:** **Fase F0 concluída** — o projeto `src/Web` existe (Vite, React, TypeScript, Router, ESLint, Prettier, Vitest, CSS Modules na home, smoke de API). **Fases F1–F5** da trilha frontend (auth na UI, módulos de negócio, hardening) **ainda pendentes**. O restante desta seção continua como contrato para essas fases.
 
 - React (18+)
 - TypeScript
 - Vite
 - React Router
 - Cliente HTTP tipado para a API (`fetch` nativo ou camada fina; **TanStack Query** recomendado para cache, estados de loading/erro e invalidação)
-- Estilização: CSS Modules ou biblioteca de componentes acordada pelo time (definir na abertura da Fase F0 do frontend)
-- Testes: Vitest + React Testing Library (padrão quando o frontend existir)
+- Estilização: **CSS Modules** adotados na Fase F0 (home); biblioteca de componentes permanece opcional nas fases seguintes, se o time acordar.
+- Testes: Vitest + React Testing Library (Vitest em uso; RTL prioritário a partir de telas com componentes mais complexos)
 
 **Condições e alinhamento com o backend:**
 
@@ -83,11 +82,10 @@ src/
  └── Web
 ```
 
-> **`Web`:** aplicação React (SPA); pasta ausente ou vazia enquanto o frontend não for implementado.
+> **`Web`:** aplicação React (SPA) em `src/Web`; estrutura base (`app/`, `features/`, `shared/`, `assets/`) alinhada ao layout sugerido abaixo.
 
 ```text
-(Web — estrutura sugerida quando existir)
-src/Web/
+src/Web/          # layout atual do repositório
  ├── app/           # providers, router, layout raiz
  ├── features/      # módulos por domínio (security-guards, unavailable-days, schedules)
  ├── shared/        # componentes, hooks, utilitários, tipos API
@@ -170,7 +168,7 @@ TDD é obrigatório.
 
 # Frontend (React) — Arquitetura e responsabilidades
 
-> Aplicável **quando** o projeto `Web` for criado. Até lá, esta seção serve apenas como contrato.
+> **Bootstrap (F0)** atendido no repositório. Esta seção permanece como contrato para **F1 em diante** (auth, telas de domínio, qualidade ampliada).
 
 ## Organização
 
@@ -607,7 +605,7 @@ Deve possuir:
 * Dockerfile
 * docker-compose.yml
 
-Quando o frontend `Web` existir, o `docker-compose.yml` **pode** incluir serviço da SPA em build multi-stage (opcional até a trilha frontend avançar).
+Quando fizer sentido na entrega, o `docker-compose.yml` **pode** incluir serviço da SPA em build multi-stage (o projeto `src/Web` já existe; integração compose é opcional).
 
 ---
 
@@ -662,7 +660,7 @@ NÃO fazer:
 
 O sistema deve nascer preparado para:
 
-* **SPA React em `src/Web`** (especificado neste documento; implementação pendente — ver também `roadmap.md`, trilha Frontend)
+* **SPA React em `src/Web`** (bootstrap F0 implementado — ver `README.md` e `roadmap.md`; F1–F5 pendentes)
 * Multiempresa
 * Múltiplos postos
 * Turnos
@@ -684,4 +682,3 @@ O foco principal do sistema é:
 * Facilidade de evolução
 * Alta testabilidade
 
-````

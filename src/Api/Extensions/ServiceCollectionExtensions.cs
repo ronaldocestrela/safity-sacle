@@ -38,6 +38,21 @@ public static class ServiceCollectionExtensions
         services.AddAuthorization();
         services.AddSwaggerGen();
 
+        var corsOrigins = configuration.GetSection("Cors:Origins").Get<string[]>()
+            ?? Array.Empty<string>();
+        if (corsOrigins.Length > 0)
+        {
+            services.AddCors(options =>
+            {
+                options.AddDefaultPolicy(policy =>
+                {
+                    policy.WithOrigins(corsOrigins)
+                        .AllowAnyHeader()
+                        .AllowAnyMethod();
+                });
+            });
+        }
+
         return services;
     }
 }

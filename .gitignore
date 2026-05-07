@@ -3,6 +3,7 @@ bin/
 obj/
 out/
 publish/
+dist/
 
 # Test and coverage artifacts
 TestResults/
@@ -25,6 +26,7 @@ coverage/
 # Package restore and local tooling
 packages/
 .nuget/
+node_modules/
 
 # Logs and temp files
 *.log

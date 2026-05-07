@@ -2,12 +2,12 @@
 
 ## Objetivo
 
-Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capaz de gerar escalas mensais confiaveis com balanceamento justo de finais de semana, respeitando indisponibilidades e historico, e **planejar uma SPA React em `src/Web`** (especificada em `AGENTS.md`; **implementacao do frontend ainda nao iniciada**).
+Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capaz de gerar escalas mensais confiaveis com balanceamento justo de finais de semana, respeitando indisponibilidades e historico, e uma **SPA React em `src/Web`** (especificada em `AGENTS.md`). **Bootstrap do frontend (Fase F0) esta concluido**; telas de negocio e auth na UI seguem nas fases F1-F5.
 
 ## Premissas obrigatorias
 
 - Stack backend: ASP.NET Core Web API, EF Core, SQLite, Identity + JWT, MediatR, FluentValidation, Serilog, xUnit, FluentAssertions, Docker.
-- **Stack frontend (referencia; nao implementada):** React 18+, TypeScript, Vite, React Router, cliente HTTP tipado (TanStack Query recomendado); testes com Vitest + React Testing Library — detalhes em `AGENTS.md`.
+- **Stack frontend em andamento:** React 18+, TypeScript, Vite, React Router, cliente HTTP tipado (TanStack Query recomendado nas fases seguintes); testes com Vitest + React Testing Library — detalhes em `AGENTS.md`. **Fase F0** do `Web` concluida.
 - Estrutura backend: `src/Api`, `src/Application`, `src/Domain`, `src/Infrastructure`, `src/Tests`; **frontend previsto em `src/Web`**.
 - Regras: sem logica de negocio em controller, Domain sem dependencia externa, migrations para toda mudanca de banco.
 - Qualidade: TDD como fluxo padrao no backend; no frontend, testes obrigatorios nas partes criticas quando a trilha for iniciada.
@@ -16,7 +16,7 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 
 - Incremental por fases, cada fase com criterio de pronto.
 - Primeiro base arquitetural e seguranca, depois dominio e algoritmo, por fim operacao e hardening.
-- **Frontend:** pode comecar apos autenticacao da API estavel (pos Fase 1); telas de negocio dependem das Fases 2-5 do backend. A trilha **F0-F5** em `Trilha Frontend React` abaixo esta **inteira pendente**.
+- **Frontend:** F0 concluida; F1-F5 pendentes. Telas de negocio dependem das Fases 2-5 do backend. A trilha **F1-F5** em `Trilha Frontend React` abaixo permanece em execucao conforme o backend avanca.
 - Nenhuma feature avanca sem testes automatizados da propria fase.
 
 ## Status atual
@@ -31,16 +31,16 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 - [ ] Fase 5 - Consultas de escala e historico
 - [ ] Fase 6 - Endurecimento, observabilidade e entrega
 
-### Frontend (React em `src/Web`) — **nao implementado**
+### Frontend (React em `src/Web`) — **parcial (F0 concluida)**
 
-- [ ] Fase F0 - Bootstrap e convencoes do `Web`
+- [x] Fase F0 - Bootstrap e convencoes do `Web`
 - [ ] Fase F1 - Autenticacao, sessao JWT e autorizacao por perfil na UI
 - [ ] Fase F2 - Modulo de segurancas (telas alinhadas aos endpoints da Fase 2 backend)
 - [ ] Fase F3 - Modulo de indisponibilidades
 - [ ] Fase F4 - Modulo de escalas (geracao e consultas)
 - [ ] Fase F5 - Qualidade, UX e integracao na entrega (testes, Docker opcional multi-servico)
 
-> Detalhamento da trilha F0-F5: secao **Trilha Frontend React (especificacao; nao implementada)**. Stack e condicoes: `AGENTS.md` (secao Frontend).
+> Detalhamento da trilha F1-F5: secao **Trilha Frontend React**. Stack, CORS e execucao local: `README.md` e `AGENTS.md` (secao Frontend).
 
 ## Fase 0 - Bootstrap e padroes (Fundacao)
 
@@ -228,9 +228,9 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 - Pipeline local de testes verde.
 - Checklist de conformidade do `AGENTS.md` atendido.
 
-## Trilha Frontend React (especificacao; **nao implementada**)
+## Trilha Frontend React (F0 concluida; F1-F5 pendentes)
 
-> Nenhuma fase abaixo foi iniciada no repositorio. Ordem recomendada: F0 → F1 → … → F5, desbloqueando F2-F4 conforme endpoints backend correspondentes estiverem prontos.
+> A **Fase F0** esta implementada no repositorio (`src/Web`, proxy Vite, CORS na API em Development, porta dev `4863` — ver `README.md`). **Fases F1 a F5** seguem a ordem abaixo, desbloqueando F2-F4 conforme endpoints backend correspondentes estiverem prontos.
 
 ### Fase F0 - Bootstrap e convencoes do `Web`
 
@@ -249,6 +249,15 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 #### Criterio de pronto
 
 - `npm run build` (ou equivalente) sem erros; pagina inicial carrega e chama health ou endpoint publico se existir.
+
+#### Status de entrega da fase
+
+- [x] Projeto `src/Web` com Vite + React + TypeScript + React Router
+- [x] ESLint, Prettier, scripts `dev`, `build`, `test` (Vitest)
+- [x] Pastas `app/`, `features/`, `shared/`, `assets/`
+- [x] `VITE_API_BASE_URL` e proxy local documentados; smoke na home (`/api/health`, login opcional)
+- [x] Estilizacao: CSS Modules na home (definido na F0)
+- [x] API: CORS configuravel via `Cors:Origins` (Development inclui `http://localhost:4863`); dev server Vite na porta **4863**
 
 ### Fase F1 - Autenticacao, sessao JWT e autorizacao por perfil na UI
 
@@ -353,7 +362,7 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
   - todos indisponiveis;
   - excesso de indisponibilidades;
   - mes com muitos finais de semana.
-- **Frontend (quando a trilha `Web` estiver ativa):** Vitest + React Testing Library em hooks/guards e fluxos criticos; opcional E2E (Playwright) na Fase F5.
+- **Frontend:** trilha `Web` iniciada (**F0** concluida); Vitest + React Testing Library em hooks/guards e fluxos criticos nas fases seguintes; opcional E2E (Playwright) na Fase F5.
 
 ## Ordem sugerida de execucao
 
@@ -367,10 +376,10 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 6. Fase 5
 7. Fase 6
 
-### Frontend (**pendente**; em paralelo apos API minima)
+### Frontend (F0 concluida; **F1-F5** em aberto)
 
-1. Fase F0 e F1 apos Fase 1 backend (JWT estavel).
-2. Fase F2 quando Fase 2 backend estiver disponivel (ja concluida).
+1. **Fase F1** (JWT e perfis na UI) — proxima da trilha frontend.
+2. **Fase F2** quando Fase 2 backend estiver disponivel (ja concluida no backend).
 3. Fase F3 apos Fase 3 backend.
 4. Fase F4 apos Fases 4 e 5 backend (geracao + consultas).
 5. Fase F5 alinhada a Fase 6 backend ou logo apos F4 frontend.
@@ -399,9 +408,10 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 - [ ] Docker pronto para execucao.
 - [ ] Swagger habilitado em desenvolvimento.
 
-### Frontend (`src/Web`) — **nao implementado**
+### Frontend (`src/Web`) — **parcial (F0 ok; F1-F5 pendentes)**
 
-- [ ] Trilha F0-F5 da secao **Trilha Frontend React** concluida conforme `AGENTS.md`.
+- [x] Fase F0 da secao **Trilha Frontend React** concluida conforme `AGENTS.md` / `README.md`.
+- [ ] Trilha F1-F5 concluida (auth na UI, modulos de negocio, qualidade F5).
 - [ ] Autenticacao JWT e rotas por perfil (`Admin` / `Supervisor`) funcionando na UI.
 - [ ] Modulos de segurancas, indisponibilidades e escalas integrados aos endpoints documentados.
 - [ ] Testes Vitest + React Testing Library nas areas criticas (auth + pelo menos um fluxo de negocio).

@@ -20,6 +20,10 @@ builder.Services
     .AddInfrastructureLayer(builder.Configuration);
 
 var app = builder.Build();
+var corsOrigins =
+    builder.Configuration.GetSection("Cors:Origins").Get<string[]>()
+    ?? Array.Empty<string>();
+
 await app.Services.InitializeInfrastructureAsync(app.Environment.IsDevelopment());
 
 if (app.Environment.IsDevelopment())
@@ -31,6 +35,11 @@ if (app.Environment.IsDevelopment())
 app.UseSerilogRequestLogging();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseHttpsRedirection();
+if (corsOrigins.Length > 0)
+{
+    app.UseCors();
+}
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

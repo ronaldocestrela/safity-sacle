@@ -37,6 +37,7 @@ O projeto foi definido para:
 - MediatR
 - Serilog
 - xUnit + FluentAssertions
+- SPA em `src/Web`: React, TypeScript, Vite, React Router, Vitest (Fase F0 do frontend concluida; ver `roadmap.md`)
 
 ### Estrutura do projeto
 
@@ -46,18 +47,27 @@ src/
  ├── Application
  ├── Domain
  ├── Infrastructure
+ ├── Web          # SPA React (Vite)
  └── Tests
 ```
 
 ## Status de implementacao
 
-### Fases concluidas
+### Fases concluidas (backend)
 
 - [x] Fase 0 - Bootstrap e padroes
 - [x] Fase 1 - Persistencia e identidade
 - [x] Fase 2 - Modulo de segurancas
 
-### Fases pendentes
+### Frontend (`src/Web`)
+
+- [x] Fase F0 - Bootstrap e convencoes (Vite, ESLint/Prettier, smoke API, CORS em Development)
+
+### Fases pendentes (frontend)
+
+- [ ] Fases F1 a F5 — ver `roadmap.md` (auth na UI, modulos de negocio, qualidade)
+
+### Fases pendentes (backend)
 
 - [ ] Fase 3 - Modulo de indisponibilidades
 - [ ] Fase 4 - Motor de geracao de escala
@@ -78,7 +88,9 @@ src/
 - migration inicial criada e aplicada automaticamente no startup;
 - modulo de segurancas com CQRS + FluentValidation;
 - tratamento de `ValidationException` com retorno HTTP `400`;
-- testes unitarios e de integracao da Fase 2 passando.
+- **CORS** configuravel (`Cors:Origins`); em Development inclui `http://localhost:4863` para o dev server do `Web`;
+- SPA em **`src/Web`** (React + Vite): router base, proxy `/api` ou URL absoluta via `VITE_API_BASE_URL`, home com smoke de `/api/health` e login opcional, porta dev **4863**;
+- testes unitarios e de integracao da Fase 2 (backend) passando.
 
 ## Entidades implementadas
 
@@ -120,6 +132,48 @@ src/
 ## Requisitos locais
 
 - .NET SDK 10
+- Node.js **20.19+** ou **22.12+** (para `src/Web`: Vite 8 / Vitest 4)
+
+## Frontend (`src/Web`)
+
+SPA **React + TypeScript + Vite** com **React Router**, **ESLint**, **Prettier** e **Vitest** (testes em modo `node` por padrão; para RTL/componentes, use `/// <reference types="vitest" />` e `@vitest-environment jsdom` por arquivo quando necessário).
+
+### Variáveis de ambiente
+
+Copie `src/Web/.env.example` para `src/Web/.env` e ajuste:
+
+- **`VITE_API_BASE_URL`**: em desenvolvimento, deixe **vazio** para o Vite fazer **proxy** de `/api` para a API (padrão `https://localhost:7104`).
+- **`VITE_SMOKE_LOGIN_EMAIL`** / **`VITE_SMOKE_LOGIN_PASSWORD`** (opcional): credenciais de smoke na home (ex.: usuário admin de desenvolvimento). Sem elas, a home ainda confirma que a API responde em `/api/health` com 401 (esperado sem token).
+
+### Rodar o Web contra a API local
+
+1. Suba a API (porta HTTPS padrão **7104**, ver `src/Api/Properties/launchSettings.json`):
+
+   ```bash
+   dotnet run --project src/Api/SafetyScale.Api.csproj
+   ```
+
+2. Em outro terminal:
+
+   ```bash
+   cd src/Web
+   npm install
+   npm run dev
+   ```
+
+3. Abra `http://localhost:4863` (porta fixa do Vite neste repositório). A página inicial executa o smoke da API (health e, se configurado, login).
+
+### Scripts úteis (`src/Web`)
+
+| Comando              | Descrição        |
+|----------------------|------------------|
+| `npm run dev`        | Servidor Vite    |
+| `npm run build`      | Build produção   |
+| `npm run test`       | Vitest (CI)      |
+| `npm run lint`       | ESLint           |
+| `npm run format`     | Prettier write   |
+
+> **Produção:** defina `VITE_API_BASE_URL` com a URL pública da API e preencha `Cors:Origins` na API com a origem exata do frontend (esquema + host + porta). Em dev o proxy do Vite ainda pode ser usado sem CORS.
 
 ## Configuracao
 
@@ -130,6 +184,7 @@ As principais configuracoes estao em `src/Api/appsettings.json` e `src/Api/appse
 - `Jwt:Audience`
 - `Jwt:Key`
 - `Jwt:ExpiryMinutes`
+- `Cors:Origins` — lista de origens do browser autorizadas (ex.: `http://localhost:4863` em Development). Vazio desativa o middleware CORS.
 
 > Importante: a chave JWT atual e somente para desenvolvimento. Troque em ambiente real.
 
@@ -223,6 +278,12 @@ Executar todos os testes:
 
 ```bash
 dotnet test src/Tests/SafetyScale.Tests.csproj
+```
+
+Frontend (`src/Web`), com dependencias instaladas:
+
+```bash
+cd src/Web && npm run test
 ```
 
 ## Regras de qualidade
