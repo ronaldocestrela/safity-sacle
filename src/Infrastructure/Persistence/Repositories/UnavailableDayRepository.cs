@@ -1,0 +1,24 @@
+using Microsoft.EntityFrameworkCore;
+using SafetyScale.Application.Abstractions.Persistence;
+using SafetyScale.Domain.Entities;
+
+namespace SafetyScale.Infrastructure.Persistence.Repositories;
+
+public class UnavailableDayRepository(ApplicationDbContext dbContext) : IUnavailableDayRepository
+{
+    public async Task AddAsync(UnavailableDay unavailableDay, CancellationToken cancellationToken = default)
+        => await dbContext.UnavailableDays.AddAsync(unavailableDay, cancellationToken);
+
+    public async Task<UnavailableDay?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+        => await dbContext.UnavailableDays.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+    public async Task<IReadOnlyList<UnavailableDay>> GetByGuardIdAsync(
+        Guid securityGuardId,
+        CancellationToken cancellationToken = default)
+        => await dbContext.UnavailableDays
+            .Where(x => x.SecurityGuardId == securityGuardId)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+    public void Remove(UnavailableDay unavailableDay) => dbContext.UnavailableDays.Remove(unavailableDay);
+}
