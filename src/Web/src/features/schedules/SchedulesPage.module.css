@@ -13,67 +13,6 @@
   flex-direction: column;
 }
 
-.header {
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 24px;
-  background: #f7fafc;
-  border-bottom: 1px solid #c4c6cd;
-}
-
-.headerLeft {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.avatarWrap {
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 999px;
-  overflow: hidden;
-  border: 1px solid #c4c6cd;
-  background: #d2e4fb;
-  flex-shrink: 0;
-}
-
-.avatarImg {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.brandTitle {
-  margin: 0;
-  font-family: 'IBM Plex Sans', sans-serif;
-  font-size: 1.5rem;
-  line-height: 2rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  color: #041627;
-}
-
-.iconBtn {
-  padding: 8px;
-  border: none;
-  border-radius: 999px;
-  background: transparent;
-  color: #44474c;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.iconBtn:hover {
-  background: #ebeef0;
-}
-
 .materialIcon {
   font-size: 1.5rem;
   line-height: 1;

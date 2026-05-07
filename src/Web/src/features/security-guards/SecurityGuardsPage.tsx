@@ -1,4 +1,5 @@
 import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { AppHeader } from '../../shared/components/AppHeader/AppHeader'
 import { useAuth } from '../../shared/auth/useAuth'
 import {
   ApiError,
@@ -43,17 +44,6 @@ function chipToActiveQuery(chip: ChipFilter): boolean | undefined {
     return true
   }
   return undefined
-}
-
-function userInitials(email: string | undefined): string {
-  if (!email) {
-    return '?'
-  }
-  const parts = email.split('@')[0].split(/[.\-_]/).filter(Boolean)
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[1][0]).toUpperCase().slice(0, 2)
-  }
-  return email.slice(0, 2).toUpperCase()
 }
 
 export function SecurityGuardsPage() {
@@ -238,24 +228,13 @@ export function SecurityGuardsPage() {
 
   return (
     <div className={styles.page}>
-      <header className={styles.topAppBar}>
-        <div className={styles.topAppBarInner}>
-          <div className={styles.topAppBarLeft}>
-            <div className={styles.avatarRing} aria-hidden>
-              <span className={styles.avatarInitials}>{userInitials(session?.email ?? undefined)}</span>
-            </div>
-            <h1 className={styles.topAppBarTitle}>SentryOps Management</h1>
-          </div>
-          <div className={styles.topAppBarActions}>
-            <button type="button" className={styles.iconGhost} aria-label="Notifications">
-              <span className={`material-symbols-outlined ${styles.iconMd}`}>notifications</span>
-            </button>
-            <button type="button" className={styles.iconGhost} aria-label="Log out" onClick={logout}>
-              <span className={`material-symbols-outlined ${styles.iconMd}`}>logout</span>
-            </button>
-          </div>
-        </div>
-      </header>
+      <AppHeader
+        title="SentryOps Management"
+        email={session?.email}
+        showNotifications
+        showLogout
+        onLogout={logout}
+      />
 
       <div className={styles.stickySearch}>
         <div className={styles.searchField}>

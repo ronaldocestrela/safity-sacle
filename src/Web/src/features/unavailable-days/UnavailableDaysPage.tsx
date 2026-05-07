@@ -1,4 +1,5 @@
 import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { AppHeader } from '../../shared/components/AppHeader/AppHeader'
 import { useAuth } from '../../shared/auth/useAuth'
 import { ApiError as GuardsApiError, listSecurityGuards } from '../security-guards/securityGuardsApi'
 import type { SecurityGuardDto } from '../security-guards/types'
@@ -63,17 +64,6 @@ function displayGuardHandle(id: string): string {
 
 function guardOptionLabel(g: SecurityGuardDto): string {
   return `${g.name} (ID: ${displayGuardHandle(g.id)})`
-}
-
-function userInitials(email: string | undefined | null): string {
-  if (!email) {
-    return '?'
-  }
-  const parts = email.split('@')[0].split(/[.\-_]/).filter(Boolean)
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[1][0]).toUpperCase().slice(0, 2)
-  }
-  return email.slice(0, 2).toUpperCase()
 }
 
 function baselineMap(items: UnavailableDayDto[]): Map<string, string> {
@@ -299,17 +289,7 @@ export function UnavailableDaysPage() {
 
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
-        <div className={styles.headerLeft}>
-          <div className={styles.avatar} aria-hidden>
-            {userInitials(email)}
-          </div>
-          <h1 className={styles.title}>Availability</h1>
-        </div>
-        <button type="button" className={styles.iconBtn} aria-label="Notifications">
-          <span className={`${styles.materialIcon} material-symbols-outlined`}>notifications</span>
-        </button>
-      </header>
+      <AppHeader title="Availability" email={email} showNotifications />
 
       <main className={styles.main}>
         <div className={styles.section}>

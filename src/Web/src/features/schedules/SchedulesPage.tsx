@@ -1,4 +1,5 @@
 import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { AppHeader } from '../../shared/components/AppHeader/AppHeader'
 import { useAuth } from '../../shared/auth/useAuth'
 import { ApiError, generateSchedule as generateScheduleRequest, getScheduleByMonthYear } from './schedulesApi'
 import type { MonthlyScheduleDto } from './types'
@@ -68,7 +69,7 @@ function validatePeriod(month: number, year: number): string | null {
 }
 
 export function SchedulesPage() {
-  const { session } = useAuth()
+  const { session, logout } = useAuth()
   const isAdmin = Boolean(session?.roles.includes('Admin'))
   const loadTokenRef = useRef(0)
 
@@ -170,19 +171,15 @@ export function SchedulesPage() {
 
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
-        <div className={styles.headerLeft}>
-          <div className={styles.avatarWrap}>
-            <img className={styles.avatarImg} src={STITCH_SUPERVISOR_AVATAR} alt="" />
-          </div>
-          <h1 className={styles.brandTitle}>SentryOps Management</h1>
-        </div>
-        <div className={styles.headerLeft}>
-          <button type="button" className={styles.iconBtn} aria-label="Notifications">
-            <span className={`${styles.materialIcon} material-symbols-outlined`}>notifications</span>
-          </button>
-        </div>
-      </header>
+      <AppHeader
+        title="SentryOps Management"
+        email={session?.email}
+        avatarSrc={STITCH_SUPERVISOR_AVATAR}
+        avatarAlt=""
+        showNotifications
+        showLogout
+        onLogout={logout}
+      />
 
       <main className={styles.main}>
         <section className={styles.sectionIntro} aria-labelledby="sched-rules-heading">

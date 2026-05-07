@@ -5,6 +5,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { AppHeader } from '../../shared/components/AppHeader/AppHeader'
 import { useAuth } from '../../shared/auth/useAuth'
 import { ApiError as GuardsApiError, listSecurityGuards } from '../security-guards/securityGuardsApi'
 import type { SecurityGuardDto } from '../security-guards/types'
@@ -85,17 +86,6 @@ function formatMonthYear(month: number, year: number): string {
   return `${MONTH_NAMES[month - 1]} ${year}`
 }
 
-function userInitials(email: string | undefined): string {
-  if (!email) {
-    return '?'
-  }
-  const parts = email.split('@')[0].split(/[.\-_]/).filter(Boolean)
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[1][0]).toUpperCase().slice(0, 2)
-  }
-  return email.slice(0, 2).toUpperCase()
-}
-
 function displayAssignmentDate(iso: string): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso.trim())
   if (m) {
@@ -166,7 +156,6 @@ function errorMessage(e: unknown, fallback: string): string {
 export function WelcomePage() {
   const { session, logout } = useAuth()
   const isAdmin = Boolean(session?.roles.includes('Admin'))
-  const primaryRole = session?.roles.includes('Admin') ? 'Admin' : 'Supervisor'
 
   const loadTokenRef = useRef(0)
 
@@ -248,31 +237,7 @@ export function WelcomePage() {
 
   return (
     <div className={styles.page}>
-      <header className={styles.topAppBar}>
-        <div className={styles.topAppBarInner}>
-          <div className={styles.topAppBarLeft}>
-            <div className={styles.avatarRing} aria-hidden>
-              <span className={styles.avatarInitials}>{userInitials(session?.email ?? undefined)}</span>
-            </div>
-            <div className={styles.titleBlock}>
-              <h1 className={styles.topAppBarTitle}>SentryOps</h1>
-              <p className={styles.emailChip} title={session?.email ?? undefined}>
-                {session?.email ?? '—'}
-              </p>
-            </div>
-          </div>
-          <div className={styles.topAppBarMeta}>
-            <span className={styles.roleBadge}>{primaryRole}</span>
-            <span className={styles.statusPill}>System online</span>
-            <button type="button" className={styles.iconGhost} aria-label="Notifications">
-              <span className={`material-symbols-outlined ${styles.iconMd}`}>notifications</span>
-            </button>
-            <button type="button" className={styles.iconGhost} aria-label="Log out" onClick={logout}>
-              <span className={`material-symbols-outlined ${styles.iconMd}`}>logout</span>
-            </button>
-          </div>
-        </div>
-      </header>
+      <AppHeader title="SentryOps" email={session?.email} showNotifications showLogout onLogout={logout} />
 
       <main className={styles.main}>
         {guardsError ? (
