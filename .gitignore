@@ -41,3 +41,5 @@ appsettings.*.local.json
 # OS generated files
 .DS_Store
 Thumbs.db
+src/Api/safetyscale.dev.db-shm
+src/Api/safetyscale.dev.db
