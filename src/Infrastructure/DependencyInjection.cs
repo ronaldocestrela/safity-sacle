@@ -39,6 +39,7 @@ public static class DependencyInjection
             .AddEntityFrameworkStores<ApplicationDbContext>();
 
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IdentitySeeder>();
         services.AddScoped<ISecurityGuardRepository, SecurityGuardRepository>();
         services.AddScoped<IUnavailableDayRepository, UnavailableDayRepository>();

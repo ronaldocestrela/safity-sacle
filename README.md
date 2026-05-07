@@ -55,10 +55,10 @@ src/
 
 - [x] Fase 0 - Bootstrap e padroes
 - [x] Fase 1 - Persistencia e identidade
+- [x] Fase 2 - Modulo de segurancas
 
 ### Fases pendentes
 
-- [ ] Fase 2 - Modulo de segurancas
 - [ ] Fase 3 - Modulo de indisponibilidades
 - [ ] Fase 4 - Motor de geracao de escala
 - [ ] Fase 5 - Consultas de escala e historico
@@ -76,7 +76,9 @@ src/
 - seed automatico de roles no startup;
 - seed de admin em ambiente Development;
 - migration inicial criada e aplicada automaticamente no startup;
-- endpoint de login JWT e rota protegida por role.
+- modulo de segurancas com CQRS + FluentValidation;
+- tratamento de `ValidationException` com retorno HTTP `400`;
+- testes unitarios e de integracao da Fase 2 passando.
 
 ## Entidades implementadas
 
@@ -89,6 +91,10 @@ src/
 
 - `POST /api/auth/login`
 - `GET /api/health` (requer role `Admin` ou `Supervisor`)
+- `POST /api/security-guards` (requer role `Admin`)
+- `GET /api/security-guards` (requer role `Admin` ou `Supervisor`)
+- `PUT /api/security-guards/{id}` (requer role `Admin`)
+- `PATCH /api/security-guards/{id}/inactive` (requer role `Admin`)
 
 ## Endpoints alvo do projeto (roadmap)
 
@@ -132,8 +138,8 @@ As principais configuracoes estao em `src/Api/appsettings.json` e `src/Api/appse
 ### 1) Restaurar e compilar
 
 ```bash
-dotnet restore SafetyScale.slnx
-dotnet build SafetyScale.slnx
+dotnet restore src/Api/SafetyScale.Api.csproj
+dotnet build src/Api/SafetyScale.Api.csproj
 ```
 
 ### 2) Subir a API
@@ -216,7 +222,7 @@ dotnet ef database update \
 Executar todos os testes:
 
 ```bash
-dotnet test SafetyScale.slnx
+dotnet test src/Tests/SafetyScale.Tests.csproj
 ```
 
 ## Regras de qualidade

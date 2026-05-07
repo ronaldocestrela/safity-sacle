@@ -21,7 +21,7 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 
 - [x] Fase 0 - Bootstrap e padroes (concluida)
 - [x] Fase 1 - Persistencia e identidade (concluida)
-- [ ] Fase 2 - Modulo de Segurancas
+- [x] Fase 2 - Modulo de Segurancas (concluida)
 - [ ] Fase 3 - Modulo de indisponibilidades
 - [ ] Fase 4 - Motor de geracao de escala
 - [ ] Fase 5 - Consultas de escala e historico
@@ -97,6 +97,19 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 
 - Testes unitarios dos handlers e validators passando.
 - Testes de integracao dos 4 endpoints passando.
+
+### Status de entrega da fase
+
+- [x] Commands implementados: `CreateSecurityGuardCommand`, `UpdateSecurityGuardCommand`, `InactivateSecurityGuardCommand`
+- [x] Query implementada: `GetSecurityGuardsQuery`
+- [x] Endpoints implementados:
+  - `POST /api/security-guards`
+  - `GET /api/security-guards`
+  - `PUT /api/security-guards/{id}`
+  - `PATCH /api/security-guards/{id}/inactive`
+- [x] Handlers com FluentValidation e sem logica de negocio em controller
+- [x] Testes unitarios dos handlers/validators passando
+- [x] Testes de integracao dos 4 endpoints passando
 
 ## Fase 3 - Modulo de indisponibilidades
 
