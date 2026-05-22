@@ -6,7 +6,7 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 
 ## Premissas obrigatorias
 
-- Stack backend: ASP.NET Core Web API, EF Core, SQLite, Identity + JWT, MediatR, FluentValidation, Serilog, xUnit, FluentAssertions, Docker.
+- Stack backend: ASP.NET Core Web API, EF Core, SQL Server, Identity + JWT, MediatR, FluentValidation, Serilog, xUnit, FluentAssertions, Docker (inclui Testcontainers nos testes de integracao da API).
 - **Stack frontend em andamento:** React 18+, TypeScript, Vite, React Router, cliente HTTP tipado (TanStack Query recomendado nas fases seguintes); testes com Vitest + React Testing Library — detalhes em `AGENTS.md`. **Fases F0–F4** do `Web` concluídas (**bootstrap**, auth com **`/signup`**, **setores** (`/app/sectors`), **seguranças** + vínculos a setores, **indisponibilidades** UI, **escalas** UI).
 - Estrutura backend: `src/Api`, `src/Application`, `src/Domain`, `src/Infrastructure`, `src/Tests`; **frontend previsto em `src/Web`**.
 - Regras: sem logica de negocio em controller, Domain sem dependencia externa, migrations para toda mudanca de banco.
@@ -37,7 +37,7 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 - **`SecurityGuardSector`**: seguranças elegíveis às vagas de cada setor; substituição completa pelo corpo **`PUT /api/security-guards/{id}/sectors`**.
 - **`ScheduleItem.SectorId`**: cada posição gravada refere o setor coberto.
 - **`POST /api/schedules/generate`**: valida seguranças ativos, setores ativos com carga e monta **`SectorWorkloadDefinition`** para o **`ScheduleGeneratorService`**; **`400`** JSON **`ScheduleCoverageFailureResponse`** (**`code`** `ScheduleCoverageFailed`) quando não for possível preencher todas as vagas de um dia com seguranças **elegíveis, ativos e não indisponíveis naquela data**; em cenários de pré-validação (**sem setores configurados**, **pool elegível vazio**) o **`400`** pode permanecer sem corpo detalhado (vide implementação atual).
-- **Migrations** `AddSectorsAndSecurityGuardSectors` e **`SectorDailyWorkloadAndScheduleSector`** (campos **`RequiredGuardsPerDay`**, FK **`SectorId`** em **`ScheduleItems`**); a migration **`SectorDailyWorkloadAndScheduleSector`** também **elimina dados antigos** em **`MonthlySchedules`/`ScheduleItems`** onde necessário antes de FK/constraints novas — importante em upgrades de desenvolvimento.
+- **Baseline SQL Server atual:** **`InitialSqlServerSchema`** cobre multitenant (`TenantId`), setores, vínculos, **`RequiredGuardsPerDay`**, **`ScheduleItems.SectorId`**, unicidades tenant-aware e demais mapeamentos. Upgrades vindos da trilha antiga SQLite nao foram mesclados: use banco novo + seed conforme projeto.
 
 ### Multitenancy e onboarding público (concluído)
 
@@ -99,7 +99,7 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 
 ### Criterio de pronto
 
-- Banco SQLite criado via migration.
+- Banco SQL Server criado via migration aplicada pela API ao subir (`MigrateAsync`).
 - Login retorna JWT valido.
 - Rotas protegidas respeitam roles.
 
@@ -166,7 +166,7 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 ### Criterio de pronto
 
 - Testes unitarios de regras e validacoes.
-- Testes de integracao dos endpoints com persistencia real em SQLite de teste.
+- Testes de integracao dos endpoints com persistencia real em SQL Server efemero via Testcontainers.
 
 ### Status de entrega da fase
 
@@ -179,7 +179,7 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 - [x] Regras: sem duplicidade data/segurança (validação aplicacional + índice único), segurança inativo não cadastra nova indisponibilidade
 - [x] Autorização: `Admin` em POST e DELETE; `Admin` ou `Supervisor` em GET
 - [x] Testes unitarios dos handlers, validators e query passando
-- [x] Testes de integracao dos tres endpoints passando (`TestWebApplicationFactory` com SQLite dedicado por instância para isolar paralelismo)
+- [x] Testes de integracao dos tres endpoints passando (`TestWebApplicationFactory` com database dedicado por instancia em SQL Server via Testcontainers)
 
 ## Fase 4 - Motor de geracao de escala (Core de negocio)
 

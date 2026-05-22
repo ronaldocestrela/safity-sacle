@@ -8,8 +8,12 @@ public sealed class ApplicationDbContextDesignTimeFactory : IDesignTimeDbContext
 {
     public ApplicationDbContext CreateDbContext(string[] args)
     {
+        var cs = Environment.GetEnvironmentVariable("SafetyScaleDesignTime_ConnectionStrings__DefaultConnection")
+                 ?? Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+                 ?? "Server=localhost,1433;Database=safetyscale;User Id=sa;Password=Your_Strong_LocalDev_Pwd1;Encrypt=True;TrustServerCertificate=True;";
+
         var builder = new DbContextOptionsBuilder<ApplicationDbContext>();
-        builder.UseSqlite("Data Source=safetyscale.db");
+        builder.UseSqlServer(cs);
 
         ITenantExecutionContext bypass = new BypassTenantExecutionContext();
         return new ApplicationDbContext(builder.Options, bypass);

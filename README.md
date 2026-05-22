@@ -30,7 +30,7 @@ O projeto foi definido para:
 - .NET 10
 - ASP.NET Core Web API
 - Entity Framework Core
-- SQLite
+- SQL Server
 - ASP.NET Identity
 - JWT Bearer Authentication
 - FluentValidation
@@ -84,7 +84,7 @@ src/
 - bootstrap de DI entre camadas;
 - middleware global de excecoes;
 - logging com Serilog;
-- EF Core com SQLite;
+- EF Core com SQL Server;
 - ASP.NET Identity com roles `Admin` e `Supervisor`; usuários com `TenantId` e `DisplayName`;
 - autenticacao JWT com claim **`tenant_id`** (tenant do usuário);
 - middleware de resolução de tenant após autenticação;
@@ -95,7 +95,7 @@ src/
 - modulo de **setores** (`Sector`): cadastro/atualização/inativação, **`requiredGuardsPerDay`** (vagas por dia na geração, mínimo 1), vínculo N:N `SecurityGuardSector`; novo segurança ativo pode ser ligado ao setor padrão (**`Primary`**) para já entrar no pool da escala;
 - modulo de escalas mensais: geração preenche **todas as posições por dia**, somando as vagas de cada setor **ativo** com `requiredGuardsPerDay ≥ 1`; **um segurança no máximo uma vez por dia**; só entram seguranças **ativos**, **vinculados ao setor** e **não indisponíveis** naquela data; `POST /api/schedules/generate` (`Admin` apenas): `409` se mês/ano já existe; **`400`** se não houver seguranças ativos, **`400`** sem setores configurados para carga (**`NoWorkloadSectorsConfigured`**, corpo genérico) ou **`400`** com **`ScheduleCoverageFailureResponse`** quando não for possível cobrir um dia (**`code`**: `ScheduleCoverageFailed`; **`message`**: texto legível em português com a data **`dd/MM/yyyy`**; **`failedDate`**: `yyyy-MM-dd`); **consultas/histórico** (`GET /api/schedules/{id}` e `GET /api/schedules/month/{month}/year/{year}`): itens ordenados por data com **`sectorId`**, **`sectorName`**, segurança (nome e `IsActive`);
 - serialização JSON da API em **camelCase** e leitura com **nome de propriedade case-insensitive** (`AddJsonOptions`), alinhando contratos ao SPA e a clientes JSON;
-- integracao: `TestWebApplicationFactory` usa arquivo SQLite temporario unico por instancia (testes de API em paralelo sem colisao no seed);
+- integracao: `TestWebApplicationFactory` sobe **SQL Server** via **Testcontainers** (container compartilhado) e usa **nome de database unico por instancia** (isolamento paralelo + limpeza `DROP DATABASE` ao descartar a factory);
 - tratamento de `ValidationException` com retorno HTTP `400`;
 - **CORS** configuravel (`Cors:Origins`); em Development inclui `http://localhost:4863` para o dev server do `Web`;
 - SPA em **`src/Web`** (React + Vite): `/login` e **`/signup`** (cadastro de empresa), JWT em `sessionStorage` com **`tenantId`** derivado do token, área `/app` com shell e rotas por perfil; **`/app/sectors`** (gestão de setores e vagas diárias), **`/app/security-guards`** (inclui setores por segurança), **`/app/unavailable-days`** e **`/app/schedules`** (lista mostra **setor** por atribuição; falha na geração exibe **`message`** retornada pela API); **`/app`** dashboard com detalhe do dia mostrando setor; proxy `/api` ou `VITE_API_BASE_URL`, home com smoke de `/api/health`, porta dev **4863**;
@@ -319,11 +319,17 @@ Usuario **Supervisor** (apenas Development — role `Supervisor` para testes e i
 
 ## Banco de dados e migrations
 
-- Banco: SQLite
+- Banco: **SQL Server** (local ou contêiner; ver `appsettings`)
 - ORM: Entity Framework Core
-- Migrations aplicadas ao subir a API incluem **`InitialIdentityAndScheduleSchema`** e evoluções subsequentes em `src/Infrastructure/Persistence/Migrations` (entre elas multitenant **`AddTenantLogicalIsolation`**, **`AddAppUserDisplayName`**, **`AddSectorsAndSecurityGuardSectors`**, **`SectorDailyWorkloadAndScheduleSector`** (`RequiredGuardsPerDay`, `ScheduleItems.SectorId` / FK**, etc.**).
+- Migrations em `src/Infrastructure/Persistence/Migrations`: baseline consolidada **`InitialSqlServerSchema`** (provider SQL Server; substitui migrations antigas do SQLite).
 
-**Atenção (upgrade):** na migration **`SectorDailyWorkloadAndScheduleSector`**, os dados históricos de **`MonthlySchedules`/`ScheduleItems`** são removidos para permitir nova restrição e FK íntegra; ao aplicar em banco já existente, **regenerar escalas** após a migração.
+Execucao local com Docker (alinha porta/senha padrao de `appsettings*.json`; ajuste a senha antes de usar em producao):
+
+```bash
+docker run -e 'ACCEPT_EULA=Y' -e 'MSSQL_SA_PASSWORD=Your_Strong_LocalDev_Pwd1' \
+  -p 1433:1433 --name safetyscale-sql -d \
+  mcr.microsoft.com/mssql/server:2022-latest
+```
 
 Criar nova migration:
 
@@ -344,10 +350,18 @@ dotnet ef database update \
 
 ## Testes
 
+Os testes de integracao precisam de **Docker** (Testcontainers inicia uma instancia ephemeral de SQL Server).
+
 Executar todos os testes:
 
 ```bash
 dotnet test src/Tests/SafetyScale.Tests.csproj
+```
+
+Somente unitarios/Application/Domain (sem API integration / sem Docker):
+
+```bash
+dotnet test src/Tests/SafetyScale.Tests.csproj --filter "FullyQualifiedName!~SafetyScale.Tests.Api.Integration"
 ```
 
 Frontend (`src/Web`), com dependencias instaladas:

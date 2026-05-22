@@ -26,7 +26,7 @@ O sistema deve permitir:
 - .NET 10
 - ASP.NET Core Web API
 - Entity Framework Core
-- SQLite
+- SQL Server
 - ASP.NET Identity
 - JWT Authentication
 - FluentValidation
@@ -148,7 +148,7 @@ A camada Domain NÃO pode depender de nenhuma outra camada.
 Responsável por:
 
 * EF Core
-* SQLite
+* SQL Server
 * Identity
 * Repositories
 * Serviços externos
@@ -251,7 +251,7 @@ O MCP `user-stitch` é a etapa padrão de descoberta visual e validação de UX;
 
 # Entidades Obrigatórias
 
-> **Multiempresa (implementação atual):** banco SQLite **compartilhado** entre tenants (`Tenant`). As entidades de negócio abaixo carregam **`TenantId`**; `AppUser` (Identity) também possui **`TenantId`** e **`DisplayName`**. Índices e unicidades (ex.: indisponibilidade por segurança/data, uma escala por **tenant+mês+ano**) incluem **`TenantId`**.
+> **Multiempresa (implementação atual):** banco SQL Server **compartilhado** entre tenants (`Tenant`). As entidades de negócio abaixo carregam **`TenantId`**; `AppUser` (Identity) também possui **`TenantId`** e **`DisplayName`**. Índices e unicidades (ex.: indisponibilidade por segurança/data, uma escala por **tenant+mês+ano**) incluem **`TenantId`**.
 
 ## Tenant
 
@@ -595,7 +595,7 @@ Anônimo (sem `Authorization`). Cria `Tenant` + primeiro `Admin`; ver contratos/
 
 ## Banco obrigatório
 
-* SQLite
+* SQL Server
 
 ---
 

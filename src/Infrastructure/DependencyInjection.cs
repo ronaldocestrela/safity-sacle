@@ -20,14 +20,14 @@ public static class DependencyInjection
         IConfiguration configuration)
     {
         var connectionString = configuration.GetConnectionString("DefaultConnection")
-            ?? "Data Source=safetyscale.db";
+            ?? "Server=localhost,1433;Database=safetyscale;User Id=sa;Password=Your_Strong_LocalDev_Pwd1;Encrypt=True;TrustServerCertificate=True;";
 
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
 
         services.AddScoped<ITenantExecutionContext, TenantExecutionContext>();
 
         services.AddDbContext<ApplicationDbContext>((_, options) =>
-            options.UseSqlite(connectionString));
+            options.UseSqlServer(connectionString));
 
         services
             .AddIdentityCore<AppUser>(options =>

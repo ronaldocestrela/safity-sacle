@@ -43,6 +43,8 @@ appsettings.*.local.json
 # OS generated files
 .DS_Store
 Thumbs.db
-src/Api/safetyscale.dev.db-shm
-src/Api/safetyscale.dev.db
-src/Api/safetyscale.dev.db-wal
+
+# Artefatos locais SQLite legados sob Api (opcional durante dev)
+src/Api/*.db
+src/Api/*.db-wal
+src/Api/*.db-shm
