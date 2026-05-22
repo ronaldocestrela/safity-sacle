@@ -57,6 +57,7 @@ describe('UnavailableDaysPage', () => {
         name: 'Ana Costa',
         isActive: true,
         createdAt: '2026-03-02T14:30:00.000Z',
+        sectors: [],
       },
     ])
     vi.spyOn(unavailableDaysApi, 'listUnavailableDays').mockResolvedValue([])

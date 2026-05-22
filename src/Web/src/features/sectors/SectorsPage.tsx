@@ -1,27 +1,18 @@
 import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AppHeader } from '../../shared/components/AppHeader/AppHeader'
 import { useAuth } from '../../shared/auth/useAuth'
-import { ApiError as SectorsApiError, listSectors } from '../sectors/sectorsApi'
-import type { SectorDto } from '../sectors/types'
 import {
   ApiError,
-  activateSecurityGuard,
-  createSecurityGuard,
-  inactivateSecurityGuard,
-  listSecurityGuards,
-  setGuardSectors,
-  updateSecurityGuard,
-} from './securityGuardsApi'
-import type { SecurityGuardDto } from './types'
-import styles from './SecurityGuardsPage.module.css'
+  activateSector,
+  createSector,
+  inactivateSector,
+  listSectors,
+  updateSector,
+} from './sectorsApi'
+import type { SectorDto } from './types'
+import styles from '../security-guards/SecurityGuardsPage.module.css'
 
 type ChipFilter = 'all' | 'activeOnly'
-
-function displayGuardId(id: string): string {
-  const alnum = id.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
-  const core = (alnum + '0000').slice(0, 4)
-  return `#SO-${core}`
-}
 
 function chipToActiveQuery(chip: ChipFilter): boolean | undefined {
   if (chip === 'activeOnly') {
@@ -30,87 +21,36 @@ function chipToActiveQuery(chip: ChipFilter): boolean | undefined {
   return undefined
 }
 
-export function SecurityGuardsPage() {
+export function SectorsPage() {
   const { session, logout } = useAuth()
   const isAdmin = Boolean(session?.roles.includes('Admin'))
   const loadTokenRef = useRef(0)
 
   const [chip, setChip] = useState<ChipFilter>('all')
-  const [sectorFilterId, setSectorFilterId] = useState<string>('')
-  const [sectorsCatalog, setSectorsCatalog] = useState<SectorDto[]>([])
-  const [sectorsPickList, setSectorsPickList] = useState<SectorDto[]>([])
-  const [sectorPickError, setSectorPickError] = useState<string | null>(null)
-
   const [search, setSearch] = useState('')
-  const [items, setItems] = useState<SecurityGuardDto[]>([])
+  const [items, setItems] = useState<SectorDto[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
 
   const [banner, setBanner] = useState<{ kind: 'success' | 'error'; message: string } | null>(null)
 
-  const [nameFormOpen, setNameFormOpen] = useState<'create' | 'edit' | null>(null)
-  const [editing, setEditing] = useState<SecurityGuardDto | null>(null)
+  const [formOpen, setFormOpen] = useState<'create' | 'edit' | null>(null)
+  const [editing, setEditing] = useState<SectorDto | null>(null)
   const [nameDraft, setNameDraft] = useState('')
-  const [selectedSectorIds, setSelectedSectorIds] = useState<string[]>([])
+  const [descriptionDraft, setDescriptionDraft] = useState('')
   const [nameTouched, setNameTouched] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const [nameFormError, setNameFormError] = useState<string | null>(null)
+  const [formError, setFormError] = useState<string | null>(null)
 
-  const [inactivateTarget, setInactivateTarget] = useState<SecurityGuardDto | null>(null)
+  const [inactivateTarget, setInactivateTarget] = useState<SectorDto | null>(null)
   const [inactivateSubmitting, setInactivateSubmitting] = useState(false)
-
-  useEffect(() => {
-    let cancelled = false
-    void (async () => {
-      try {
-        const all = await listSectors(undefined)
-        if (!cancelled) {
-          setSectorsCatalog(all)
-        }
-      } catch {
-        if (!cancelled) {
-          setSectorsCatalog([])
-        }
-      }
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  useEffect(() => {
-    if (!nameFormOpen || !isAdmin) {
-      setSectorsPickList([])
-      setSectorPickError(null)
-      return
-    }
-    let cancelled = false
-    void (async () => {
-      try {
-        const active = await listSectors(true)
-        if (!cancelled) {
-          setSectorsPickList(active)
-          setSectorPickError(null)
-        }
-      } catch (e: unknown) {
-        if (!cancelled) {
-          setSectorsPickList([])
-          const msg = e instanceof SectorsApiError ? e.message : 'Could not load active sectors.'
-          setSectorPickError(msg ?? 'Could not load active sectors.')
-        }
-      }
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [nameFormOpen, isAdmin])
 
   const refreshList = useCallback(async () => {
     const token = ++loadTokenRef.current
     setLoading(true)
     setLoadError(null)
     try {
-      const list = await listSecurityGuards(chipToActiveQuery(chip))
+      const list = await listSectors(chipToActiveQuery(chip))
       if (loadTokenRef.current !== token) {
         return
       }
@@ -119,7 +59,7 @@ export function SecurityGuardsPage() {
       if (loadTokenRef.current !== token) {
         return
       }
-      const fallback = 'Could not load personnel.'
+      const fallback = 'Could not load sectors.'
       if (e instanceof ApiError) {
         setLoadError(e.message || fallback)
       } else {
@@ -140,86 +80,74 @@ export function SecurityGuardsPage() {
 
   const displayedRows = useMemo(() => {
     let list = items
-    if (sectorFilterId) {
-      list = list.filter((g) => g.sectors.some((s) => s.id === sectorFilterId))
-    }
     const q = search.trim().toLowerCase()
     if (q) {
-      list = list.filter(
-        (g) =>
-          g.name.toLowerCase().includes(q) ||
-          displayGuardId(g.id).toLowerCase().includes(q) ||
-          g.sectors.some((s) => s.name.toLowerCase().includes(q)),
-      )
+      list = list.filter((s) => s.name.toLowerCase().includes(q) || (s.description?.toLowerCase().includes(q) ?? false))
     }
     return list
-  }, [items, sectorFilterId, search])
+  }, [items, search])
 
   const nameInvalid = nameTouched && nameDraft.trim() === ''
 
-  function closeNameForm() {
-    setNameFormOpen(null)
+  function closeForm() {
+    setFormOpen(null)
     setEditing(null)
     setNameDraft('')
-    setSelectedSectorIds([])
+    setDescriptionDraft('')
     setNameTouched(false)
-    setNameFormError(null)
+    setFormError(null)
     setSubmitting(false)
   }
 
   function openCreate() {
     setBanner(null)
-    setNameFormOpen('create')
+    setFormOpen('create')
     setEditing(null)
     setNameDraft('')
-    setSelectedSectorIds([])
+    setDescriptionDraft('')
     setNameTouched(false)
-    setNameFormError(null)
+    setFormError(null)
   }
 
-  function openEdit(g: SecurityGuardDto) {
+  function openEdit(s: SectorDto) {
     if (!isAdmin) {
       return
     }
     setBanner(null)
-    setNameFormOpen('edit')
-    setEditing(g)
-    setNameDraft(g.name)
-    setSelectedSectorIds(g.sectors.map((s) => s.id))
+    setFormOpen('edit')
+    setEditing(s)
+    setNameDraft(s.name)
+    setDescriptionDraft(s.description ?? '')
     setNameTouched(false)
-    setNameFormError(null)
+    setFormError(null)
   }
 
-  function toggleSectorSelection(id: string) {
-    setSelectedSectorIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
-  }
-
-  async function handleSubmitName(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setNameTouched(true)
-    setNameFormError(null)
+    setFormError(null)
     if (!nameDraft.trim()) {
       return
     }
 
     setSubmitting(true)
     try {
-      if (nameFormOpen === 'create') {
-        const { id } = await createSecurityGuard(nameDraft.trim())
-        await setGuardSectors(id, selectedSectorIds)
-        setBanner({ kind: 'success', message: 'Personnel created.' })
-      } else if (nameFormOpen === 'edit' && editing) {
-        await updateSecurityGuard(editing.id, nameDraft.trim())
-        await setGuardSectors(editing.id, selectedSectorIds)
+      const descTrim = descriptionDraft.trim()
+      const descPayload = descTrim.length > 0 ? descTrim : null
+      if (formOpen === 'create') {
+        await createSector(nameDraft.trim(), descPayload)
+        setBanner({ kind: 'success', message: 'Sector created.' })
+      } else if (formOpen === 'edit' && editing) {
+        await updateSector(editing.id, nameDraft.trim(), descPayload)
         setBanner({ kind: 'success', message: 'Changes saved.' })
       }
-      closeNameForm()
+      closeForm()
       await refreshList()
     } catch (err: unknown) {
       if (err instanceof ApiError) {
-        setNameFormError(err.message || 'Save failed.')
+        setFormError(err.message || 'Save failed.')
       } else {
-        setNameFormError('Save failed.')
+        setFormError('Save failed.')
       }
     } finally {
       setSubmitting(false)
@@ -233,8 +161,8 @@ export function SecurityGuardsPage() {
     setInactivateSubmitting(true)
     setBanner(null)
     try {
-      await inactivateSecurityGuard(inactivateTarget.id)
-      setBanner({ kind: 'success', message: 'Personnel deactivated.' })
+      await inactivateSector(inactivateTarget.id)
+      setBanner({ kind: 'success', message: 'Sector deactivated.' })
       setInactivateTarget(null)
       await refreshList()
     } catch (err: unknown) {
@@ -248,11 +176,11 @@ export function SecurityGuardsPage() {
     }
   }
 
-  async function handleActivate(guardId: string): Promise<void> {
+  async function handleActivate(sectorId: string): Promise<void> {
     setBanner(null)
     try {
-      await activateSecurityGuard(guardId)
-      setBanner({ kind: 'success', message: 'Personnel activated.' })
+      await activateSector(sectorId)
+      setBanner({ kind: 'success', message: 'Sector activated.' })
       await refreshList()
     } catch (err: unknown) {
       if (err instanceof ApiError) {
@@ -268,14 +196,14 @@ export function SecurityGuardsPage() {
   }
 
   const chips: { id: ChipFilter; label: string }[] = [
-    { id: 'all', label: 'All Personnel' },
-    { id: 'activeOnly', label: 'Active Only' },
+    { id: 'all', label: 'All sectors' },
+    { id: 'activeOnly', label: 'Active only' },
   ]
 
   return (
     <div className={styles.page}>
       <AppHeader
-        title="SentryOps Management"
+        title="Sector management"
         email={session?.email}
         showNotifications
         showLogout
@@ -288,16 +216,16 @@ export function SecurityGuardsPage() {
           <input
             className={styles.searchInput}
             type="search"
-            placeholder="Search guards by name, ID or sector..."
+            placeholder="Search sectors by name or description..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            aria-label="Search guards by name, ID or sector"
+            aria-label="Search sectors by name or description"
           />
           <button type="button" className={styles.tuneBtn} aria-label="Filter tune" title="Filters">
             <span className={`material-symbols-outlined ${styles.iconMd}`}>tune</span>
           </button>
         </div>
-        <div className={styles.chipRow} style={{ alignItems: 'center' }}>
+        <div className={styles.chipRow}>
           {chips.map((c) => (
             <button
               key={c.id}
@@ -308,26 +236,6 @@ export function SecurityGuardsPage() {
               {c.label}
             </button>
           ))}
-          <label style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.35rem', flexShrink: 0 }}>
-            <span className={styles.cardLocation} style={{ fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 700 }}>
-              Sector
-            </span>
-            <select
-              className={styles.input}
-              style={{ minWidth: '8rem', fontSize: '0.75rem', padding: '0.35rem 0.5rem' }}
-              aria-label="Filter by sector"
-              value={sectorFilterId}
-              onChange={(ev) => setSectorFilterId(ev.target.value)}
-            >
-              <option value="">All sectors</option>
-              {sectorsCatalog.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                  {!s.isActive ? ' (inactive)' : ''}
-                </option>
-              ))}
-            </select>
-          </label>
         </div>
       </div>
 
@@ -354,18 +262,18 @@ export function SecurityGuardsPage() {
         </div>
       ) : null}
 
-      <section className={styles.listSection} aria-busy={loading} aria-label="Personnel list">
+      <section className={styles.listSection} aria-busy={loading} aria-label="Sectors list">
         {loading && displayedRows.length === 0 ? <p className={styles.muted}>Loading…</p> : null}
 
         {!loading && displayedRows.length === 0 && !loadError ? (
           <p className={styles.muted} role="status">
-            No personnel found for this filter.
+            No sectors found for this filter.
           </p>
         ) : null}
 
         <ul className={styles.cardList}>
           {displayedRows.map((row) => (
-            <PersonnelCard
+            <SectorCard
               key={row.id}
               row={row}
               isAdmin={isAdmin}
@@ -378,37 +286,37 @@ export function SecurityGuardsPage() {
       </section>
 
       {isAdmin ? (
-        <button type="button" className={styles.fab} aria-label="Add personnel" onClick={() => openCreate()}>
-          <span className={`material-symbols-outlined ${styles.fabIcon}`}>person_add</span>
+        <button type="button" className={styles.fab} aria-label="Add sector" onClick={() => openCreate()}>
+          <span className={`material-symbols-outlined ${styles.fabIcon}`}>business</span>
         </button>
       ) : null}
 
-      {nameFormOpen ? (
+      {formOpen ? (
         <div
           className={styles.backdrop}
           role="presentation"
           onClick={(evt) => {
             if (evt.target === evt.currentTarget) {
-              closeNameForm()
+              closeForm()
             }
           }}
         >
           <div className={styles.dialogInner}>
-            <h2 id="sg-form-title" className={styles.dialogTitle}>
-              {nameFormOpen === 'create' ? 'New personnel' : 'Edit personnel'}
+            <h2 id="sector-form-title" className={styles.dialogTitle}>
+              {formOpen === 'create' ? 'New sector' : 'Edit sector'}
             </h2>
 
-            <form aria-labelledby="sg-form-title" onSubmit={(e) => void handleSubmitName(e)}>
-              {nameFormError ? (
+            <form aria-labelledby="sector-form-title" onSubmit={(e) => void handleSubmit(e)}>
+              {formError ? (
                 <p className={styles.alert} role="alert">
-                  {nameFormError}
+                  {formError}
                 </p>
               ) : null}
 
-              <label className={styles.label} htmlFor="sg-name-input">
+              <label className={styles.label} htmlFor="sector-name-input">
                 Name
                 <input
-                  id="sg-name-input"
+                  id="sector-name-input"
                   className={`${styles.input} ${nameInvalid ? styles.inputInvalid : ''}`}
                   value={nameDraft}
                   onChange={(ev) => setNameDraft(ev.target.value)}
@@ -420,44 +328,24 @@ export function SecurityGuardsPage() {
               </label>
               {nameInvalid ? <span className={styles.fieldErr}>Enter a name.</span> : null}
 
-              {isAdmin ? (
-                <fieldset style={{ marginTop: '0.85rem', border: '1px solid #e2e8f0', borderRadius: '0.35rem', padding: '0.65rem' }}>
-                  <legend className={styles.label} style={{ padding: '0 0.25rem' }}>
-                    Sectors (active)
-                  </legend>
-                  {sectorPickError ? (
-                    <p className={styles.fieldErr} role="alert">
-                      {sectorPickError}
-                    </p>
-                  ) : null}
-                  {sectorsPickList.length === 0 && !sectorPickError ? (
-                    <p className={styles.cardLocation}>No active sectors. Create sectors first.</p>
-                  ) : (
-                    <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                      {sectorsPickList.map((s) => (
-                        <li key={s.id}>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.875rem' }}>
-                            <input
-                              type="checkbox"
-                              checked={selectedSectorIds.includes(s.id)}
-                              disabled={submitting}
-                              onChange={() => toggleSectorSelection(s.id)}
-                            />
-                            <span>{s.name}</span>
-                          </label>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </fieldset>
-              ) : null}
+              <label className={styles.label} htmlFor="sector-desc-input">
+                Description
+                <textarea
+                  id="sector-desc-input"
+                  className={styles.input}
+                  rows={3}
+                  value={descriptionDraft}
+                  onChange={(ev) => setDescriptionDraft(ev.target.value)}
+                  disabled={submitting}
+                />
+              </label>
 
               <div className={styles.dialogFooter}>
-                <button type="button" className={styles.btnGhost} onClick={() => closeNameForm()} disabled={submitting}>
+                <button type="button" className={styles.btnGhost} onClick={() => closeForm()} disabled={submitting}>
                   Cancel
                 </button>
                 <button type="submit" className={styles.btnPrimary} disabled={submitting}>
-                  {submitting ? 'Saving…' : nameFormOpen === 'create' ? 'Create' : 'Save'}
+                  {submitting ? 'Saving…' : formOpen === 'create' ? 'Create' : 'Save'}
                 </button>
               </div>
             </form>
@@ -476,9 +364,10 @@ export function SecurityGuardsPage() {
           }}
         >
           <div className={styles.dialogInner}>
-            <h2 className={styles.dialogTitle}>Deactivate personnel</h2>
+            <h2 className={styles.dialogTitle}>Deactivate sector</h2>
             <p className={styles.confirmBody}>
-              Confirm deactivation of <strong>{inactivateTarget.name}</strong>. Existing schedule history is kept.
+              Confirm deactivation of <strong>{inactivateTarget.name}</strong>. Guard assignments linked to this
+              sector remain until changed.
             </p>
             <div className={styles.dialogFooter}>
               <button
@@ -505,27 +394,19 @@ export function SecurityGuardsPage() {
   )
 }
 
-function PersonnelCard({
+function SectorCard({
   row,
   isAdmin,
   onEdit,
   onToggleOff,
   onToggleOn,
 }: {
-  row: SecurityGuardDto
+  row: SectorDto
   isAdmin: boolean
   onEdit: () => void
   onToggleOff: () => void
   onToggleOn: () => void
 }) {
-  const sectorLabel =
-    row.sectors.length > 0
-      ? row.sectors
-          .map((s) => s.name)
-          .sort((a, b) => a.localeCompare(b))
-          .join(', ')
-      : 'No sectors assigned'
-
   return (
     <li
       className={`${styles.personnelCard} ${row.isActive ? styles.personnelCardActive : styles.personnelCardInactive}`}
@@ -538,18 +419,20 @@ function PersonnelCard({
         <div className={styles.cardTitleRow}>
           <h3 className={styles.cardName}>
             {isAdmin ? (
-              <button type="button" className={styles.nameBtn} onClick={onEdit} title="Edit personnel">
+              <button type="button" className={styles.nameBtn} onClick={onEdit} title="Edit sector">
                 {row.name}
               </button>
             ) : (
               row.name
             )}
           </h3>
-          <span className={styles.cardId}>{displayGuardId(row.id)}</span>
+          <span className={styles.cardId} title={row.id}>
+            {row.id.slice(0, 8)}…
+          </span>
         </div>
         <div className={styles.cardMetaRow}>
           {row.isActive ? <span className={styles.badgeActive}>Active</span> : <span className={styles.badgeInactive}>Inactive</span>}
-          <span className={styles.cardLocation}>{row.isActive ? sectorLabel : 'Off duty'}</span>
+          <span className={styles.cardLocation}>{row.description?.trim() ? row.description : 'No description'}</span>
         </div>
       </div>
       <div className={styles.cardToggleCol}>

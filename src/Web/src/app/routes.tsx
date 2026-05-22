@@ -5,6 +5,7 @@ import { RegisterTenantPage } from '../features/tenant-registration/RegisterTena
 import { WelcomePage } from '../features/app/WelcomePage'
 import { SchedulesPage } from '../features/schedules/SchedulesPage'
 import { SecurityGuardsPage } from '../features/security-guards/SecurityGuardsPage'
+import { SectorsPage } from '../features/sectors/SectorsPage'
 import { UnavailableDaysPage } from '../features/unavailable-days/UnavailableDaysPage'
 import { AppLayout } from './AppLayout'
 import { ProtectedRoute } from './routes/ProtectedRoute'
@@ -27,6 +28,14 @@ export function AppRoutes() {
             element={
               <RoleRoute allowedRoles={['Admin', 'Supervisor']}>
                 <SecurityGuardsPage />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="sectors"
+            element={
+              <RoleRoute allowedRoles={['Admin', 'Supervisor']}>
+                <SectorsPage />
               </RoleRoute>
             }
           />

@@ -99,8 +99,45 @@ public class SecurityGuardsEndpointsTests
         items.Should().Contain(x => x.Id == created.Id && x.IsActive);
     }
 
+    [Fact]
+    public async Task PutSectors_ShouldAssignActiveSectors()
+    {
+        using var factory = new TestWebApplicationFactory();
+        using var client = CreateHttpsClient(factory);
+        await AuthTestHelper.AuthenticateAsAdminAsync(client);
+
+        var sectorResp = await client.PostAsJsonAsync("/api/sectors", new { name = "Gate A", description = (string?)null });
+        sectorResp.StatusCode.Should().Be(HttpStatusCode.Created);
+        var sector = await sectorResp.Content.ReadFromJsonAsync<SectorStubResponse>();
+        sector.Should().NotBeNull();
+
+        var createResp = await client.PostAsJsonAsync("/api/security-guards", new { name = "Guard Sector" });
+        var createdGuard = await createResp.Content.ReadFromJsonAsync<CreateSecurityGuardResponse>();
+        createdGuard.Should().NotBeNull();
+
+        var put = await client.PutAsJsonAsync(
+            $"/api/security-guards/{createdGuard!.Id}/sectors",
+            new { sectorIds = new[] { sector!.Id } });
+
+        put.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var listResponse = await client.GetAsync("/api/security-guards");
+        var items = await listResponse.Content.ReadFromJsonAsync<List<SecurityGuardResponse>>();
+        items.Should().NotBeNull();
+        var g = items!.Single(x => x.Id == createdGuard.Id);
+        g.Sectors.Should().NotBeNull();
+        g.Sectors!.Should().Contain(s => s.Id == sector.Id && s.Name == "Gate A");
+    }
+
     private sealed record CreateSecurityGuardResponse(Guid Id);
-    private sealed record SecurityGuardResponse(Guid Id, string Name, bool IsActive, DateTime CreatedAt);
+    private sealed record SectorStubResponse(Guid Id);
+    private sealed record GuardSectorResponse(Guid Id, string Name, string? Description, bool IsActive, DateTime CreatedAt);
+    private sealed record SecurityGuardResponse(
+        Guid Id,
+        string Name,
+        bool IsActive,
+        DateTime CreatedAt,
+        List<GuardSectorResponse>? Sectors);
 
     private static HttpClient CreateHttpsClient(TestWebApplicationFactory factory)
         => factory.CreateClient(new()

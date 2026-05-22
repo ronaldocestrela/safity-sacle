@@ -49,6 +49,8 @@ public static class DependencyInjection
         services.AddScoped<ISecurityGuardRepository, SecurityGuardRepository>();
         services.AddScoped<IUnavailableDayRepository, UnavailableDayRepository>();
         services.AddScoped<IMonthlyScheduleRepository, MonthlyScheduleRepository>();
+        services.AddScoped<ISectorRepository, SectorRepository>();
+        services.AddScoped<ISecurityGuardSectorRepository, SecurityGuardSectorRepository>();
 
         return services;
     }

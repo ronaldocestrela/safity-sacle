@@ -16,6 +16,8 @@ public class ApplicationDbContext(
 
     public DbSet<Tenant> Tenants => Set<Tenant>();
     public DbSet<SecurityGuard> SecurityGuards => Set<SecurityGuard>();
+    public DbSet<Sector> Sectors => Set<Sector>();
+    public DbSet<SecurityGuardSector> SecurityGuardSectors => Set<SecurityGuardSector>();
     public DbSet<UnavailableDay> UnavailableDays => Set<UnavailableDay>();
     public DbSet<MonthlySchedule> MonthlySchedules => Set<MonthlySchedule>();
     public DbSet<ScheduleItem> ScheduleItems => Set<ScheduleItem>();
@@ -68,6 +70,54 @@ public class ApplicationDbContext(
             entity.HasQueryFilter(g =>
                 !_tenant.IsTenantIsolationEnabled ||
                 g.TenantId == (_tenant.TenantId ?? Guid.Empty));
+        });
+
+        builder.Entity<Sector>(entity =>
+        {
+            entity.ToTable("Sectors");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Name).HasMaxLength(150).IsRequired();
+            entity.Property(x => x.Description).HasMaxLength(500);
+            entity.Property(x => x.CreatedAt).IsRequired();
+            entity.Property(x => x.IsActive).IsRequired();
+            entity.Property(x => x.TenantId).IsRequired();
+            entity.HasIndex(x => new { x.TenantId, x.Name }).IsUnique();
+
+            entity.HasOne(x => x.Tenant)
+                .WithMany()
+                .HasForeignKey(x => x.TenantId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasQueryFilter(s =>
+                !_tenant.IsTenantIsolationEnabled ||
+                s.TenantId == (_tenant.TenantId ?? Guid.Empty));
+        });
+
+        builder.Entity<SecurityGuardSector>(entity =>
+        {
+            entity.ToTable("SecurityGuardSectors");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.TenantId).IsRequired();
+            entity.HasIndex(x => new { x.TenantId, x.SecurityGuardId, x.SectorId }).IsUnique();
+
+            entity.HasOne(x => x.Tenant)
+                .WithMany()
+                .HasForeignKey(x => x.TenantId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.SecurityGuard)
+                .WithMany(g => g.SecurityGuardSectors)
+                .HasForeignKey(x => x.SecurityGuardId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(x => x.Sector)
+                .WithMany(s => s.SecurityGuardSectors)
+                .HasForeignKey(x => x.SectorId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasQueryFilter(x =>
+                !_tenant.IsTenantIsolationEnabled ||
+                x.TenantId == (_tenant.TenantId ?? Guid.Empty));
         });
 
         builder.Entity<UnavailableDay>(entity =>

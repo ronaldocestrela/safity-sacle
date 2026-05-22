@@ -4,6 +4,7 @@ import styles from './AppLayout.module.css'
 
 const bottomNav = [
   { to: '/app', end: true, label: 'Dashboard', icon: 'calendar_month' as const },
+  { to: '/app/sectors', end: false, label: 'Sectors', icon: 'map' as const },
   { to: '/app/security-guards', end: false, label: 'Guards', icon: 'shield_person' as const },
   { to: '/app/unavailable-days', end: false, label: 'Availability', icon: 'event_available' as const },
   { to: '/app/schedules', end: false, label: 'Schedules', icon: 'settings_suggest' as const },
@@ -15,6 +16,7 @@ export function AppLayout() {
   const { pathname } = useLocation()
   const hideShellHeader =
     pathname === '/app' ||
+    pathname === '/app/sectors' ||
     pathname === '/app/security-guards' ||
     pathname === '/app/unavailable-days' ||
     pathname === '/app/schedules'

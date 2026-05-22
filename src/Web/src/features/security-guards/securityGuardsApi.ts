@@ -71,3 +71,12 @@ export async function activateSecurityGuard(id: string): Promise<void> {
   })
   await ensureOk(res, 'Não foi possível reativar.')
 }
+
+export async function setGuardSectors(guardId: string, sectorIds: string[]): Promise<void> {
+  const res = await apiFetch(`/api/security-guards/${encodeURIComponent(guardId)}/sectors`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sectorIds }),
+  })
+  await ensureOk(res, 'Não foi possível salvar setores do segurança.')
+}

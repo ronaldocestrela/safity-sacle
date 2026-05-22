@@ -13,7 +13,11 @@ public class SecurityGuardRepository(ApplicationDbContext dbContext) : ISecurity
         => await dbContext.SecurityGuards.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
     public async Task<IReadOnlyList<SecurityGuard>> GetAllAsync(CancellationToken cancellationToken = default)
-        => await dbContext.SecurityGuards.AsNoTracking().ToListAsync(cancellationToken);
+        => await dbContext.SecurityGuards
+            .AsNoTracking()
+            .Include(g => g.SecurityGuardSectors)
+            .ThenInclude(sgs => sgs.Sector)
+            .ToListAsync(cancellationToken);
 
     public async Task<IReadOnlyList<SecurityGuard>> GetActiveAsync(CancellationToken cancellationToken = default)
         => await dbContext.SecurityGuards

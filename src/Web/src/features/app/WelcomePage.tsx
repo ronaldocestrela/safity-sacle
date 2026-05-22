@@ -379,6 +379,10 @@ export function WelcomePage() {
             <section className={styles.shortcutsSection} aria-label="Quick navigation">
               <h2 className={styles.sectionTitle}>Shortcuts</h2>
               <div className={styles.shortcutsGrid}>
+                <Link className={styles.shortcut} to="/app/sectors">
+                  <span className={`material-symbols-outlined ${styles.shortcutIcon}`}>map</span>
+                  <span className={styles.shortcutLabel}>Sectors</span>
+                </Link>
                 <Link className={styles.shortcut} to="/app/security-guards">
                   <span className={`material-symbols-outlined ${styles.shortcutIcon}`}>shield_person</span>
                   <span className={styles.shortcutLabel}>Guards</span>

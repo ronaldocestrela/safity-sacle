@@ -5,6 +5,7 @@ using SafetyScale.Api.Contracts.SecurityGuards;
 using SafetyScale.Application.SecurityGuards.Commands.CreateSecurityGuard;
 using SafetyScale.Application.SecurityGuards.Commands.ActivateSecurityGuard;
 using SafetyScale.Application.SecurityGuards.Commands.InactivateSecurityGuard;
+using SafetyScale.Application.SecurityGuards.Commands.SetSecurityGuardSectors;
 using SafetyScale.Application.SecurityGuards.Commands.UpdateSecurityGuard;
 using SafetyScale.Application.SecurityGuards.Queries.GetSecurityGuards;
 
@@ -63,5 +64,26 @@ public class SecurityGuardsController(ISender sender) : ControllerBase
     {
         var activated = await sender.Send(new ActivateSecurityGuardCommand(id), cancellationToken);
         return activated ? NoContent() : NotFound();
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpPut("{id:guid}/sectors")]
+    public async Task<IActionResult> SetSectors(
+        [FromRoute] Guid id,
+        [FromBody] UpdateSecurityGuardSectorsRequest request,
+        CancellationToken cancellationToken)
+    {
+        var status = await sender.Send(
+            new SetSecurityGuardSectorsCommand(id, request.SectorIds),
+            cancellationToken);
+
+        return status switch
+        {
+            SetSecurityGuardSectorsStatus.Success => NoContent(),
+            SetSecurityGuardSectorsStatus.GuardNotFound => NotFound(),
+            SetSecurityGuardSectorsStatus.InvalidSectors => BadRequest(
+                new { error = "One or more sector ids are invalid or inactive." }),
+            _ => Problem(),
+        };
     }
 }

@@ -45,12 +45,14 @@ describe('WelcomePage (dashboard)', () => {
         name: 'Ana Costa',
         isActive: true,
         createdAt: '2026-03-02T14:30:00.000Z',
+        sectors: [],
       },
       {
         id: 'g-inactive',
         name: 'Bruno Silva',
         isActive: false,
         createdAt: '2026-03-03T14:30:00.000Z',
+        sectors: [],
       },
     ])
     vi.spyOn(schedulesApi, 'getScheduleByMonthYear').mockResolvedValue({
@@ -159,6 +161,7 @@ describe('WelcomePage (dashboard)', () => {
         name: 'Only One',
         isActive: true,
         createdAt: '2026-03-02T14:30:00.000Z',
+        sectors: [],
       },
     ])
 

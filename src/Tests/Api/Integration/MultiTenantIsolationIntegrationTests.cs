@@ -42,6 +42,26 @@ public class MultiTenantIsolationIntegrationTests
     }
 
     [Fact]
+    public async Task Tenant2_ListSectors_DoesNotInclude_Tenant1_Sector()
+    {
+        using var factory = new TestWebApplicationFactory();
+        await SeedSecondTenantAdminAsync(factory);
+
+        using var clientT1 = CreateHttpsClient(factory);
+        await AuthTestHelper.AuthenticateAsAdminAsync(clientT1);
+        await clientT1.PostAsJsonAsync("/api/sectors", new { name = "T1OnlySector", description = (string?)null });
+
+        using var clientT2 = CreateHttpsClient(factory);
+        await AuthenticateAsSecondTenantAdminAsync(clientT2);
+
+        var listResp = await clientT2.GetAsync("/api/sectors");
+        listResp.StatusCode.Should().Be(HttpStatusCode.OK);
+        var items = await listResp.Content.ReadFromJsonAsync<List<SectorResponse>>();
+        items.Should().NotBeNull();
+        items!.Should().NotContain(x => x.Name == "T1OnlySector");
+    }
+
+    [Fact]
     public async Task Tenant2_GetScheduleById_FromTenant1_ReturnsNotFound()
     {
         using var factory = new TestWebApplicationFactory();
@@ -131,7 +151,14 @@ public class MultiTenantIsolationIntegrationTests
 
     private sealed record CreateSecurityGuardResponse(Guid Id);
 
-    private sealed record SecurityGuardResponse(Guid Id, string Name, bool IsActive, DateTime CreatedAt);
+    private sealed record SectorResponse(Guid Id, string Name, string? Description, bool IsActive, DateTime CreatedAt);
+
+    private sealed record SecurityGuardResponse(
+        Guid Id,
+        string Name,
+        bool IsActive,
+        DateTime CreatedAt,
+        List<SectorResponse>? Sectors);
 
     private sealed record ScheduleCreatedResponse(Guid Id);
 }
