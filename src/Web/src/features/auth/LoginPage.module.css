@@ -18,6 +18,10 @@
   overflow: hidden;
 }
 
+.cardWide {
+  max-width: 520px;
+}
+
 .cardHeader {
   background: #1a2b3c;
   color: #fff;

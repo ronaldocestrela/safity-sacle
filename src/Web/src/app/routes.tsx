@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { HomePage } from '../features/home/HomePage'
 import { LoginPage } from '../features/auth/LoginPage'
+import { RegisterTenantPage } from '../features/tenant-registration/RegisterTenantPage'
 import { WelcomePage } from '../features/app/WelcomePage'
 import { SchedulesPage } from '../features/schedules/SchedulesPage'
 import { SecurityGuardsPage } from '../features/security-guards/SecurityGuardsPage'
@@ -15,6 +16,7 @@ export function AppRoutes() {
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/signup" element={<RegisterTenantPage />} />
 
       <Route element={<ProtectedRoute />}>
         <Route path="/app" element={<AppLayout />}>

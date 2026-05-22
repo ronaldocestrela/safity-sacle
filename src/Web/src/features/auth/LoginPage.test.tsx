@@ -42,6 +42,12 @@ describe('LoginPage', () => {
     expect(screen.getByText(/informe a senha/i)).toBeInTheDocument()
   })
 
+  it('shows link to company signup page', async () => {
+    renderLogin()
+    const link = screen.getByRole('link', { name: /cadastrar minha empresa/i })
+    expect(link).toHaveAttribute('href', '/signup')
+  })
+
   it('submits and navigates on success', async () => {
     const user = userEvent.setup()
     const token = makeUnsignedJwt({ exp: expSoon(), role: 'Admin', email: 'a@b.com' })

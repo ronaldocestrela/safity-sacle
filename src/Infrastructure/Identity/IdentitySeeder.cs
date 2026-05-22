@@ -69,6 +69,7 @@ public class IdentitySeeder(
                 UserName = email,
                 EmailConfirmed = true,
                 TenantId = defaultTenantId,
+                DisplayName = email.Split('@')[0],
             };
 
             var createResult = await userManager.CreateAsync(user, password);
@@ -152,6 +153,7 @@ public class IdentitySeeder(
             UserName = email,
             EmailConfirmed = true,
             TenantId = defaultTenantId,
+            DisplayName = "Supervisor dev",
         };
 
         var createResult = await userManager.CreateAsync(user, password);

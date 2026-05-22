@@ -1,15 +1,23 @@
-import { type FormEvent, useState } from 'react'
+import { type FormEvent, useMemo, useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../shared/auth/useAuth'
 import styles from './LoginPage.module.css'
+
+type LoginLocationState = {
+  from?: string
+  reason?: 'session-expired'
+  registrationSuccess?: boolean
+  registeredEmail?: string
+}
 
 export function LoginPage() {
   const { session, login } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const from = (location.state as { from?: string } | null)?.from
+  const nav = useMemo(() => (location.state as LoginLocationState | null) ?? null, [location.state])
+  const from = nav?.from
 
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(() => nav?.registeredEmail?.trim() ?? '')
   const [password, setPassword] = useState('')
   const [touched, setTouched] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -44,9 +52,13 @@ export function LoginPage() {
   }
 
   const sessionHint =
-    (location.state as { reason?: string } | null)?.reason === 'session-expired'
+    nav?.reason === 'session-expired'
       ? 'Sua sessão expirou ou o token deixou de ser válido. Entre novamente.'
       : null
+
+  const registrationHint = nav?.registrationSuccess
+    ? 'Empresa cadastrada com sucesso. Faça login com as credenciais informadas.'
+    : null
 
   return (
     <div className={styles.page}>
@@ -59,6 +71,7 @@ export function LoginPage() {
 
         <form className={styles.form} onSubmit={handleSubmit} noValidate>
           {sessionHint ? <p className={styles.banner}>{sessionHint}</p> : null}
+          {registrationHint ? <p className={styles.banner}>{registrationHint}</p> : null}
           {error ? (
             <p className={styles.error} role="alert">
               {error}
@@ -103,6 +116,10 @@ export function LoginPage() {
         </form>
 
         <p className={styles.footer}>
+          <Link className={styles.link} to="/signup">
+            Cadastrar minha empresa
+          </Link>
+          {' · '}
           <Link className={styles.link} to="/">
             Voltar à página inicial
           </Link>

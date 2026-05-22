@@ -42,6 +42,7 @@ public class ApplicationDbContext(
         builder.Entity<AppUser>(entity =>
         {
             entity.Property(u => u.TenantId).IsRequired();
+            entity.Property(u => u.DisplayName).HasMaxLength(200).IsRequired();
             entity.HasOne(u => u.Tenant)
                 .WithMany()
                 .HasForeignKey(u => u.TenantId)

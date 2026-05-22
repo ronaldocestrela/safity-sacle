@@ -7,6 +7,7 @@ using SafetyScale.Infrastructure.Authentication;
 using SafetyScale.Infrastructure.Identity;
 using SafetyScale.Infrastructure.Persistence;
 using SafetyScale.Infrastructure.Persistence.Repositories;
+using SafetyScale.Infrastructure.Tenancy;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -42,6 +43,7 @@ public static class DependencyInjection
             .AddEntityFrameworkStores<ApplicationDbContext>();
 
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<ITenantRegistrationService, TenantRegistrationService>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IdentitySeeder>();
         services.AddScoped<ISecurityGuardRepository, SecurityGuardRepository>();
