@@ -1,3 +1,34 @@
+# SafetyScale — SPA (`src/Web`)
+
+Frontend **React + TypeScript + Vite** do SafetyScale.
+
+## Fluxos principais
+
+- **`/login`** — autenticação (`POST /api/auth/login`). O JWT inclui **`tenant_id`**; a sessão em `sessionStorage` persiste **`token`** e **`tenantId`** (entre outros dados de perfil) para todas as chamadas autenticadas à API.
+- **`/signup`** — cadastro público de empresa (`POST /api/tenants/register`, anônimo). Implementação em **`src/features/tenant-registration/`**.
+- **`/app/...`** — área protegida (shell, Guards, Availability, Schedules).
+
+## Como rodar contra a API
+
+Detalhes (proxy Vite `4863`, CORS variáveis, smoke na home): ver o **[README.md](../../README.md)** na raiz do repositório (secção **Frontend**).
+
+Resumo rápido:
+
+```bash
+cd src/Web
+cp .env.example .env   # ajustar se necessário (ex.: VITE_DEV_API_PROXY_TARGET em HTTPS local)
+npm install
+npm run dev
+```
+
+Scripts: `npm run dev` | `build` | `test` | `lint` | `format`.
+
+---
+
+_Conteúdo abaixo: template oficial do Vite (referência de ferramentas)._
+
+---
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.

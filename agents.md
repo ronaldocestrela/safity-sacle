@@ -36,7 +36,7 @@ O sistema deve permitir:
 
 ## Frontend (React)
 
-> **Status:** **Fases F0–F4 concluídas** — o projeto `src/Web` inclui Vite, React, TypeScript, Router, ESLint, Prettier, Vitest, CSS Modules, **login JWT (`sessionStorage`)**, shell, rotas por perfil e **módulos security-guards, unavailable-days e schedules**. **Fase F5** (hardening UX e qualidade) **ainda pendente**.
+> **Status:** **Fases F0–F4 concluídas** — o projeto `src/Web` inclui Vite, React, TypeScript, Router, ESLint, Prettier, Vitest, CSS Modules, **login JWT (`sessionStorage`)** com **`tenantId`** (claim `tenant_id`), **cadastro público de empresa** em **`/signup`**, shell, rotas por perfil e **módulos security-guards, unavailable-days e schedules**. **Fase F5** (hardening UX e qualidade) **ainda pendente**.
 
 - React (18+)
 - TypeScript
@@ -48,7 +48,7 @@ O sistema deve permitir:
 
 **Condições e alinhamento com o backend:**
 
-- Autenticação **JWT Bearer** igual à API (`Authorization: Bearer <token>`); refresh/logout conforme política definida na implementação.
+- Autenticação **JWT Bearer** igual à API (`Authorization: Bearer <token>`); o token inclui a claim **`tenant_id`** para delimitar o tenant em todas as rotas `/api` autenticadas; refresh/logout conforme política definida na implementação.
 - Autorização na UI espelhando perfis **`Admin`** e **`Supervisor`**: rotas, menus e ações condicionais; regras definitivas continuam no backend.
 - Formulários com validação de UX (campos obrigatórios, formatos); **validação de negócio permanece na API** (FluentValidation/handlers).
 - Tratamento padronizado de erros da API (401, 403, 422, 500) e mensagens ao usuário.
@@ -168,11 +168,11 @@ TDD é obrigatório.
 
 # Frontend (React) — Arquitetura e responsabilidades
 
-> **Bootstrap (F0), auth na UI (F1)**, **módulo de Seguranças (F2)** e **módulo de indisponibilidades (F3)** atendidos no repositório. Esta seção permanece como contrato para **F4 em diante** (escalas, qualidade ampliada).
+> **Bootstrap (F0), auth na UI (F1)** incluindo **cadastro público de tenant (`/signup` → `POST /api/tenants/register`)**, **módulo de Seguranças (F2)**, **módulo de indisponibilidades (F3)** e **Escalas na UI (F4)** **atendidos** no repositório. Esta seção permanece como contrato para **F5 em diante** (qualidade, UX ampla).
 
 ## Organização
 
-- **Por features** (`features/security-guards`, `features/schedules`, etc.), não por tipo de arquivo isolado em todo o projeto.
+- **Por features** (`features/security-guards`, `features/schedules`, `features/tenant-registration`, etc.), não por tipo de arquivo isolado em todo o projeto.
 - **Camada de API**: módulos que chamam os endpoints documentados neste arquivo; DTOs/tipos alinhados aos contratos da API.
 - **Componentes apresentacionais** versus **containers/hooks** com lógica de dados quando necessário.
 - Sem duplicar regras de negócio complexas no cliente; confiar no servidor para decisões finais.
@@ -182,8 +182,9 @@ TDD é obrigatório.
 - **Seguranças:** listagem, criação, edição, inativação e **reativação** — alinhado a `/api/security-guards`, `PATCH .../inactive` e `PATCH .../active`.
 - **Indisponibilidades:** CRUD por segurança — alinhado a `/api/security-guards/{id}/unavailable-days` e `DELETE /api/unavailable-days/{id}`.
 - **Escalas:** geração mensal e consultas — alinhado a `POST /api/schedules/generate`, `GET /api/schedules/{id}` e `GET /api/schedules/month/{month}/year/{year}`.
+- **Onboarding de empresa (público):** **`/signup`** — `POST /api/tenants/register` (`AllowAnonymous`); após sucesso, login com o Admin criado. **Stitch:** seguir o padrão quando houver **composição de tela nova** de porte similar às demais; telas muito próximas ao login já existente podem reutilizar o mesmo tratamento visual (CSS Modules `Login`-like) desde que UX e contrato com a API estejam claros — preferir Stitch se o time julgar mudança de layout relevante.
 
-Novas telas que materializem estes fluxos devem seguir o **fluxo obrigatório** descrito em **MCP Google Stitch** antes da implementação em código.
+Novas telas administrativas (pós-login) devem seguir o **fluxo obrigatório** descrito em **MCP Google Stitch** antes da implementação em código.
 
 ## Qualidade (frontend)
 
@@ -223,6 +224,7 @@ O MCP `user-stitch` é a etapa padrão de descoberta visual e validação de UX;
 ## Onde é opcional
 
 - Ajustes pequenos em **componentes já existentes**, correções pontuais de texto ou estilo, **refactors** sem mudança de UX, correções de bug que **não** criem nova composição de tela.
+- Formulários públicos simples já alinhados ao **login existente** (ex.: **`/signup`**) quando não houver layout novo acordado com design — registar na descrição do PR que a Stitch foi dispensada neste caso.
 
 ## Ferramentas principais
 
@@ -245,12 +247,21 @@ O MCP `user-stitch` é a etapa padrão de descoberta visual e validação de UX;
 
 # Entidades Obrigatórias
 
+> **Multiempresa (implementação atual):** banco SQLite **compartilhado** entre tenants (`Tenant`). As entidades de negócio abaixo carregam **`TenantId`**; `AppUser` (Identity) também possui **`TenantId`** e **`DisplayName`**. Índices e unicidades (ex.: indisponibilidade por segurança/data, uma escala por **tenant+mês+ano**) incluem **`TenantId`**.
+
+## Tenant
+
+Representa a empresa / organização lógica (slug único, nome, estado ativo).
+
+---
+
 ## SecurityGuard
 
 ```csharp
 public class SecurityGuard
 {
     public Guid Id { get; set; }
+    public Guid TenantId { get; set; }
     public string Name { get; set; }
     public bool IsActive { get; set; }
     public DateTime CreatedAt { get; set; }
@@ -265,6 +276,7 @@ public class SecurityGuard
 public class UnavailableDay
 {
     public Guid Id { get; set; }
+    public Guid TenantId { get; set; }
     public Guid SecurityGuardId { get; set; }
     public DateOnly Date { get; set; }
     public string? Reason { get; set; }
@@ -279,6 +291,7 @@ public class UnavailableDay
 public class MonthlySchedule
 {
     public Guid Id { get; set; }
+    public Guid TenantId { get; set; }
     public int Month { get; set; }
     public int Year { get; set; }
     public DateTime GeneratedAt { get; set; }
@@ -293,6 +306,7 @@ public class MonthlySchedule
 public class ScheduleItem
 {
     public Guid Id { get; set; }
+    public Guid TenantId { get; set; }
     public Guid MonthlyScheduleId { get; set; }
     public Guid SecurityGuardId { get; set; }
     public DateOnly Date { get; set; }
@@ -486,6 +500,16 @@ GET  /api/schedules/month/{month}/year/{year}
 
 ---
 
+## Tenants — cadastro público (multitenant)
+
+```http
+POST /api/tenants/register
+```
+
+Anônimo (sem `Authorization`). Cria `Tenant` + primeiro `Admin`; ver contratos/DTO em `src/Api/Contracts/Tenants/` e tratamento (`201`/`400`/`409`) na documentação Swagger em Development.
+
+---
+
 # Banco de Dados
 
 ## Banco obrigatório
@@ -512,6 +536,8 @@ Utilizar:
 
 * ASP.NET Identity
 * JWT Bearer Authentication
+
+JWT deve transportar **`tenant_id`** (GUID da organização) para rotas `/api` autenticadas, alinhando o contexto de execução ao tenant do usuário Identity.
 
 ---
 
@@ -584,9 +610,11 @@ Cobrir:
 
 Cobrir:
 
-* Endpoints
-* Persistência
-* Fluxo completo de geração
+* Endpoints obrigatórios listados neste arquivo
+* Persistência por tenant onde aplicável
+* Fluxo completo de geração de escala
+* Cadastro público de tenant (**`TenantsRegistrationEndpointsTests`** ou equivalente)
+* Isolamento lógico entre tenants em operações autenticadas (**`MultiTenantIsolationIntegrationTests`** ou equivalente)
 
 ---
 
@@ -673,8 +701,8 @@ NÃO fazer:
 
 O sistema deve nascer preparado para:
 
-* **SPA React em `src/Web`** (F0–F3 implementadas — ver `README.md` e `roadmap.md`; F4–F5 UI pendentes; backend já cobre até Fase 5 incluindo consultas de escala)
-* Multiempresa
+* **SPA React em `src/Web`** (**Fases F0–F4** implementadas — ver `README.md` / `roadmap.md`; backend cobre até Fase 5 e **isolamento multitenant** com cadastro público)
+* **Multiempresa lógica (Tenants)** já em uso — evoluir com governança, faturação e limites por plano quando necessário
 * Múltiplos postos
 * Turnos
 * Dashboard

@@ -2,12 +2,12 @@
 
 ## Objetivo
 
-Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capaz de gerar escalas mensais confiaveis com balanceamento justo de finais de semana, respeitando indisponibilidades e historico, e uma **SPA React em `src/Web`** (especificada em `AGENTS.md`). **Bootstrap do frontend (Fase F0), auth na UI (Fase F1), modulo de segurancas na UI (Fase F2), modulo de indisponibilidades na UI (Fase F3) e modulo de escalas na UI (Fase F4) estão concluídos**; hardening de UX e qualidade segue na **Fase F5** (UI); no backend, **Fases 0 a 5 estão concluídas** — falta apenas **Fase 6** (endurecimento e entrega).
+Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capaz de gerar escalas mensais confiaveis com balanceamento justo de finais de semana, respeitando indisponibilidades e historico, e uma **SPA React em `src/Web`** (especificada em `AGENTS.md`). **Bootstrap do frontend (Fase F0), auth na UI com cadastro público de empresa (`/signup`),** **módulo de seguranças na UI (Fase F2)**, **módulo de indisponibilidades na UI (Fase F3)** e **módulo de escalas na UI (Fase F4)** estão concluídos; hardening de UX e qualidade segue na **Fase F5** (UI). No backend, **Fases 0 a 5 estão concluídas**, com **isolamento multitenant lógico** (Tenant + JWT `tenant_id`) **e `POST /api/tenants/register`** — falta **Fase 6** (endurecimento operacional ampla, incluindo proteções para endpoints públicos e entrega Docker).
 
 ## Premissas obrigatorias
 
 - Stack backend: ASP.NET Core Web API, EF Core, SQLite, Identity + JWT, MediatR, FluentValidation, Serilog, xUnit, FluentAssertions, Docker.
-- **Stack frontend em andamento:** React 18+, TypeScript, Vite, React Router, cliente HTTP tipado (TanStack Query recomendado nas fases seguintes); testes com Vitest + React Testing Library — detalhes em `AGENTS.md`. **Fases F0–F4** do `Web` concluídas (bootstrap, auth, seguranças UI, indisponibilidades UI, escalas UI).
+- **Stack frontend em andamento:** React 18+, TypeScript, Vite, React Router, cliente HTTP tipado (TanStack Query recomendado nas fases seguintes); testes com Vitest + React Testing Library — detalhes em `AGENTS.md`. **Fases F0–F4** do `Web` concluídas (bootstrap, auth com **`/signup`**, seguranças UI, indisponibilidades UI, escalas UI).
 - Estrutura backend: `src/Api`, `src/Application`, `src/Domain`, `src/Infrastructure`, `src/Tests`; **frontend previsto em `src/Web`**.
 - Regras: sem logica de negocio em controller, Domain sem dependencia externa, migrations para toda mudanca de banco.
 - Qualidade: TDD como fluxo padrao no backend; no frontend, testes obrigatorios nas partes criticas quando a trilha for iniciada.
@@ -16,7 +16,7 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 
 - Incremental por fases, cada fase com criterio de pronto.
 - Primeiro base arquitetural e seguranca, depois dominio e algoritmo, por fim operacao e hardening.
-- **Frontend:** F0–F4 concluídas na UI; **F5** pendente (qualidade, UX). Backend **Fases 3 a 5** concluídas (indisponibilidades; motor de geração `POST /api/schedules/generate`; **consultas/histórico** `GET /api/schedules/{id}` e `GET /api/schedules/month/{month}/year/{year}`). **Novas telas:** fluxo Stitch obrigatório por padrão antes do código React — ver `AGENTS.md` (MCP Google Stitch).
+- **Frontend:** F0–F4 concluídas na UI; **F5** pendente (qualidade, UX). Backend **Fases 3 a 5** concluídas (indisponibilidades; motor `POST /api/schedules/generate`; **consultas/histórico** — `GET /api/schedules/{id}`, `GET /api/schedules/month/{month}/year/{year}`); **isolamento multitenant** e **cadastro público `POST /api/tenants/register`** implementados. **Novas telas:** fluxo Stitch obrigatório por padrão antes do código React — ver `AGENTS.md` (MCP Google Stitch).
 - Nenhuma feature avanca sem testes automatizados da propria fase.
 
 ## Status atual
@@ -29,7 +29,16 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 - [x] Fase 3 - Modulo de indisponibilidades (concluida)
 - [x] Fase 4 - Motor de geracao de escala
 - [x] Fase 5 - Consultas de escala e historico
-- [ ] Fase 6 - Endurecimento, observabilidade e entrega
+- [ ] Fase 6 - Endurecimento, observabilidade e entrega (Docker, revisão segurança, hardening para `POST /api/tenants/register` em produção)
+
+### Multitenancy e onboarding público (concluído)
+
+- **`Tenant`** + `Slug` único para organizações; todas as linhas de negócio levam **`TenantId`**; índice único de escala por **`TenantId + Month + Year`** (substituindo o índice global antigo apenas mes/ano).
+- **JWT** com claim **`tenant_id`**; middleware resolve contexto tenant em requests autenticados.
+- **`AppUser`** com **`TenantId`** + **`DisplayName`**; filtros EF globais em entidades de negócio, **exceto** `AppUser` (Identity / `FindByEmail` etc.).
+- **Endpoint público** `POST /api/tenants/register` (**AllowAnonymous**) — fluxo transacional cria Tenant, garante slug único (sufixo numérico se necessário) e primeiro **Admin**.
+- **`/signup`** em `src/Web`, link a partir da tela de login, testes de integração de registro e de isolamento entre tenants onde aplicável.
+- Pendências de endurecimento (rate-limit, CAPTCHA, aprovação manual da conta) ficam como **parte-alvo da Fase 6**.
 
 ### Frontend (React em `src/Web`) — **parcial (F0–F4 concluídas; F5 pendente)**
 
@@ -203,7 +212,7 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 - [x] Command + validator: `GenerateMonthlyScheduleCommand` (`Month`/`Year`), FluentValidation 1–12 e ano 2000–2100
 - [x] Endpoint `POST /api/schedules/generate` (`Admin` apenas); `409` se mês/ano já gerado (índice único DB + checagem); `400` sem guardas ativos ou cobertura impossível
 - [x] Persistência: `MonthlySchedule` + `ScheduleItem` num único `SaveChanges`; `GetActiveAsync` em seguranças; `GetByDateRangeAsync` em indisponibilidades
-- [x] Migration: índice único `(Month, Year)` em `MonthlySchedules`
+- [x] Migration: índice único **`(TenantId, Month, Year)`** em `MonthlySchedules` (com isolamento multitenant; substitui o índice antigo apenas mes/ano)
 - [x] Testes: domínio do gerador, handler CQRS, validator e integração API (`SchedulesGenerateEndpointsTests`)
 
 ## Fase 5 - Consultas de escala e historico
@@ -247,6 +256,7 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 
 ### Tarefas principais
 
+- Proteções para **`POST /api/tenants/register`** em produção (rate limiting / CAPTCHA / aprovação — conforme produto).
 - Ajustar health checks e configuracoes por ambiente.
 - Executar bateria completa de testes unitarios + integracao.
 - Revisar validacoes fora de controllers (100% em validators/handlers/domain).
@@ -310,6 +320,7 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 #### Status de entrega da fase
 
 - [x] Tela de login + shell + rotas protegidas e por perfil
+- [x] Cadastro público de empresa (**`/signup`**) chamando **`POST /api/tenants/register`**; cliente em `features/tenant-registration` (ou pasta equivalente)
 - [x] Token em `sessionStorage` + `Authorization: Bearer` via `apiFetch`
 - [x] Referências Stitch: Login de Acesso (`1837019a956541aabb147945bb4378ad`) e Shell Administrativo desktop (`7b68e9354acb499f835e008c52c21c57`)
 - [x] Testes Vitest + RTL dos guards e login
@@ -426,6 +437,7 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
   - persistencia;
   - fluxo completo de geracao;
   - consultas `GET` de escala por id e por mes/ano (`SchedulesQueryEndpointsTests`).
+  - **Multitenancy / onboarding:** registros públicos (`TenantsRegistrationEndpointsTests`) e isolamento entre tenants onde aplicável.
 - Casos extremos:
   - poucos segurancas;
   - todos indisponiveis;
@@ -469,7 +481,7 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 
 - [ ] Estrutura de pastas obrigatoria atendida.
 - [ ] Commands, queries e endpoints obrigatorios implementados.
-- [ ] Identity + JWT + roles `Admin` e `Supervisor`.
+- [ ] Identity + JWT + roles `Admin` e `Supervisor` + **claim `tenant_id` no JWT**.
 - [ ] Regras de negocio obrigatorias cobertas por testes.
 - [ ] `ScheduleGeneratorService` em producao.
 - [ ] Migrations para todas alteracoes de banco.
@@ -479,7 +491,7 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 ### Frontend (`src/Web`) — **parcial (F0–F4 ok; F5 pendente)**
 
 - [x] Fase F0 da secao **Trilha Frontend React** concluida conforme `AGENTS.md` / `README.md`.
-- [x] Fase F1: autenticação JWT, `sessionStorage`, rotas e shell por perfil; testes de auth; referências Stitch no `README.md`.
+- [x] Fase **F1** estendida: **`/signup`**, sessão com **`tenantId`** no cliente.
 - [x] Fase F2: modulo de segurancas em `/app/security-guards`; testes RTL do fluxo principal de listagem/criacao mockada; referencia Stitch a documentar ao validar no MCP (vide `README.md`).
 - [x] Fase F3: indisponibilidades em `/app/unavailable-days`; testes RTL; referência Stitch no `README.md`.
 - [x] Fase F4: escalas em `/app/schedules`; testes RTL; referência Stitch no `README.md`.

@@ -65,7 +65,7 @@ src/
 ### Frontend (`src/Web`)
 
 - [x] Fase F0 - Bootstrap e convencoes (Vite, ESLint/Prettier, smoke API, CORS em Development)
-- [x] Fase F1 - Autenticacao JWT na UI, `sessionStorage`, rotas por perfil (`Admin` / `Supervisor`)
+- [x] Fase F1 estendida — cadastro público `/signup`, sessão com `tenantId` no JWT
 - [x] Fase F2 - Seguranças na UI (`/app/security-guards`; `Admin` gerencia, `Supervisor` consulta)
 - [x] Fase F3 - Indisponibilidades na UI (`/app/unavailable-days`; `Admin`: CRUD via calendário + **SAVE RESTRICTIONS**; `Supervisor`: consulta)
 - [x] Fase F4 - Escalas na UI (`/app/schedules`; consulta mês/ano; `Admin`: geração mensal)
@@ -85,8 +85,9 @@ src/
 - middleware global de excecoes;
 - logging com Serilog;
 - EF Core com SQLite;
-- ASP.NET Identity com roles `Admin` e `Supervisor`;
-- autenticacao JWT;
+- ASP.NET Identity com roles `Admin` e `Supervisor`; usuários com `TenantId` e `DisplayName`;
+- autenticacao JWT com claim **`tenant_id`** (tenant do usuário);
+- middleware de resolução de tenant após autenticação;
 - seed automatico de roles no startup;
 - seed de admin em ambiente Development (**e usuario `Supervisor` apenas em Development** para testes de permissao);
 - migration inicial criada e aplicada automaticamente no startup;
@@ -95,19 +96,37 @@ src/
 - integracao: `TestWebApplicationFactory` usa arquivo SQLite temporario unico por instancia (testes de API em paralelo sem colisao no seed);
 - tratamento de `ValidationException` com retorno HTTP `400`;
 - **CORS** configuravel (`Cors:Origins`); em Development inclui `http://localhost:4863` para o dev server do `Web`;
-- SPA em **`src/Web`** (React + Vite): `/login` com JWT em `sessionStorage`, área `/app` com shell e rotas por perfil; **`/app/security-guards`**, **`/app/unavailable-days`** e **`/app/schedules`** (Fase F4: regras/escala alinhada ao Stitch **Regras de Escala**); proxy `/api` ou `VITE_API_BASE_URL`, home com smoke de `/api/health`, porta dev **4863**;
-- testes unitarios e de integracao do backend (modulos de segurancas, indisponibilidades e escalas — geracao + consultas) passando.
+- SPA em **`src/Web`** (React + Vite): `/login` e **`/signup`** (cadastro de empresa), JWT em `sessionStorage` com **`tenantId`** derivado do token, área `/app` com shell e rotas por perfil; **`/app/security-guards`**, **`/app/unavailable-days`** e **`/app/schedules`**; proxy `/api` ou `VITE_API_BASE_URL`, home com smoke de `/api/health`, porta dev **4863**;
+- testes unitarios e de integracao do backend (**incl.** registro de tenant e isolamento multitenant onde aplicável) passando.
 
 ## Entidades implementadas
 
-- `SecurityGuard`
-- `UnavailableDay`
-- `MonthlySchedule`
-- `ScheduleItem`
+- `Tenant` (organização / tenant lógico; `Slug` único)
+- `SecurityGuard` (com `TenantId`)
+- `UnavailableDay` (com `TenantId`)
+- `MonthlySchedule` (com `TenantId`)
+- `ScheduleItem` (com `TenantId`)
+
+Usuários Identity (`AppUser`) possuem `TenantId` (um tenant por usuário) e `DisplayName` (nome exibível do administrador).
+
+## Multitenancy (isolamento lógico no banco compartilhado)
+
+- **Modelo:** uma linha em `Tenants` por organização; todas as entidades de negócio carregam `TenantId`.
+- **API autenticada:** após o login, o JWT inclui a claim **`tenant_id`**. O middleware resolve o tenant no request; o `ApplicationDbContext` aplica **filtros globais** nas entidades de domínio para restringir leituras ao tenant atual.
+- **`SaveChanges`:** em requests autenticados com tenant resolvido, novas linhas recebem `TenantId` automaticamente; alterações cruzando tenant são bloqueadas.
+- **`AppUser`:** **não** usa filtro global do EF (compatibilidade com `UserManager` / login); o vínculo ao tenant continua por coluna `TenantId` e pela claim do JWT nas APIs de negócio.
+- **Seed / migrations:** existe tenant padrão (`slug` `default`) na migration de isolamento; usuários de desenvolvimento são associados a esse tenant. Novas instalações podem criar empresas adicionais pelo fluxo público abaixo.
+
+## Cadastro público de empresa (tenant + admin)
+
+- Endpoint anônimo: **`POST /api/tenants/register`** — cria `Tenant`, gera `Slug` único a partir do nome (com sufixo `-2`, `-3`, … se necessário), cria usuário **Admin** com as credenciais informadas e role `Admin`.
+- **SPA:** rota pública **`/signup`** (`RegisterTenantPage`); após sucesso redireciona para **`/login`** com mensagem e e-mail pré-preenchido. Link **“Cadastrar minha empresa”** na tela de login.
+- **Riscos operacionais:** endpoint público — em produção considerar rate limiting, CAPTCHA ou fluxo de aprovação (ver `roadmap.md`).
 
 ## Endpoints disponiveis atualmente
 
 - `POST /api/auth/login`
+- `POST /api/tenants/register` (**anônimo**; `201` tenant + admin; `400` validação/senha; `409` e-mail já usado ou falha ao gerar slug)
 - `GET /api/health` (requer role `Admin` ou `Supervisor`)
 - `POST /api/security-guards` (requer role `Admin`)
 - `GET /api/security-guards` (requer role `Admin` ou `Supervisor`)
@@ -134,7 +153,8 @@ SPA **React + TypeScript + Vite** com **React Router**, **ESLint**, **Prettier**
 
 ### Fase F1 (auth na UI)
 
-- **Login:** `/login` → `POST /api/auth/login`, JWT em `sessionStorage` (expira → limpa sessão e volta ao login).
+- **Login:** `/login` → `POST /api/auth/login`, JWT em `sessionStorage` (expira → limpa sessão e volta ao login). Token inclui **`tenant_id`** para isolamento multitenant nas APIs seguintes.
+- **Cadastro de empresa:** `/signup` → `POST /api/tenants/register` (**anônimo**); após criar tenant e usuário Admin, fluxo sugere voltar ao login com o mesmo e-mail.
 - **Área autenticada:** `/app` com **barra inferior de navegação** (Dashboard, Guards, Availability, Schedules), header com e-mail / perfil / logout nas telas shell; telas **Guards**, **Availability** e **Schedules** (`/app/schedules`) usam header próprio estilo Stitch.
 - **Referências Google Stitch usadas como base:** tela **Login de Acesso** (`projects/9334796298126275303/screens/1837019a956541aabb147945bb4378ad`), shell desktop histórico **Shell Administrativo SafetyScale** (`projects/9334796298126275303/screens/7b68e9354acb499f835e008c52c21c57`), **BottomNavBar** da tela MOBILE **Gestão de Seguranças** (`projects/9334796298126275303/screens/1a430c771b494c85baf12207c805be74`), e **Regras de Escala** / aba Schedules (`projects/9334796298126275303/screens/e1026c6a3524415ca5f749c9496b2f5e`) — ícones **Material Symbols**.
 
@@ -232,7 +252,7 @@ No startup da API, automaticamente:
 
 - migrations sao aplicadas;
 - roles `Admin` e `Supervisor` sao garantidas;
-- usuario admin dev e criado se nao existir.
+- existe tenant **`default`** (seed de isolamento multitenant); usuario admin dev e criado ou associado conforme configuracao atual.
 
 ### 3) Swagger
 
@@ -269,6 +289,8 @@ Enviar no header:
 Authorization: Bearer <jwt>
 ```
 
+O JWT codifica as claims padrão de Identity (**sub**, e-mail etc.) mais **`tenant_id`** (GUID da organização). O frontend mantém esse valor em **`AuthSession.tenantId`** após login.
+
 ### Credenciais de desenvolvimento (seed)
 
 - Email: `admin@local.com`
@@ -288,7 +310,7 @@ Usuario **Supervisor** (apenas Development — role `Supervisor` para testes e i
 
 - Banco: SQLite
 - ORM: Entity Framework Core
-- Migration inicial: `InitialIdentityAndScheduleSchema`
+- Migrations aplicadas ao subir a API incluem **`InitialIdentityAndScheduleSchema`** e evoluções subsequentes em `src/Infrastructure/Persistence/Migrations` (entre elas multitenant **`AddTenantLogicalIsolation`**, **`AddAppUserDisplayName`** e outras já presentes na árvore do repositório).
 
 Criar nova migration:
 
