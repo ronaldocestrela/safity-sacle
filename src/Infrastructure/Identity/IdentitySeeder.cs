@@ -1,11 +1,15 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using SafetyScale.Domain.Entities;
+using SafetyScale.Infrastructure.Persistence;
 
 namespace SafetyScale.Infrastructure.Identity;
 
 public class IdentitySeeder(
     RoleManager<IdentityRole> roleManager,
     UserManager<AppUser> userManager,
+    ApplicationDbContext dbContext,
     ILogger<IdentitySeeder> logger)
 {
     public static class Roles
@@ -31,6 +35,9 @@ public class IdentitySeeder(
                 logger.LogWarning("Failed to create role {Role}", role);
             }
         }
+
+        var defaultTenantId = await EnsureDefaultTenantAsync();
+        await AssignMissingTenantToUsersAsync(defaultTenantId);
 
         if (!isDevelopment)
         {
@@ -60,7 +67,8 @@ public class IdentitySeeder(
             {
                 Email = email,
                 UserName = email,
-                EmailConfirmed = true
+                EmailConfirmed = true,
+                TenantId = defaultTenantId,
             };
 
             var createResult = await userManager.CreateAsync(user, password);
@@ -73,10 +81,56 @@ public class IdentitySeeder(
             await userManager.AddToRoleAsync(user, Roles.Admin);
         }
 
-        await EnsureSupervisorUserAsync();
+        await EnsureSupervisorUserAsync(defaultTenantId);
     }
 
-    private async Task EnsureSupervisorUserAsync()
+    private async Task<Guid> EnsureDefaultTenantAsync()
+    {
+        const string slug = "default";
+        var existing = await dbContext.Tenants
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Slug == slug);
+
+        if (existing is not null)
+        {
+            return existing.Id;
+        }
+
+        var tenant = new Tenant
+        {
+            Id = Guid.NewGuid(),
+            Name = "Default",
+            Slug = slug,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow,
+        };
+
+        dbContext.Tenants.Add(tenant);
+        await dbContext.SaveChangesAsync();
+        logger.LogInformation("Created default tenant {TenantId}", tenant.Id);
+        return tenant.Id;
+    }
+
+    private async Task AssignMissingTenantToUsersAsync(Guid tenantId)
+    {
+        var users = await dbContext.Users
+            .IgnoreQueryFilters()
+            .Where(u => u.TenantId == Guid.Empty)
+            .ToListAsync();
+
+        foreach (var user in users)
+        {
+            user.TenantId = tenantId;
+        }
+
+        if (users.Count > 0)
+        {
+            await dbContext.SaveChangesAsync();
+        }
+    }
+
+    private async Task EnsureSupervisorUserAsync(Guid defaultTenantId)
     {
         const string email = "supervisor@safetyscale.local";
         const string password = "Supervisor@12345";
@@ -97,6 +151,7 @@ public class IdentitySeeder(
             Email = email,
             UserName = email,
             EmailConfirmed = true,
+            TenantId = defaultTenantId,
         };
 
         var createResult = await userManager.CreateAsync(user, password);

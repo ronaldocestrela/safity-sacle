@@ -2,6 +2,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SafetyScale.Application.Abstractions.Authentication;
 using SafetyScale.Application.Abstractions.Persistence;
+using SafetyScale.Application.Abstractions.Tenancy;
 using SafetyScale.Infrastructure.Authentication;
 using SafetyScale.Infrastructure.Identity;
 using SafetyScale.Infrastructure.Persistence;
@@ -22,7 +23,9 @@ public static class DependencyInjection
 
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
 
-        services.AddDbContext<ApplicationDbContext>(options =>
+        services.AddScoped<ITenantExecutionContext, TenantExecutionContext>();
+
+        services.AddDbContext<ApplicationDbContext>((_, options) =>
             options.UseSqlite(connectionString));
 
         services

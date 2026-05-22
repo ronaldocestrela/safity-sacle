@@ -5,6 +5,8 @@ const ROLE_CLAIM_KEYS = [
   'http://schemas.microsoft.com/ws/2008/06/identity/claims/role',
 ] as const
 
+const TENANT_CLAIM_KEYS = ['tenant_id'] as const
+
 function base64UrlToJson(segment: string): Record<string, unknown> | null {
   try {
     const padded = segment.replace(/-/g, '+').replace(/_/g, '/')
@@ -54,5 +56,17 @@ export function emailFromPayload(payload: Record<string, unknown>): string | nul
   if (typeof email === 'string' && email.length > 0) return email
   const uniqueName = payload.unique_name
   if (typeof uniqueName === 'string' && uniqueName.includes('@')) return uniqueName
+  return null
+}
+
+/** Reads the logical tenant id claim from the API-issued JWT. */
+export function tenantIdFromPayload(payload: Record<string, unknown>): string | null {
+  for (const key of TENANT_CLAIM_KEYS) {
+    const v = payload[key]
+    if (typeof v === 'string' && v.length > 0) {
+      return v
+    }
+  }
+
   return null
 }

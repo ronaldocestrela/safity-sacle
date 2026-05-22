@@ -4,6 +4,7 @@ import {
   filterAppRoles,
   isJwtExpired,
   parseJwtPayload,
+  tenantIdFromPayload,
 } from './jwt'
 import type { AuthSession } from './types'
 
@@ -18,10 +19,14 @@ export function buildSessionFromToken(token: string): AuthSession | null {
   if (!payload) return null
   if (isJwtExpired(payload)) return null
   const roles = filterAppRoles(collectRoleClaims(payload))
+  const tenantId = tenantIdFromPayload(payload)
+  if (!tenantId) return null
+
   return {
     token,
     email: emailFromPayload(payload),
     roles,
+    tenantId,
   }
 }
 

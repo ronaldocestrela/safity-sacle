@@ -41,6 +41,7 @@ if (corsOrigins.Length > 0)
 }
 
 app.UseAuthentication();
+app.UseMiddleware<TenantClaimMiddleware>();
 app.UseAuthorization();
 app.MapControllers();
 

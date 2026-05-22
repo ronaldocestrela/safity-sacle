@@ -23,6 +23,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Application\SafetyScale.Application.csproj" />
     <ProjectReference Include="..\Domain\SafetyScale.Domain.csproj" />
+    <ProjectReference Include="..\Infrastructure\SafetyScale.Infrastructure.csproj" />
     <ProjectReference Include="..\Api\SafetyScale.Api.csproj" />
   </ItemGroup>
 

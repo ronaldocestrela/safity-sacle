@@ -5,6 +5,7 @@ import {
   filterAppRoles,
   isJwtExpired,
   parseJwtPayload,
+  tenantIdFromPayload,
 } from './jwt'
 import { expSoon, makeUnsignedJwt } from '../../test/jwtTestUtils'
 
@@ -32,5 +33,12 @@ describe('jwt helpers', () => {
   it('detects expiration', () => {
     expect(isJwtExpired({ exp: Math.floor(Date.now() / 1000) - 10 })).toBe(true)
     expect(isJwtExpired({ exp: expSoon() })).toBe(false)
+  })
+
+  it('extracts tenant id claim', () => {
+    const tid = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'
+    const token = makeUnsignedJwt({ tenant_id: tid, exp: expSoon() })
+    const payload = parseJwtPayload(token)
+    expect(tenantIdFromPayload(payload!)).toBe(tid)
   })
 })

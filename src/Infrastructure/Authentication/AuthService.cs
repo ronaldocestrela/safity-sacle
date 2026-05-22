@@ -27,6 +27,12 @@ public class AuthService(
             return null;
         }
 
+        // Users without a tenant cannot access tenant-scoped data.
+        if (user.TenantId == Guid.Empty)
+        {
+            return null;
+        }
+
         var roles = await userManager.GetRolesAsync(user);
         return GenerateJwtToken(user, roles);
     }
@@ -42,7 +48,8 @@ public class AuthService(
             new(JwtRegisteredClaimNames.Sub, user.Id),
             new(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
             new(ClaimTypes.NameIdentifier, user.Id),
-            new(ClaimTypes.Name, user.UserName ?? string.Empty)
+            new(ClaimTypes.Name, user.UserName ?? string.Empty),
+            new(TenantClaimTypes.TenantId, user.TenantId.ToString())
         };
 
         claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));

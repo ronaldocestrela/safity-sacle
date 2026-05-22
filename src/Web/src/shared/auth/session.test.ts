@@ -20,6 +20,7 @@ describe('session storage', () => {
     const session = saveSessionToken(token)
     expect(session?.email).toBe('a@b.com')
     expect(session?.roles).toEqual(['Admin'])
+    expect(session?.tenantId).toBe('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')
     expect(loadSession()?.token).toBe(token)
   })
 
