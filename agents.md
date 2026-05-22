@@ -7,9 +7,11 @@ Este projeto consiste em um sistema monolítico para gestão e geração automá
 O sistema deve permitir:
 
 - Cadastro de seguranças
+- Cadastro de **setores** (com vagas diárias por setor **`RequiredGuardsPerDay`**)
+- **Vincular seguranças aos setores** em que podem trabalhar (**elegibilidade** para a escala daquele setor)
 - Inativação de seguranças
 - Cadastro de indisponibilidades
-- Geração automática de escala mensal
+- Geração automática de escala mensal (por vagas combinadas dos setores ativos configurados para carga)
 - Balanceamento justo de finais de semana
 - Controle de histórico das escalas
 - Ajustes manuais futuros
@@ -36,7 +38,7 @@ O sistema deve permitir:
 
 ## Frontend (React)
 
-> **Status:** **Fases F0–F4 concluídas** — o projeto `src/Web` inclui Vite, React, TypeScript, Router, ESLint, Prettier, Vitest, CSS Modules, **login JWT (`sessionStorage`)** com **`tenantId`** (claim `tenant_id`), **cadastro público de empresa** em **`/signup`**, shell, rotas por perfil e **módulos security-guards, unavailable-days e schedules**. **Fase F5** (hardening UX e qualidade) **ainda pendente**.
+> **Status:** **Fases F0–F4 concluídas** — o projeto `src/Web` inclui Vite, React, TypeScript, Router, ESLint, Prettier, Vitest, CSS Modules, **login JWT (`sessionStorage`)** com **`tenantId`** (claim `tenant_id`), **cadastro público de empresa** em **`/signup`**, shell, rotas por perfil e **módulos sectors, security-guards, unavailable-days e schedules**. **Fase F5** (hardening UX e qualidade) **ainda pendente**.
 
 - React (18+)
 - TypeScript
@@ -87,7 +89,7 @@ src/
 ```text
 src/Web/          # layout atual do repositório
  ├── app/           # providers, router, layout raiz
- ├── features/      # módulos por domínio (security-guards, unavailable-days, schedules)
+ ├── features/      # módulos por domínio (sectors, security-guards, unavailable-days, schedules)
  ├── shared/        # componentes, hooks, utilitários, tipos API
  └── assets/
 ```
@@ -172,7 +174,7 @@ TDD é obrigatório.
 
 ## Organização
 
-- **Por features** (`features/security-guards`, `features/schedules`, `features/tenant-registration`, etc.), não por tipo de arquivo isolado em todo o projeto.
+- **Por features** (`features/sectors`, `features/security-guards`, `features/schedules`, `features/tenant-registration`, etc.), não por tipo de arquivo isolado em todo o projeto.
 - **Camada de API**: módulos que chamam os endpoints documentados neste arquivo; DTOs/tipos alinhados aos contratos da API.
 - **Componentes apresentacionais** versus **containers/hooks** com lógica de dados quando necessário.
 - Sem duplicar regras de negócio complexas no cliente; confiar no servidor para decisões finais.
@@ -180,8 +182,10 @@ TDD é obrigatório.
 ## Telas e fluxos previstos (espelho dos endpoints)
 
 - **Seguranças:** listagem, criação, edição, inativação e **reativação** — alinhado a `/api/security-guards`, `PATCH .../inactive` e `PATCH .../active`.
+- **Setores (por segurança):** atualização substitutiva dos vínculos elegíveis — alinhado a **`PUT /api/security-guards/{id}/sectors`** (lista de GUIDs de setores **ativos**).
+- **Setores:** CRUD de **`Sector`** (nome, descrição, **`requiredGuardsPerDay`**), ativação/inativação — `POST /api/sectors`, `GET /api/sectors`, `PUT /api/sectors/{id}`, `PATCH .../inactive`, `PATCH .../active`.
 - **Indisponibilidades:** CRUD por segurança — alinhado a `/api/security-guards/{id}/unavailable-days` e `DELETE /api/unavailable-days/{id}`.
-- **Escalas:** geração mensal e consultas — alinhado a `POST /api/schedules/generate`, `GET /api/schedules/{id}` e `GET /api/schedules/month/{month}/year/{year}`.
+- **Escalas:** geração mensal e consultas — alinhado a `POST /api/schedules/generate` (**`400`** com **`ScheduleCoverageFailureResponse`** quando um dia não puder ser coberto), `GET /api/schedules/{id}` e `GET /api/schedules/month/{month}/year/{year}` (itens com **`sectorId`/`sectorName`**).
 - **Onboarding de empresa (público):** **`/signup`** — `POST /api/tenants/register` (`AllowAnonymous`); após sucesso, login com o Admin criado. **Stitch:** seguir o padrão quando houver **composição de tela nova** de porte similar às demais; telas muito próximas ao login já existente podem reutilizar o mesmo tratamento visual (CSS Modules `Login`-like) desde que UX e contrato com a API estejam claros — preferir Stitch se o time julgar mudança de layout relevante.
 
 Novas telas administrativas (pós-login) devem seguir o **fluxo obrigatório** descrito em **MCP Google Stitch** antes da implementação em código.
@@ -255,6 +259,45 @@ Representa a empresa / organização lógica (slug único, nome, estado ativo).
 
 ---
 
+## Sector
+
+Setor lógico de escala dentro do tenant. Define quantas vagas precisam ser preenchidas **por dia** na geração (`RequiredGuardsPerDay`). Apenas seguranças vinculados via `SecurityGuardSector` são elegíveis às vagas daquele setor.
+
+```csharp
+public class Sector
+{
+    public Guid Id { get; set; }
+    public Guid TenantId { get; set; }
+
+    public string Name { get; set; }
+    public string? Description { get; set; }
+
+    /// <summary>Vagas por dia na geração (mínimo 1 quando o setor entra na carga).</summary>
+    public int RequiredGuardsPerDay { get; set; } = 1;
+
+    public bool IsActive { get; set; } = true;
+    public DateTime CreatedAt { get; set; }
+}
+```
+
+---
+
+## SecurityGuardSector
+
+Vínculo N:N segurança ↔ setor (compartilhado por `TenantId`). Determina elegibilidade: um segurança só pode ser escolhido para vagas de setores aos quais está vinculado.
+
+```csharp
+public class SecurityGuardSector
+{
+    public Guid Id { get; set; }
+    public Guid TenantId { get; set; }
+    public Guid SecurityGuardId { get; set; }
+    public Guid SectorId { get; set; }
+}
+```
+
+---
+
 ## SecurityGuard
 
 ```csharp
@@ -309,6 +352,7 @@ public class ScheduleItem
     public Guid TenantId { get; set; }
     public Guid MonthlyScheduleId { get; set; }
     public Guid SecurityGuardId { get; set; }
+    public Guid SectorId { get; set; }
     public DateOnly Date { get; set; }
     public bool IsWeekend { get; set; }
 }
@@ -335,6 +379,15 @@ A distribuição deve considerar:
 * Quantidade total de finais de semana
 
 Evitar concentração em poucos seguranças.
+
+---
+
+## Regra 2b — Cobertura diária por setor e unicidade por dia
+
+- Para cada **dia** do mês e cada **setor ativo com carga**, a soma **`RequiredGuardsPerDay`** de todos os setores define quantas linhas devem existir naquele dia (ordem determinística nos slots: repetir por setor em ordem crescente de `SectorId`, `RequiredGuardsPerDay` vezes cada um).
+- Não escalar seguranças **sem vínculo** ao setor cuja vaga está sendo preenchida.
+- **Um segurança ativo aparece no máximo uma vez no mesmo dia** na escala (índice único tenant + segurança + data nos itens).
+- Quando não houver pool elegível e disponível suficiente para **cobrir** todas as vagas de um dia, a geração falha antes de persistir (**resposta HTTP 400** com **`ScheduleCoverageFailureResponse`**: **`code`** `ScheduleCoverageFailed`, **`message`** em português, **`failedDate`** opcional conforme caso).
 
 ---
 
@@ -367,11 +420,11 @@ ScheduleGeneratorService
 
 Responsável por:
 
-* Gerar escalas
+* Gerar escalas a partir das **definições de setor/vagas/elegibilidade**
 * Validar indisponibilidades
-* Balancear finais de semana
-* Evitar conflitos
-* Distribuir carga de trabalho
+* Preencher **todas as posições** de cada dia (fins de semana antes dos dias úteis na ordem cronológica)
+* Balancear finais de semana na escolha de candidatos (**greedy**, ver critérios de desempate)
+* Garantir **no máximo um plantão por segurança por dia** e só candidatos elegíveis e disponíveis
 
 ---
 
@@ -391,46 +444,52 @@ Critérios de ordenação:
 
 # Fluxo Obrigatório da Geração
 
+> **Implementação atual (por setor):** o pipeline CQRS monta **`SectorWorkloadDefinition`** por cada setor ativo com **`RequiredGuardsPerDay ≥ 1`**, lista de seguranças **ativos vinculados** ao setor em ordem estável (`Guid`). O **`ScheduleGeneratorService`** percorre as datas na ordem **todos os sábados/domingos do mês primeiro**, depois **dias úteis**. Para cada data, expande os **slots diários** (padrão repetido: para cada setor com carga, `RequiredGuardsPerDay` posições) e escolhe um elegível disponível segundo o **greedy** documentado na seção **Estratégia Inicial**. Se não houver candidato para algum slot interrompe com falha (**cobertura**).
+
 ## Etapa 1
 
 Carregar:
 
-* Seguranças ativos
-* Indisponibilidades
+* Seguranças ativos e **vínculos setor ↔ segurança**
+* Setores ativos configurados como carga (**`RequiredGuardsPerDay` ≥ 1**)
+* Indisponibilidades do intervalo `[primeiro dia, último dia]` do mês
 
 ---
 
 ## Etapa 2
 
-Separar:
+Validações de pré-condição (exemplo no handler da aplicação):
 
-* Dias úteis
-* Sábados
-* Domingos
+* Escala já existe para mês/ano (**conflito**)
+* Ausência total de seguranças ativos (**erro cliente** sem payload especial)
+* Ausência de setores com definições de carga ou **pool elegível vazio** (**erro cliente** conforme código da API atual)
 
 ---
 
 ## Etapa 3
 
-Distribuir finais de semana primeiro.
+Ordenação de dias:
+
+* Todos os **sábados e domingos** do mês (nessa ordem de data no calendário)
+* Em seguida os **demais dias úteis** do mês
 
 ---
 
 ## Etapa 4
 
-Distribuir dias úteis.
+Para cada data, distribuir todas as vagas (slots) combinando setores até obter **`MonthlySchedule`** com **`ScheduleItem`** contendo **`SectorId`**.
 
 ---
 
 ## Etapa 5
 
-Validar conflitos.
+Ao detectar falta de cobertura em algum dia, **não persistir**; retornar status de erro de aplicação mapeado em HTTP conforme **`SchedulesController`**.
 
 ---
 
 ## Etapa 6
 
-Persistir escala.
+Persistir escala válida (**`MonthlySchedule`** + **`ScheduleItems`**) atomicamente (**um `SaveChanges`**).
 
 ---
 
@@ -446,11 +505,17 @@ Todos os fluxos devem seguir CQRS.
 CreateSecurityGuardCommand
 UpdateSecurityGuardCommand
 InactivateSecurityGuardCommand
+ActivateSecurityGuardCommand
 
 AddUnavailableDayCommand
 RemoveUnavailableDayCommand
 
 GenerateMonthlyScheduleCommand
+CreateSectorCommand
+UpdateSectorCommand
+InactivateSectorCommand
+ActivateSectorCommand
+SetSecurityGuardSectorsCommand
 ```
 
 ---
@@ -459,6 +524,7 @@ GenerateMonthlyScheduleCommand
 
 ```text
 GetSecurityGuardsQuery
+GetSectorsQuery
 GetUnavailableDaysQuery
 GetMonthlyScheduleQuery
 GetMonthlySchedulesQuery
@@ -476,6 +542,19 @@ GET    /api/security-guards
 PUT    /api/security-guards/{id}
 PATCH  /api/security-guards/{id}/inactive
 PATCH  /api/security-guards/{id}/active
+PUT    /api/security-guards/{id}/sectors   # lista de SectorIds — substitui vínculos; somente Admin; todos os ids devem ser setores ativos
+```
+
+---
+
+## Sectors (`Admin`; `GET` também `Supervisor`)
+
+```http
+POST   /api/sectors
+GET    /api/sectors                      # optional ?isActive=
+PUT    /api/sectors/{id}
+PATCH  /api/sectors/{id}/inactive
+PATCH  /api/sectors/{id}/active
 ```
 
 ---
@@ -493,10 +572,12 @@ GET    /api/security-guards/{id}/unavailable-days
 ## Schedules
 
 ```http
-POST /api/schedules/generate
+POST /api/schedules/generate        # Admin; 400 vazio quando sem guards ativos; 400 vazio quando setores elegíveis indisponíveis (pré-cheque); 400 + ScheduleCoverageFailureResponse quando falha ao cobrir dia
 GET  /api/schedules/{id}
 GET  /api/schedules/month/{month}/year/{year}
 ```
+
+Contrato **`ScheduleCoverageFailureResponse`**: **`code`** (ex.: `ScheduleCoverageFailed`), **`message`** legível ao usuário, **`failedDate`** (`yyyy-MM-dd` ou omitido quando a API não conseguiu isolar uma data específica). Ver código em **`src/Api/Contracts/Schedules/`** e montagem na API.
 
 ---
 
@@ -547,7 +628,8 @@ JWT deve transportar **`tenant_id`** (GUID da organização) para rotas `/api` a
 
 Pode:
 
-* Gerenciar seguranças
+* Gerenciar seguranças (**incl.** vínculos de setores do segurança)
+* Gerenciar setores (**CRUD**/ativar/desativar, **`requiredGuardsPerDay`**)
 * Gerar escala
 * Visualizar escalas
 
@@ -557,7 +639,7 @@ Pode:
 
 Pode:
 
-* Visualizar escalas
+* Visualizar escalas e **consultar setores**
 * Consultar seguranças
 
 ---
@@ -610,7 +692,7 @@ Cobrir:
 
 Cobrir:
 
-* Endpoints obrigatórios listados neste arquivo
+* Endpoints obrigatórios listados neste arquivo (**incl.** setores + `PUT` de setores por segurança quando integrado ao roadmap)
 * Persistência por tenant onde aplicável
 * Fluxo completo de geração de escala
 * Cadastro público de tenant (**`TenantsRegistrationEndpointsTests`** ou equivalente)
@@ -622,17 +704,19 @@ Cobrir:
 
 ## Escala
 
-* Não escalar indisponíveis
+* Não escalar indisponíveis e não escalar segurança fora dos setores aos quais está vinculado
 * Não duplicar segurança no mesmo dia
-* Balancear finais de semana
-* Respeitar quantidade mínima diária
+* Cobrir todas as vagas somadas pelos **`RequiredGuardsPerDay`** dos setores ou falhar antes de gravar (**payload** de cobertura quando aplicável)
+* Balancear finais de semana (critério greedy / desempate)
+* Respeitar carga combinada dos setores (não apenas “quantidade fixa única por dia sem setor”)
 * Não usar segurança inativo
 
 ---
 
 ## Casos extremos
 
-* Poucos seguranças
+* Poucos seguranças para o número de vagas diárias (somatório entre setores)
+* **Setores ou vínculos** insuficientes para formar um pool elegível
 * Todos indisponíveis
 * Excesso de indisponibilidades
 * Mês com muitos finais de semana
@@ -703,7 +787,8 @@ O sistema deve nascer preparado para:
 
 * **SPA React em `src/Web`** (**Fases F0–F4** implementadas — ver `README.md` / `roadmap.md`; backend cobre até Fase 5 e **isolamento multitenant** com cadastro público)
 * **Multiempresa lógica (Tenants)** já em uso — evoluir com governança, faturação e limites por plano quando necessário
-* Múltiplos postos
+* **`Sector` + vagas combinadas**: **setores já modelam várias vagas/postos simultâneos** — evoluir com turnos diferentes, especialização ou regra de ocupação física quando necessário (ver domínio)
+* Múltiplos postos (conceitos além dos setores atuais, se produto distinguir **posto físico × setor lógico**)
 * Turnos
 * Dashboard
 * Exportação PDF/Excel

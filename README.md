@@ -37,7 +37,7 @@ O projeto foi definido para:
 - MediatR
 - Serilog
 - xUnit + FluentAssertions
-- SPA em `src/Web`: React, TypeScript, Vite, React Router, Vitest, seguranças e **indisponibilidades** (UI) — ver `roadmap.md`
+- SPA em `src/Web`: React, TypeScript, Vite, React Router, Vitest — **sectors**, security-guards, indisponibilidades e escalas na UI — ver `roadmap.md`
 
 ### Estrutura do projeto
 
@@ -68,7 +68,7 @@ src/
 - [x] Fase F1 estendida — cadastro público `/signup`, sessão com `tenantId` no JWT
 - [x] Fase F2 - Seguranças na UI (`/app/security-guards`; `Admin` gerencia, `Supervisor` consulta)
 - [x] Fase F3 - Indisponibilidades na UI (`/app/unavailable-days`; `Admin`: CRUD via calendário + **SAVE RESTRICTIONS**; `Supervisor`: consulta)
-- [x] Fase F4 - Escalas na UI (`/app/schedules`; consulta mês/ano; `Admin`: geração mensal)
+- [x] Fase F4 - Escalas na UI (`/app/schedules`; consulta mês/ano; **`Admin`** geração mensal; mensagens claras quando a API devolve **`ScheduleCoverageFailed`** na geração; listagem por item com **setor**); **telas de setores** (`/app/sectors`; vagas por dia **`requiredGuardsPerDay`**)
 
 ### Fases pendentes (frontend)
 
@@ -92,20 +92,25 @@ src/
 - seed de admin em ambiente Development (**e usuario `Supervisor` apenas em Development** para testes de permissao);
 - migration inicial criada e aplicada automaticamente no startup;
 - modulo de indisponibilidades (`UnavailableDays`) com CQRS + FluentValidation: `POST` / `GET` por seguranca, `DELETE` por id; `Admin` cadastra/remove, `Supervisor` consulta lista;
-- modulo de escalas mensais: geracao (`POST /api/schedules/generate`, apenas `Admin`; `409` se mes/ano ja existir; `400` sem guardas ativos ou cobertura impossivel) e **consultas/historico** (`GET /api/schedules/{id}` e `GET /api/schedules/month/{month}/year/{year}`, `Admin` ou `Supervisor`; `404` se nao existir); resposta com itens ordenados por data e dados do seguranca (nome e `IsActive` atual) para preservar leitura do historico;
+- modulo de **setores** (`Sector`): cadastro/atualização/inativação, **`requiredGuardsPerDay`** (vagas por dia na geração, mínimo 1), vínculo N:N `SecurityGuardSector`; novo segurança ativo pode ser ligado ao setor padrão (**`Primary`**) para já entrar no pool da escala;
+- modulo de escalas mensais: geração preenche **todas as posições por dia**, somando as vagas de cada setor **ativo** com `requiredGuardsPerDay ≥ 1`; **um segurança no máximo uma vez por dia**; só entram seguranças **ativos**, **vinculados ao setor** e **não indisponíveis** naquela data; `POST /api/schedules/generate` (`Admin` apenas): `409` se mês/ano já existe; **`400`** se não houver seguranças ativos, **`400`** sem setores configurados para carga (**`NoWorkloadSectorsConfigured`**, corpo genérico) ou **`400`** com **`ScheduleCoverageFailureResponse`** quando não for possível cobrir um dia (**`code`**: `ScheduleCoverageFailed`; **`message`**: texto legível em português com a data **`dd/MM/yyyy`**; **`failedDate`**: `yyyy-MM-dd`); **consultas/histórico** (`GET /api/schedules/{id}` e `GET /api/schedules/month/{month}/year/{year}`): itens ordenados por data com **`sectorId`**, **`sectorName`**, segurança (nome e `IsActive`);
+- serialização JSON da API em **camelCase** e leitura com **nome de propriedade case-insensitive** (`AddJsonOptions`), alinhando contratos ao SPA e a clientes JSON;
 - integracao: `TestWebApplicationFactory` usa arquivo SQLite temporario unico por instancia (testes de API em paralelo sem colisao no seed);
 - tratamento de `ValidationException` com retorno HTTP `400`;
 - **CORS** configuravel (`Cors:Origins`); em Development inclui `http://localhost:4863` para o dev server do `Web`;
-- SPA em **`src/Web`** (React + Vite): `/login` e **`/signup`** (cadastro de empresa), JWT em `sessionStorage` com **`tenantId`** derivado do token, área `/app` com shell e rotas por perfil; **`/app/security-guards`**, **`/app/unavailable-days`** e **`/app/schedules`**; proxy `/api` ou `VITE_API_BASE_URL`, home com smoke de `/api/health`, porta dev **4863**;
+- SPA em **`src/Web`** (React + Vite): `/login` e **`/signup`** (cadastro de empresa), JWT em `sessionStorage` com **`tenantId`** derivado do token, área `/app` com shell e rotas por perfil; **`/app/sectors`** (gestão de setores e vagas diárias), **`/app/security-guards`** (inclui setores por segurança), **`/app/unavailable-days`** e **`/app/schedules`** (lista mostra **setor** por atribuição; falha na geração exibe **`message`** retornada pela API); **`/app`** dashboard com detalhe do dia mostrando setor; proxy `/api` ou `VITE_API_BASE_URL`, home com smoke de `/api/health`, porta dev **4863**;
 - testes unitarios e de integracao do backend (**incl.** registro de tenant e isolamento multitenant onde aplicável) passando.
 
 ## Entidades implementadas
 
 - `Tenant` (organização / tenant lógico; `Slug` único)
+- **`Sector`** (com `TenantId`; **`RequiredGuardsPerDay`** — posições a preencher por dia na escala quando o setor entra como carga; ativo/inativo)
+- **`SecurityGuardSector`** (vínculo segurança ↔ setor; define elegibilidade do segurança às vagas daquele setor)
 - `SecurityGuard` (com `TenantId`)
 - `UnavailableDay` (com `TenantId`)
 - `MonthlySchedule` (com `TenantId`)
-- `ScheduleItem` (com `TenantId`)
+- **`ScheduleItem`** (com `TenantId`; **`SectorId`** referencia qual setor a posição cobre)
+- Índices relevantes por tenant: unicidade **`(TenantId, SecurityGuardId, Date)`** em itens da escala (um segurança por dia na escala atual); índice auxiliar **`(TenantId, SectorId, Date)`**.
 
 Usuários Identity (`AppUser`) possuem `TenantId` (um tenant por usuário) e `DisplayName` (nome exibível do administrador).
 
@@ -133,10 +138,15 @@ Usuários Identity (`AppUser`) possuem `TenantId` (um tenant por usuário) e `Di
 - `PUT /api/security-guards/{id}` (requer role `Admin`)
 - `PATCH /api/security-guards/{id}/inactive` (requer role `Admin`)
 - `PATCH /api/security-guards/{id}/active` (requer role `Admin`)
+- **`PUT /api/security-guards/{id}/sectors`** (requer role `Admin`; lista de ids de setores ativos — substitui vínculos do segurança)
 - `POST /api/security-guards/{id}/unavailable-days` (requer role `Admin`; `201` em sucesso, `404` seguranca inexistente, `400` seguranca inativo, `409` data duplicada para o mesmo seguranca)
 - `GET /api/security-guards/{id}/unavailable-days` (requer role `Admin` ou `Supervisor`)
 - `DELETE /api/unavailable-days/{id}` (requer role `Admin`)
-- `POST /api/schedules/generate` (requer role `Admin`; `201` em sucesso com `Location` apontando para `GET .../{id}`; `409` mes/ano duplicado; `400` sem guardas ativos ou geracao impossivel)
+- **`POST /api/sectors`** (requer role `Admin`; `requiredGuardsPerDay` opcional, padrão 1)
+- **`GET /api/sectors`** (`Admin` ou `Supervisor`; query `?isActive=`)
+- **`PUT /api/sectors/{id}`** (`Admin`)
+- **`PATCH /api/sectors/{id}/inactive`** e **`PATCH /api/sectors/{id}/active`** (`Admin`)
+- `POST /api/schedules/generate` (requer role `Admin`; `201` em sucesso com `Location` apontando para `GET .../{id}`; `409` mes/ano duplicado; **`400`** sem guardas ativos (corpo sem payload detalhado); **`400`** sem setores ativos com carga configurada / sem pool elegível suficiente (**validação de aplicação — corpo simples**); **`400`** quando a geração não cobre um dia: JSON **`code`**: `ScheduleCoverageFailed`, **`message`** (português), **`failedDate`** — ver [`ScheduleCoverageFailureResponse`](src/Api/Contracts/Schedules/ScheduleCoverageFailureResponse.cs))
 - `GET /api/schedules/{id}` (requer role `Admin` ou `Supervisor`; `404` se id inexistente)
 - `GET /api/schedules/month/{month}/year/{year}` (requer role `Admin` ou `Supervisor`; `404` se nao houver escala gerada para o periodo)
 
@@ -155,7 +165,7 @@ SPA **React + TypeScript + Vite** com **React Router**, **ESLint**, **Prettier**
 
 - **Login:** `/login` → `POST /api/auth/login`, JWT em `sessionStorage` (expira → limpa sessão e volta ao login). Token inclui **`tenant_id`** para isolamento multitenant nas APIs seguintes.
 - **Cadastro de empresa:** `/signup` → `POST /api/tenants/register` (**anônimo**); após criar tenant e usuário Admin, fluxo sugere voltar ao login com o mesmo e-mail.
-- **Área autenticada:** `/app` com **barra inferior de navegação** (Dashboard, Guards, Availability, Schedules), header com e-mail / perfil / logout nas telas shell; telas **Guards**, **Availability** e **Schedules** (`/app/schedules`) usam header próprio estilo Stitch.
+- **Área autenticada:** `/app` com **barra inferior de navegação** (Dashboard, **Sectors**, Guards, Availability, Schedules), header com e-mail / perfil / logout nas telas shell; telas **Sectors**, **Guards**, **Availability** e **Schedules** (`/app/schedules`) usam header próprio estilo Stitch.
 - **Referências Google Stitch usadas como base:** tela **Login de Acesso** (`projects/9334796298126275303/screens/1837019a956541aabb147945bb4378ad`), shell desktop histórico **Shell Administrativo SafetyScale** (`projects/9334796298126275303/screens/7b68e9354acb499f835e008c52c21c57`), **BottomNavBar** da tela MOBILE **Gestão de Seguranças** (`projects/9334796298126275303/screens/1a430c771b494c85baf12207c805be74`), e **Regras de Escala** / aba Schedules (`projects/9334796298126275303/screens/e1026c6a3524415ca5f749c9496b2f5e`) — ícones **Material Symbols**.
 
 ### Fase F2 (seguranças na UI)
@@ -171,7 +181,8 @@ SPA **React + TypeScript + Vite** com **React Router**, **ESLint**, **Prettier**
 
 ### Fase F4 (escalas na UI)
 
-- **Rota:** `/app/schedules` — `Supervisor` e `Admin`: `GET /api/schedules/month/{month}/year/{year}`; `Admin`: `POST /api/schedules/generate`.
+- **Rota:** `/app/schedules` — `Supervisor` e `Admin`: `GET /api/schedules/month/{month}/year/{year}`; `Admin`: `POST /api/schedules/generate`. Cada item da lista inclui **`sectorName`** quando a escala existe; erro **`400`** com corpo **`code`**: `ScheduleCoverageFailed` exibe **`message`** devolvida pela API ao usuário.
+- **Telas relacionadas:** `/app/sectors` (CRUD/setores + **`requiredGuardsPerDay`**), `/app/security-guards` (**`PUT`** setores por segurança quando **Admin**) — mesmo domínio de elegibilidade da geração.
 - Layout alinhado ao mock MOBILE **Regras de Escala**: `projects/9334796298126275303/screens/e1026c6a3524415ca5f749c9496b2f5e` (tokens Sentinel Command; lista de plantões integrada à API).
 
 ### Novas telas e Google Stitch (padrão)
@@ -310,7 +321,9 @@ Usuario **Supervisor** (apenas Development — role `Supervisor` para testes e i
 
 - Banco: SQLite
 - ORM: Entity Framework Core
-- Migrations aplicadas ao subir a API incluem **`InitialIdentityAndScheduleSchema`** e evoluções subsequentes em `src/Infrastructure/Persistence/Migrations` (entre elas multitenant **`AddTenantLogicalIsolation`**, **`AddAppUserDisplayName`** e outras já presentes na árvore do repositório).
+- Migrations aplicadas ao subir a API incluem **`InitialIdentityAndScheduleSchema`** e evoluções subsequentes em `src/Infrastructure/Persistence/Migrations` (entre elas multitenant **`AddTenantLogicalIsolation`**, **`AddAppUserDisplayName`**, **`AddSectorsAndSecurityGuardSectors`**, **`SectorDailyWorkloadAndScheduleSector`** (`RequiredGuardsPerDay`, `ScheduleItems.SectorId` / FK**, etc.**).
+
+**Atenção (upgrade):** na migration **`SectorDailyWorkloadAndScheduleSector`**, os dados históricos de **`MonthlySchedules`/`ScheduleItems`** são removidos para permitir nova restrição e FK íntegra; ao aplicar em banco já existente, **regenerar escalas** após a migração.
 
 Criar nova migration:
 

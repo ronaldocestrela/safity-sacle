@@ -6,7 +6,17 @@ Frontend **React + TypeScript + Vite** do SafetyScale.
 
 - **`/login`** — autenticação (`POST /api/auth/login`). O JWT inclui **`tenant_id`**; a sessão em `sessionStorage` persiste **`token`** e **`tenantId`** (entre outros dados de perfil) para todas as chamadas autenticadas à API.
 - **`/signup`** — cadastro público de empresa (`POST /api/tenants/register`, anônimo). Implementação em **`src/features/tenant-registration/`**.
-- **`/app/...`** — área protegida (shell, Guards, Availability, Schedules).
+- **`/app/...`** — área protegida (shell com bottom nav **Dashboard**, **Sectors**, **Guards**, **Availability**, **Schedules**).
+
+### Área `/app`
+
+- **`/app/sectors`** — setores (**`Sector`**) do tenant: **`Admin`** pode criar/editar/inativar/reativar (**`PATCH`** ativo/inativo) e configurar **`requiredGuardsPerDay`** (≥ 1 onde a UI valida); **`Supervisor`** normalmente apenas consulta a lista (**`GET /api/sectors`**).
+- **`/app/security-guards`** — CRUD/listagem conforme perfil (**`PATCH`** inativo/**ativo** só **`Admin`**); formulário permite associar seguranças a setores via **`PUT /api/security-guards/{id}/sectors`** (lista de GUIDs substitutiva — só **`Admin`**).
+- **`/app/unavailable-days`** — indisponibilidades por segurança (ver raiz **`README.md`**).
+- **`/app/schedules`** — consulta **`GET /api/schedules/month/{month}/year/{year}`**; **`Admin`** gera com **`POST /api/schedules/generate`**; quando a API responde **400** com JSON **`code: "ScheduleCoverageFailed"`**, a UI prioriza **`message`** e usa **`failedDate`** quando vier no corpo (**tipos camelCase**, alinhados ao `AddJsonOptions` da API). Cada item da lista deve mostrar **`sectorName`** (ou equivalente exposto pela API quando o mês já foi gerado).
+- **`/app`** dashboard — pode resumir o dia usando os mesmos dados (setores nas atribuições).
+
+Contratos camelCase devem estar alinhados aos DTOs em `src/Api/Contracts/` e aos tipos em `src/Web/shared/` (onde existirem).
 
 ## Como rodar contra a API
 
@@ -56,7 +66,7 @@ export default defineConfig([
 
       // Remove tseslint.configs.recommended and replace with this
       tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
+      // Alternatively, use this for more strict rules
       tseslint.configs.strictTypeChecked,
       // Optionally, add this for stylistic rules
       tseslint.configs.stylisticTypeChecked,

@@ -2,12 +2,12 @@
 
 ## Objetivo
 
-Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capaz de gerar escalas mensais confiaveis com balanceamento justo de finais de semana, respeitando indisponibilidades e historico, e uma **SPA React em `src/Web`** (especificada em `AGENTS.md`). **Bootstrap do frontend (Fase F0), auth na UI com cadastro público de empresa (`/signup`),** **módulo de seguranças na UI (Fase F2)**, **módulo de indisponibilidades na UI (Fase F3)** e **módulo de escalas na UI (Fase F4)** estão concluídos; hardening de UX e qualidade segue na **Fase F5** (UI). No backend, **Fases 0 a 5 estão concluídas**, com **isolamento multitenant lógico** (Tenant + JWT `tenant_id`) **e `POST /api/tenants/register`** — falta **Fase 6** (endurecimento operacional ampla, incluindo proteções para endpoints públicos e entrega Docker).
+Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capaz de gerar escalas mensais confiáveis por **setor** (várias vagas diárias somadas via **`Sector.RequiredGuardsPerDay`** e elegibilidade via **`SecurityGuardSector`**), balanceamento justo de finais de semana, resposta HTTP clara (**`ScheduleCoverageFailureResponse`**) quando a cobertura de um dia for impossível, respeitando indisponibilidades e histórico, e uma **SPA React em `src/Web`** (especificada em `AGENTS.md`). **Bootstrap do frontend (Fase F0), auth na UI com cadastro público de empresa (`/signup`),** **módulo de setores (`/app/sectors`), security-guards + vínculos, indisponibilidades (Fase F3)** e **escalas na UI (Fase F4)** estão concluídos; hardening de UX e qualidade segue na **Fase F5** (UI). No backend, **Fases 0 a 5 estão concluídas**, com **isolamento multitenant lógico** (Tenant + JWT `tenant_id`) **e `POST /api/tenants/register`** — falta **Fase 6** (endurecimento operacional ampla, incluindo proteções para endpoints públicos e entrega Docker).
 
 ## Premissas obrigatorias
 
 - Stack backend: ASP.NET Core Web API, EF Core, SQLite, Identity + JWT, MediatR, FluentValidation, Serilog, xUnit, FluentAssertions, Docker.
-- **Stack frontend em andamento:** React 18+, TypeScript, Vite, React Router, cliente HTTP tipado (TanStack Query recomendado nas fases seguintes); testes com Vitest + React Testing Library — detalhes em `AGENTS.md`. **Fases F0–F4** do `Web` concluídas (bootstrap, auth com **`/signup`**, seguranças UI, indisponibilidades UI, escalas UI).
+- **Stack frontend em andamento:** React 18+, TypeScript, Vite, React Router, cliente HTTP tipado (TanStack Query recomendado nas fases seguintes); testes com Vitest + React Testing Library — detalhes em `AGENTS.md`. **Fases F0–F4** do `Web` concluídas (**bootstrap**, auth com **`/signup`**, **setores** (`/app/sectors`), **seguranças** + vínculos a setores, **indisponibilidades** UI, **escalas** UI).
 - Estrutura backend: `src/Api`, `src/Application`, `src/Domain`, `src/Infrastructure`, `src/Tests`; **frontend previsto em `src/Web`**.
 - Regras: sem logica de negocio em controller, Domain sem dependencia externa, migrations para toda mudanca de banco.
 - Qualidade: TDD como fluxo padrao no backend; no frontend, testes obrigatorios nas partes criticas quando a trilha for iniciada.
@@ -31,6 +31,14 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 - [x] Fase 5 - Consultas de escala e historico
 - [ ] Fase 6 - Endurecimento, observabilidade e entrega (Docker, revisão segurança, hardening para `POST /api/tenants/register` em produção)
 
+### Setores, vagas diárias e elegibilidade (concluído)
+
+- **`Sector`**: **`RequiredGuardsPerDay`** (padrão 1), ativo/inativo; CRUD em **`/api/sectors`** (escrita só **`Admin`**; **`GET`** também **`Supervisor`**).
+- **`SecurityGuardSector`**: seguranças elegíveis às vagas de cada setor; substituição completa pelo corpo **`PUT /api/security-guards/{id}/sectors`**.
+- **`ScheduleItem.SectorId`**: cada posição gravada refere o setor coberto.
+- **`POST /api/schedules/generate`**: valida seguranças ativos, setores ativos com carga e monta **`SectorWorkloadDefinition`** para o **`ScheduleGeneratorService`**; **`400`** JSON **`ScheduleCoverageFailureResponse`** (**`code`** `ScheduleCoverageFailed`) quando não for possível preencher todas as vagas de um dia com seguranças **elegíveis, ativos e não indisponíveis naquela data**; em cenários de pré-validação (**sem setores configurados**, **pool elegível vazio**) o **`400`** pode permanecer sem corpo detalhado (vide implementação atual).
+- **Migrations** `AddSectorsAndSecurityGuardSectors` e **`SectorDailyWorkloadAndScheduleSector`** (campos **`RequiredGuardsPerDay`**, FK **`SectorId`** em **`ScheduleItems`**); a migration **`SectorDailyWorkloadAndScheduleSector`** também **elimina dados antigos** em **`MonthlySchedules`/`ScheduleItems`** onde necessário antes de FK/constraints novas — importante em upgrades de desenvolvimento.
+
 ### Multitenancy e onboarding público (concluído)
 
 - **`Tenant`** + `Slug` único para organizações; todas as linhas de negócio levam **`TenantId`**; índice único de escala por **`TenantId + Month + Year`** (substituindo o índice global antigo apenas mes/ano).
@@ -46,7 +54,7 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 - [x] Fase F1 - Autenticacao, sessao JWT e autorizacao por perfil na UI
 - [x] Fase F2 - Modulo de segurancas (telas alinhadas aos endpoints da Fase 2 backend)
 - [x] Fase F3 - Modulo de indisponibilidades
-- [x] Fase F4 - Modulo de escalas (geracao e consultas)
+- [x] Fase F4 - Modulo de escalas, setores na UI (`/app/sectors`) e integração segurança↔setor (consulta/gestão onde aplicável)
 - [ ] Fase F5 - Qualidade, UX e integracao na entrega (testes, Docker opcional multi-servico)
 
 > Detalhamento da trilha F1-F5: secao **Trilha Frontend React**. Stack, CORS e execucao local: `README.md` e `AGENTS.md` (secao Frontend).
@@ -177,23 +185,25 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 
 ### Entregaveis
 
-- `ScheduleGeneratorService` implementado.
-- `GenerateMonthlyScheduleCommand`.
+- `ScheduleGeneratorService` implementado (greedy com **várias vagas por dia**, somadas pelos **`RequiredGuardsPerDay`** dos setores com carga; **um segurança no máximo por dia** na escala; ordem cronológica: **todos os fins de semana do mês antes dos dias úteis**).
+- `GenerateMonthlyScheduleCommand` usando **setores ativos**, elegíveis (**vinculados** ao setor **e** seguranças ativos) e **`SectorWorkloadDefinition`**.
 - Regras obrigatorias aplicadas:
   - nao escalar indisponiveis;
   - nao escalar inativos;
-  - balancear sabados/domingo;
-  - balancear total de plantoes;
-  - evitar conflitos e concentracao.
-- Fluxo de geracao em 6 etapas (carregar, separar, distribuir fim de semana, distribuir dias uteis, validar, persistir).
+  - nao escalar fora dos setores vinculados ao seguranca;
+  - balancear fins de semana nos desempates (greedy conforme codigo/domínio);
+  - balancear total de plantões e maior intervalo entre plantões onde aplicável aos critérios de escolha;
+  - preencher **todas** as posições exigidas por dia (**somatório das vagas** dos setores) ou falhar com **`ScheduleCoverageFailed`** onde mapeado.
+- Fluxo de geracao CQRS atual: carregar **guards**/indisposições/setores; validar pré-condições; gerar **`MonthlySchedule` + items** atomicamente (ver **`agents.md`** para o espelho de etapas alinhadas à implementação).
 
 ### Tarefas principais (TDD primeiro)
 
 - Criar suite de testes de dominio para:
-  - indisponibilidade;
+  - indisponibilidade e **elegibilidade por setor**;
   - balanceamento de finais de semana;
   - balanceamento geral;
-  - intervalo entre plantoes.
+  - intervalo entre plantoes empatados;
+  - **várias vagas/dia combinando setores** e falhas de cobertura.
 - Implementar algoritmo greedy com criterios:
   1. menor qtd de finais de semana;
   2. menor qtd total de plantoes;
@@ -202,18 +212,19 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 
 ### Criterio de pronto
 
-- Casos obrigatorios de escala validados por testes automatizados.
-- Geracao mensal funcional por comando, sem duplicidade no mesmo dia.
+- Casos obrigatorios de escala validados por testes automatizados (**incl. setores combinados / cobertura**).
+- Geracao mensal funcional por comando, sem duplicidade do **mesmo segurança no mesmo dia**; itens sempre com **`SectorId`** válido quando persistidos.
 - Logs de geracao e falhas auditaveis via Serilog.
 
 ### Status de entrega da fase
 
-- [x] `ScheduleGeneratorService` no domínio (greedy: fins de semana primeiro; critérios de desempate agents.md)
-- [x] Command + validator: `GenerateMonthlyScheduleCommand` (`Month`/`Year`), FluentValidation 1–12 e ano 2000–2100
-- [x] Endpoint `POST /api/schedules/generate` (`Admin` apenas); `409` se mês/ano já gerado (índice único DB + checagem); `400` sem guardas ativos ou cobertura impossível
-- [x] Persistência: `MonthlySchedule` + `ScheduleItem` num único `SaveChanges`; `GetActiveAsync` em seguranças; `GetByDateRangeAsync` em indisponibilidades
-- [x] Migration: índice único **`(TenantId, Month, Year)`** em `MonthlySchedules` (com isolamento multitenant; substitui o índice antigo apenas mes/ano)
-- [x] Testes: domínio do gerador, handler CQRS, validator e integração API (`SchedulesGenerateEndpointsTests`)
+- [x] `ScheduleGeneratorService` no domínio (**greedy** por slot; fins de semana antes de dias úteis; **`ExpandDailySlots`** determinístico; critérios de desempate `agents.md`/código-fonte `ScheduleGeneratorService`)
+- [x] Command + validator: `GenerateMonthlyScheduleCommand` (`Month`/`Year`), FluentValidation 1–12 e ano 2000–2100 (**integração real** com **`ISectorRepository.GetActiveWorkloadSectorsWithLinksAsync`**)
+- [x] CRUD **`/api/sectors`**, vínculos **`PUT /api/security-guards/{id}/sectors`** (testes de integração onde aplicável)
+- [x] Endpoint `POST /api/schedules/generate` (`Admin` apenas); `409` se mês/ano já gerado (**índice único `TenantId+Month+Year`**); **`400`** sem guardas ativos; **`400`** quando não há setores de carga válidos ou **pool elegível vazio** (status tratado pelo handler atual); **`400`** + **`ScheduleCoverageFailureResponse`** quando a cobertura de um dia falhar
+- [x] Persistência: `MonthlySchedule` + `ScheduleItem` (com **`SectorId`**) num único `SaveChanges`; `GetActiveAsync` em seguranças; `GetByDateRangeAsync` em indisponibilidades
+- [x] Migrations (**setores**, **`RequiredGuardsPerDay`**, **`SectorId`** em itens — ver subseção “Setores…” acima sobre **limpeza** de dados legados onde necessário)
+- [x] Testes: domínio do gerador, handler CQRS, validator e integração API (`SchedulesGenerateEndpointsTests`, incluindo **`ScheduleCoverageFailed`** onde coberto pelo contrato atual)
 
 ## Fase 5 - Consultas de escala e historico
 
@@ -225,7 +236,7 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 - Endpoints:
   - `GET /api/schedules/{id}`
   - `GET /api/schedules/month/{month}/year/{year}`
-- Projecoes de leitura com dados de seguranca e marcacao de fim de semana.
+- Projecoes de leitura com dados de seguranca **e setor**, marcacao de fim de semana.
 
 ### Tarefas principais
 
@@ -242,7 +253,7 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 
 - [x] Queries implementadas: `GetMonthlyScheduleQuery`, `GetMonthlySchedulesQuery` (por mês/ano; sem listagem global de todas as escalas)
 - [x] Endpoints: `GET /api/schedules/{id}` e `GET /api/schedules/month/{month}/year/{year}` (`Admin` ou `Supervisor`; `404` quando não existir)
-- [x] Resposta com DTOs: cabeçalho da escala e itens ordenados por data, com dados do segurança (id, nome, `IsActive`), `Date` e `IsWeekend`; leitura EF com `Include` / `ThenInclude(SecurityGuard)` e `AsNoTracking`
+- [x] Resposta com DTOs: cabeçalho da escala e itens ordenados por data, com dados do segurança (id, nome, `IsActive`), **`sectorId`** / **`sectorName`**, `Date` e `IsWeekend`; leitura EF com includes necessários (**`Sector`**) e `AsNoTracking`
 - [x] Testes de aplicação (handlers/validators) e de integração (`SchedulesQueryEndpointsTests`), incluindo histórico após inativação de segurança
 
 ## Fase 6 - Endurecimento, observabilidade e entrega
@@ -269,7 +280,7 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 
 ## Trilha Frontend React (F0–F4 concluídas; F5 pendente)
 
-> A **Fase F0** está implementada no repositório (`src/Web`, proxy Vite, CORS na API em Development, porta dev `4863` — ver `README.md`). As **Fases F1 a F4** (auth JWT na UI; seguranças; indisponibilidades; escalas em `/app/schedules`) estão implementadas. **Fase F5** segue abaixo.
+> A **Fase F0** está implementada no repositório (`src/Web`, proxy Vite, CORS na API em Development, porta dev `4863` — ver `README.md`). As **Fases F1 a F4** (auth JWT na UI; seguranças e setores por seguranca; **`/app/sectors`**; indisponibilidades; escalas **`/app/schedules`**) estão implementadas. **Fase F5** segue abaixo.
 
 ### Fase F0 - Bootstrap e convencoes do `Web`
 
@@ -387,24 +398,28 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 
 - Acionar geracao: `POST /api/schedules/generate`.
 - Consultas: `GET /api/schedules/{id}` e `GET /api/schedules/month/{month}/year/{year}`.
-- Visualizacao clara de itens (datas, fim de semana, seguranca).
+- Gestão **`/app/sectors`**: alinhamento aos endpoints de setores (inclui **`requiredGuardsPerDay`** onde a UI expõe).
+- **Seguranças:** superfície na UI para **`PUT /api/security-guards/{id}/sectors`** onde implementado (**`Admin`**).
+- Visualizacao clara de itens (**setor**, datas, fim de semana, seguranca); tratamento **`message`** quando a API responder **`ScheduleCoverageFailed`**.
 
 #### Tarefas principais
 
-- **Stitch (padrão):** antes das telas de geração e consulta de escalas, gerar ou revisar referência no MCP `user-stitch` (`AGENTS.md`).
-- Parametros mes/ano, feedback de geracao (loading, sucesso, falha auditavel na UI).
+- **Stitch (padrão):** antes das telas de geração e consulta de escalas **ou** grandes mudanças de layout em setores, gerar ou revisar referência no MCP `user-stitch` (`AGENTS.md`).
+- Parametros mes/ano, feedback de geracao (loading, sucesso, falha auditavel na UI com mensagem legível quando a API devolver JSON estruturado).
 - Respeitar quem pode gerar (`Admin`) vs somente leitura (`Supervisor`) na interface.
 
 #### Criterio de pronto
 
-- Fluxo de geracao e consulta usavel; testes nos componentes de listagem/detalhe principais.
+- Fluxos de geracao e consulta usáveis **e** fluxo de setores onde existir na UI; testes nos componentes de listagem/detalhe principais.
 - Referências Stitch revisadas e citadas no PR quando aplicável.
 
 #### Status de entrega da fase
 
-- [x] Rota `/app/schedules` com consulta por mês/ano e lista de itens; `Admin`: geração (`POST /api/schedules/generate`); `Supervisor`: sem geração
-- [x] Referência Stitch: **Regras de Escala** (`projects/9334796298126275303/screens/e1026c6a3524415ca5f749c9496b2f5e`)
-- [x] Testes Vitest + RTL em `features/schedules`
+- [x] Rota **`/app/sectors`** + integração aos endpoints de setores
+- [x] Rota `/app/schedules` com consulta por mês/ano e lista de itens (**setor** por linha); `Admin`: geração (**`ScheduleCoverageFailed` → mensagem**); `Supervisor`: consulta apenas
+- [x] Rota **`/app/security-guards`** com gestão dos setores do seguranca (**`Admin`**, onde aplicável)
+- [x] Referência Stitch (base das escalas): **Regras de Escala** (`projects/9334796298126275303/screens/e1026c6a3524415ca5f749c9496b2f5e`)
+- [x] Testes Vitest + RTL em `features/schedules` (mensagem **`ScheduleCoverageFailed`** onde mockado)
 
 ### Fase F5 - Qualidade, UX e integracao na entrega
 
@@ -433,7 +448,7 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
   - balanceamento;
   - validadores.
 - Integracao (backend):
-  - endpoints obrigatorios;
+  - endpoints obrigatorios (**incl.** **`/api/sectors`** e **`PUT`** de setores do seguranca);
   - persistencia;
   - fluxo completo de geracao;
   - consultas `GET` de escala por id e por mes/ano (`SchedulesQueryEndpointsTests`).
@@ -443,7 +458,7 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
   - todos indisponiveis;
   - excesso de indisponibilidades;
   - mes com muitos finais de semana.
-- **Frontend:** Fases **F0–F4** concluídas (`Web`); Vitest + React Testing Library em guards/login, `security-guards`, `unavailable-days` e `schedules`; opcional E2E (Playwright) na Fase F5.
+- Vitest + React Testing Library: **auth**, **segurancas**, **unavailable-days**, **schedules** e **sectors** (onde há testes no repositório).
 
 ## Ordem sugerida de execucao
 
@@ -461,7 +476,7 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 
 1. **Fase F2:** modulo de segurancas na UI (concluída; backend Fase 2 já disponível).
 2. **Fase F3:** modulo de indisponibilidades na UI (concluída; backend Fase 3 disponível).
-3. **Fase F4** UI de escalas (concluída; backend Fases 4 e 5: geração + consultas).
+3. **Fase F4** UI de escalas **+ `/app/sectors`** (concluída; backend Fases 4 e 5: geração + consultas por setor).
 4. **Fase F5** alinhada a Fase 6 backend ou como hardening imediato da UI.
 
 ## Riscos e mitigacoes
@@ -492,12 +507,13 @@ Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capa
 
 - [x] Fase F0 da secao **Trilha Frontend React** concluida conforme `AGENTS.md` / `README.md`.
 - [x] Fase **F1** estendida: **`/signup`**, sessão com **`tenantId`** no cliente.
-- [x] Fase F2: modulo de segurancas em `/app/security-guards`; testes RTL do fluxo principal de listagem/criacao mockada; referencia Stitch a documentar ao validar no MCP (vide `README.md`).
+- [x] Fase F2: modulo de segurancas em `/app/security-guards` (**setores por seguranca** onde implementado na UI); testes RTL do fluxo principal de listagem/criacao mockada; referencia Stitch a documentar ao validar no MCP (vide `README.md`).
 - [x] Fase F3: indisponibilidades em `/app/unavailable-days`; testes RTL; referência Stitch no `README.md`.
-- [x] Fase F4: escalas em `/app/schedules`; testes RTL; referência Stitch no `README.md`.
+- [x] Fase F4: escalas em `/app/schedules` (lista com setor quando existir escala; geração com mensagem quando a API retorna **`ScheduleCoverageFailed`**); **`/app/sectors`** para CRUD/visualização conforme perfil; referências Stitch principalmente das escalas no `README.md`.
 - [ ] Fase **F5** concluída (qualidade global UX e integração na entrega).
 - [x] Fluxo **Stitch** para telas novas da F1; F2+ segue `AGENTS.md`; referências citadas no README/PR quando aplicável.
 - [x] Autenticacao JWT e rotas por perfil (`Admin` / `Supervisor`) funcionando na UI.
 - [x] Modulo de escalas integrado aos endpoints documentados (**F4** UI).
+- [x] Modulo **de setores** integrado aos endpoints **`/api/sectors`** (UI).
 - [x] Modulo de indisponibilidades integrado (`F3` UI).
-- [x] Testes Vitest + React Testing Library: **auth**, **segurancas**, **unavailable-days** e **schedules**.
+- [x] Testes Vitest + React Testing Library: **auth**, **segurancas**, **unavailable-days**, **schedules** e **sectors** (onde há suítes no repo).
