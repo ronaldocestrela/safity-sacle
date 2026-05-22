@@ -8,6 +8,8 @@ public sealed record CreateSecurityGuardCommand(string Name) : IRequest<Guid>;
 
 public sealed class CreateSecurityGuardCommandHandler(
     ISecurityGuardRepository securityGuardRepository,
+    ISectorRepository sectorRepository,
+    ISecurityGuardSectorRepository securityGuardSectorRepository,
     IUnitOfWork unitOfWork) : IRequestHandler<CreateSecurityGuardCommand, Guid>
 {
     public async Task<Guid> Handle(CreateSecurityGuardCommand request, CancellationToken cancellationToken)
@@ -22,6 +24,16 @@ public sealed class CreateSecurityGuardCommandHandler(
 
         await securityGuardRepository.AddAsync(securityGuard, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        var defaultSectorId = await sectorRepository.GetDefaultSchedulingSectorIdAsync(cancellationToken);
+        if (defaultSectorId.HasValue)
+        {
+            await securityGuardSectorRepository.EnsureGuardLinkedToSectorAsync(
+                securityGuard.Id,
+                defaultSectorId.Value,
+                cancellationToken);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+        }
 
         return securityGuard.Id;
     }

@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AuthProvider } from '../../shared/auth/AuthProvider'
 import { AUTH_SESSION_STORAGE_KEY } from '../../shared/auth/session'
 import { clearSession } from '../../shared/auth/session'
+import { ApiError } from './schedulesApi'
 import * as schedulesApi from './schedulesApi'
 import { SchedulesPage } from './SchedulesPage'
 import { expSoon, makeUnsignedJwt } from '../../test/jwtTestUtils'
@@ -42,6 +43,8 @@ const sampleSchedule = {
       securityGuardId: 'gggggggg-gggg-gggg-gggg-gggggggggggg',
       securityGuardName: 'Pat Smith',
       securityGuardIsActive: true,
+      sectorId: 'ssssssss-ssss-ssss-ssss-ssssssssssss',
+      sectorName: 'Primary',
       date: '2026-05-07',
       isWeekend: false,
     },
@@ -50,6 +53,8 @@ const sampleSchedule = {
       securityGuardId: 'hhhhhhhh-hhhh-hhhh-hhhh-hhhhhhhhhhhh',
       securityGuardName: 'Alex Inactive',
       securityGuardIsActive: false,
+      sectorId: 'ssssssss-ssss-ssss-ssss-ssssssssssss',
+      sectorName: 'Primary',
       date: '2026-05-10',
       isWeekend: true,
     },
@@ -95,6 +100,7 @@ describe('SchedulesPage', () => {
     renderPage('Supervisor')
     expect(await screen.findByText('Pat Smith')).toBeInTheDocument()
     expect(screen.getByText('Alex Inactive')).toBeInTheDocument()
+    expect(screen.getAllByText('Primary').length).toBe(2)
     expect(screen.getByText('Weekend')).toBeInTheDocument()
     expect(screen.getByText('Inactive')).toBeInTheDocument()
   })
@@ -120,5 +126,25 @@ describe('SchedulesPage', () => {
     await waitFor(() => {
       expect(schedulesApi.getScheduleByMonthYear).toHaveBeenCalledTimes(2)
     })
+  })
+
+  it('shows API coverage error message when generate fails with 400', async () => {
+    const user = userEvent.setup()
+    vi.mocked(schedulesApi.generateSchedule).mockRejectedValueOnce(
+      new ApiError(
+        400,
+        'Não foi possível gerar a escala para 02/05/2026 porque não há seguranças elegíveis suficientes para cobrir todas as vagas do dia.',
+      ),
+    )
+
+    renderPage('Admin')
+    await waitFor(() => expect(schedulesApi.getScheduleByMonthYear).toHaveBeenCalled())
+
+    await user.click(screen.getByRole('button', { name: /generate schedule/i }))
+
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent(/não foi possível gerar a escala/i)
+    expect(alert).toHaveTextContent(/02\/05\/2026/)
+    expect(alert).toHaveTextContent(/seguranças elegíveis/i)
   })
 })

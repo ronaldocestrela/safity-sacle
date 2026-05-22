@@ -13,7 +13,7 @@ public class SectorsEndpointsTests
         using var client = CreateHttpsClient(factory);
         await AuthTestHelper.AuthenticateAsAdminAsync(client);
 
-        var response = await client.PostAsJsonAsync("/api/sectors", new { name = "North Wing", description = "Floors 1–3" });
+        var response = await client.PostAsJsonAsync("/api/sectors", new { name = "North Wing", description = "Floors 1–3", requiredGuardsPerDay = 2 });
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         var payload = await response.Content.ReadFromJsonAsync<CreateSectorResponse>();
@@ -35,7 +35,7 @@ public class SectorsEndpointsTests
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var items = await response.Content.ReadFromJsonAsync<List<SectorResponse>>();
         items.Should().NotBeNull();
-        items!.Should().Contain(x => x.Name == "Lobby" && x.IsActive);
+        items!.Should().Contain(x => x.Name == "Lobby" && x.IsActive && x.RequiredGuardsPerDay >= 1);
     }
 
     [Fact]
@@ -51,17 +51,23 @@ public class SectorsEndpointsTests
 
         var updateResponse = await client.PutAsJsonAsync(
             $"/api/sectors/{created!.Id}",
-            new { name = "New", description = "nd" });
+            new { name = "New", description = "nd", requiredGuardsPerDay = 3 });
 
         updateResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         var listResponse = await client.GetAsync("/api/sectors");
         var items = await listResponse.Content.ReadFromJsonAsync<List<SectorResponse>>();
-        items.Should().Contain(x => x.Id == created.Id && x.Name == "New");
+        items.Should().Contain(x => x.Id == created.Id && x.Name == "New" && x.RequiredGuardsPerDay == 3);
     }
 
     private sealed record CreateSectorResponse(Guid Id);
-    private sealed record SectorResponse(Guid Id, string Name, string? Description, bool IsActive, DateTime CreatedAt);
+    private sealed record SectorResponse(
+        Guid Id,
+        string Name,
+        string? Description,
+        int RequiredGuardsPerDay,
+        bool IsActive,
+        DateTime CreatedAt);
 
     private static HttpClient CreateHttpsClient(TestWebApplicationFactory factory)
         => factory.CreateClient(new()

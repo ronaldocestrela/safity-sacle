@@ -95,6 +95,7 @@ public class IdentitySeeder(
 
         if (existing is not null)
         {
+            await EnsurePrimarySectorAsync(existing.Id);
             return existing.Id;
         }
 
@@ -110,7 +111,30 @@ public class IdentitySeeder(
         dbContext.Tenants.Add(tenant);
         await dbContext.SaveChangesAsync();
         logger.LogInformation("Created default tenant {TenantId}", tenant.Id);
+        await EnsurePrimarySectorAsync(tenant.Id);
         return tenant.Id;
+    }
+
+    private async Task EnsurePrimarySectorAsync(Guid tenantId)
+    {
+        if (await dbContext.Sectors
+                .IgnoreQueryFilters()
+                .AnyAsync(x => x.TenantId == tenantId && x.Name == "Primary"))
+        {
+            return;
+        }
+
+        dbContext.Sectors.Add(new Sector
+        {
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
+            Name = "Primary",
+            Description = null,
+            RequiredGuardsPerDay = 1,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow,
+        });
+        await dbContext.SaveChangesAsync();
     }
 
     private async Task AssignMissingTenantToUsersAsync(Guid tenantId)

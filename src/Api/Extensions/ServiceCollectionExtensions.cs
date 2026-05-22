@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using SafetyScale.Infrastructure.Authentication;
 using System.Text;
+using System.Text.Json;
 
 namespace SafetyScale.Api.Extensions;
 
@@ -15,7 +16,14 @@ public static class ServiceCollectionExtensions
         var jwtOptions = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
         var key = Encoding.UTF8.GetBytes(jwtOptions.Key);
 
-        services.AddControllers();
+        services
+            .AddControllers()
+            .AddJsonOptions(o =>
+            {
+                o.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+                o.JsonSerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
+                o.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+            });
         services.AddFluentValidationAutoValidation();
         services.AddEndpointsApiExplorer();
         services

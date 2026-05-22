@@ -1,3 +1,4 @@
+using System.Globalization;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -47,8 +48,36 @@ public sealed class SchedulesController(ISender sender) : ControllerBase
                 Created($"/api/schedules/{result.ScheduleId!.Value}", new { id = result.ScheduleId }),
             GenerateMonthlyScheduleStatus.AlreadyExists => Conflict(),
             GenerateMonthlyScheduleStatus.NoActiveGuards => BadRequest(),
-            GenerateMonthlyScheduleStatus.ImpossibleToGenerate => BadRequest(new { failedDate = result.FailedDate }),
+            GenerateMonthlyScheduleStatus.NoWorkloadSectorsConfigured => BadRequest(),
+            GenerateMonthlyScheduleStatus.ImpossibleToGenerate => BadRequest(BuildCoverageFailure(result.FailedDate)),
             _ => throw new ArgumentOutOfRangeException(nameof(result.Status), result.Status, null),
+        };
+    }
+
+    private static ScheduleCoverageFailureResponse BuildCoverageFailure(DateOnly? failedDate)
+    {
+        const string code = "ScheduleCoverageFailed";
+        if (failedDate is null)
+        {
+            return new ScheduleCoverageFailureResponse
+            {
+                Code = code,
+                Message =
+                    "Não foi possível gerar a escala porque não há seguranças elegíveis suficientes para cobrir todas as vagas de um dos dias.",
+                FailedDate = null,
+            };
+        }
+
+        var display = failedDate.Value.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture);
+        var message =
+            $"Não foi possível gerar a escala para {display} porque não há seguranças elegíveis suficientes " +
+            "para cobrir todas as vagas do dia. Verifique vagas por setor, vínculos dos seguranças aos setores e indisponibilidades.";
+
+        return new ScheduleCoverageFailureResponse
+        {
+            Code = code,
+            Message = message,
+            FailedDate = failedDate,
         };
     }
 }

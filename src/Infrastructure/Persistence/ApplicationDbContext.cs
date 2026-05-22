@@ -80,6 +80,7 @@ public class ApplicationDbContext(
             entity.Property(x => x.Description).HasMaxLength(500);
             entity.Property(x => x.CreatedAt).IsRequired();
             entity.Property(x => x.IsActive).IsRequired();
+            entity.Property(x => x.RequiredGuardsPerDay).IsRequired();
             entity.Property(x => x.TenantId).IsRequired();
             entity.HasIndex(x => new { x.TenantId, x.Name }).IsUnique();
 
@@ -172,8 +173,10 @@ public class ApplicationDbContext(
             entity.Property(x => x.Date).IsRequired();
             entity.Property(x => x.IsWeekend).IsRequired();
             entity.Property(x => x.TenantId).IsRequired();
+            entity.Property(x => x.SectorId).IsRequired();
 
             entity.HasIndex(x => new { x.TenantId, x.SecurityGuardId, x.Date }).IsUnique();
+            entity.HasIndex(x => new { x.TenantId, x.SectorId, x.Date });
 
             entity.HasOne(x => x.Tenant)
                 .WithMany()
@@ -183,6 +186,10 @@ public class ApplicationDbContext(
             entity.HasOne(x => x.SecurityGuard)
                 .WithMany(x => x.ScheduleItems)
                 .HasForeignKey(x => x.SecurityGuardId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(x => x.Sector)
+                .WithMany()
+                .HasForeignKey(x => x.SectorId)
                 .OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(x => x.MonthlySchedule)
                 .WithMany(x => x.Items)

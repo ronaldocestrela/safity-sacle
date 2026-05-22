@@ -65,18 +65,5 @@ export async function generateSchedule(month: number, year: number): Promise<{ i
     return (await res.json()) as { id: string }
   }
 
-  if (res.status === 400) {
-    const ct = res.headers.get('Content-Type') ?? ''
-    if (ct.includes('application/json')) {
-      const dup = res.clone()
-      const body = (await dup.json().catch(() => null)) as { failedDate?: string } | null
-      const fd = body && typeof body.failedDate === 'string' ? body.failedDate : null
-      if (fd) {
-        throw new ApiError(400, `Unable to cover date ${fd} for ${monthYearMessage(month, year)}.`)
-      }
-    }
-  }
-
-  await ensureOk(res, 'Could not generate schedule.')
-  throw new Error('Unreachable: generateSchedule response not handled')
+  await ensureOk(res, `Não foi possível gerar a escala para ${monthYearMessage(month, year)}.`)
 }

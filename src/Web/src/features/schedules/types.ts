@@ -3,6 +3,8 @@ export type ScheduleItemDto = {
   securityGuardId: string
   securityGuardName: string
   securityGuardIsActive: boolean
+  sectorId: string
+  sectorName: string
   date: string
   isWeekend: boolean
 }

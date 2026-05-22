@@ -66,6 +66,8 @@ describe('WelcomePage (dashboard)', () => {
           securityGuardId: 'g-active',
           securityGuardName: 'Ana Costa',
           securityGuardIsActive: true,
+          sectorId: 'sec-lobby',
+          sectorName: 'Lobby',
           date: '2026-05-05',
           isWeekend: false,
         },
@@ -74,6 +76,8 @@ describe('WelcomePage (dashboard)', () => {
           securityGuardId: 'g-active',
           securityGuardName: 'Ana Costa',
           securityGuardIsActive: true,
+          sectorId: 'sec-gate',
+          sectorName: 'Gate A',
           date: '2026-05-15',
           isWeekend: false,
         },
@@ -82,6 +86,8 @@ describe('WelcomePage (dashboard)', () => {
           securityGuardId: 'g-inactive',
           securityGuardName: 'Bruno Silva',
           securityGuardIsActive: false,
+          sectorId: 'sec-gate',
+          sectorName: 'Gate A',
           date: '2026-05-17',
           isWeekend: true,
         },
@@ -117,6 +123,7 @@ describe('WelcomePage (dashboard)', () => {
     await user.click(screen.getByRole('button', { name: /May 15, 2026, 1 assignment/i }))
     expect(screen.getByRole('heading', { level: 3, name: /May 15, 2026/ })).toBeInTheDocument()
     expect(screen.getAllByText('Ana Costa').length).toBeGreaterThan(0)
+    expect(screen.getByText('Gate A')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /May 17, 2026, 1 assignment/i }))
     expect(screen.getAllByText('Bruno Silva').length).toBeGreaterThan(0)

@@ -14,6 +14,8 @@ public class MonthlyScheduleRepository(ApplicationDbContext dbContext) : IMonthl
             .AsNoTracking()
             .Include(x => x.Items)
             .ThenInclude(i => i.SecurityGuard)
+            .Include(x => x.Items)
+            .ThenInclude(i => i.Sector)
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
     public async Task<MonthlySchedule?> GetByMonthYearAsync(int month, int year, CancellationToken cancellationToken = default)
@@ -21,6 +23,8 @@ public class MonthlyScheduleRepository(ApplicationDbContext dbContext) : IMonthl
             .AsNoTracking()
             .Include(x => x.Items)
             .ThenInclude(i => i.SecurityGuard)
+            .Include(x => x.Items)
+            .ThenInclude(i => i.Sector)
             .FirstOrDefaultAsync(x => x.Month == month && x.Year == year, cancellationToken);
 
     public Task<bool> ExistsByMonthYearAsync(int month, int year, CancellationToken cancellationToken = default)

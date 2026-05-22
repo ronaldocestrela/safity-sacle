@@ -458,6 +458,13 @@
   margin: 0;
 }
 
+.rowSector {
+  font-size: 13px;
+  font-weight: 500;
+  color: #5c5f63;
+  margin: 4px 0 0;
+}
+
 .rowDate {
   font-family: 'JetBrains Mono', monospace;
   font-size: 13px;

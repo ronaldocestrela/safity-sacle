@@ -3,7 +3,8 @@ using SafetyScale.Application.Abstractions.Persistence;
 
 namespace SafetyScale.Application.Sectors.Commands.UpdateSector;
 
-public sealed record UpdateSectorCommand(Guid Id, string Name, string? Description) : IRequest<bool>;
+public sealed record UpdateSectorCommand(Guid Id, string Name, string? Description, int RequiredGuardsPerDay)
+    : IRequest<bool>;
 
 public sealed class UpdateSectorCommandHandler(
     ISectorRepository sectorRepository,
@@ -19,6 +20,7 @@ public sealed class UpdateSectorCommandHandler(
 
         sector.Name = request.Name.Trim();
         sector.Description = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim();
+        sector.RequiredGuardsPerDay = request.RequiredGuardsPerDay;
         sectorRepository.Update(sector);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

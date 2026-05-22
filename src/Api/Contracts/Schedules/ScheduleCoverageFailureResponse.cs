@@ -1,0 +1,10 @@
+namespace SafetyScale.Api.Contracts.Schedules;
+
+/// <summary>Returned when automatic schedule generation cannot cover all sector positions on a given day.</summary>
+public sealed class ScheduleCoverageFailureResponse
+{
+    public string Code { get; init; } = string.Empty;
+    public string Message { get; init; } = string.Empty;
+    /// <summary>First calendar day without full coverage.</summary>
+    public DateOnly? FailedDate { get; init; }
+}

@@ -38,7 +38,9 @@ export function SectorsPage() {
   const [editing, setEditing] = useState<SectorDto | null>(null)
   const [nameDraft, setNameDraft] = useState('')
   const [descriptionDraft, setDescriptionDraft] = useState('')
+  const [positionsDraft, setPositionsDraft] = useState(1)
   const [nameTouched, setNameTouched] = useState(false)
+  const [positionsTouched, setPositionsTouched] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
 
@@ -88,13 +90,18 @@ export function SectorsPage() {
   }, [items, search])
 
   const nameInvalid = nameTouched && nameDraft.trim() === ''
+  const positionsInvalid =
+    !Number.isFinite(positionsDraft) || !Number.isInteger(positionsDraft) || positionsDraft < 1 || positionsDraft > 500
+  const positionsShowError = positionsTouched && positionsInvalid
 
   function closeForm() {
     setFormOpen(null)
     setEditing(null)
     setNameDraft('')
     setDescriptionDraft('')
+    setPositionsDraft(1)
     setNameTouched(false)
+    setPositionsTouched(false)
     setFormError(null)
     setSubmitting(false)
   }
@@ -105,7 +112,9 @@ export function SectorsPage() {
     setEditing(null)
     setNameDraft('')
     setDescriptionDraft('')
+    setPositionsDraft(1)
     setNameTouched(false)
+    setPositionsTouched(false)
     setFormError(null)
   }
 
@@ -118,15 +127,22 @@ export function SectorsPage() {
     setEditing(s)
     setNameDraft(s.name)
     setDescriptionDraft(s.description ?? '')
+    setPositionsDraft(s.requiredGuardsPerDay)
     setNameTouched(false)
+    setPositionsTouched(false)
     setFormError(null)
   }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setNameTouched(true)
+    setPositionsTouched(true)
     setFormError(null)
     if (!nameDraft.trim()) {
+      return
+    }
+    if (positionsInvalid) {
+      setFormError('Positions per day must be a whole number from 1 to 500.')
       return
     }
 
@@ -135,10 +151,10 @@ export function SectorsPage() {
       const descTrim = descriptionDraft.trim()
       const descPayload = descTrim.length > 0 ? descTrim : null
       if (formOpen === 'create') {
-        await createSector(nameDraft.trim(), descPayload)
+        await createSector(nameDraft.trim(), descPayload, positionsDraft)
         setBanner({ kind: 'success', message: 'Sector created.' })
       } else if (formOpen === 'edit' && editing) {
-        await updateSector(editing.id, nameDraft.trim(), descPayload)
+        await updateSector(editing.id, nameDraft.trim(), descPayload, positionsDraft)
         setBanner({ kind: 'success', message: 'Changes saved.' })
       }
       closeForm()
@@ -340,6 +356,29 @@ export function SectorsPage() {
                 />
               </label>
 
+              <label className={styles.label} htmlFor="sector-positions-input">
+                Positions per day
+                <input
+                  id="sector-positions-input"
+                  className={`${styles.input} ${positionsShowError ? styles.inputInvalid : ''}`}
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={500}
+                  step={1}
+                  value={Number.isFinite(positionsDraft) ? positionsDraft : ''}
+                  onChange={(ev) =>
+                    setPositionsDraft(ev.target.value === '' ? Number.NaN : Number(ev.target.value))
+                  }
+                  onBlur={() => setPositionsTouched(true)}
+                  disabled={submitting}
+                  aria-invalid={positionsShowError}
+                />
+              </label>
+              {positionsShowError ? (
+                <span className={styles.fieldErr}>Use a whole number between 1 and 500.</span>
+              ) : null}
+
               <div className={styles.dialogFooter}>
                 <button type="button" className={styles.btnGhost} onClick={() => closeForm()} disabled={submitting}>
                   Cancel
@@ -432,7 +471,11 @@ function SectorCard({
         </div>
         <div className={styles.cardMetaRow}>
           {row.isActive ? <span className={styles.badgeActive}>Active</span> : <span className={styles.badgeInactive}>Inactive</span>}
-          <span className={styles.cardLocation}>{row.description?.trim() ? row.description : 'No description'}</span>
+          <span className={styles.cardLocation}>
+            {row.requiredGuardsPerDay} position{row.requiredGuardsPerDay === 1 ? '' : 's'}/day
+            {' · '}
+            {row.description?.trim() ? row.description : 'No description'}
+          </span>
         </div>
       </div>
       <div className={styles.cardToggleCol}>

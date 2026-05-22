@@ -39,6 +39,7 @@ describe('SectorsPage', () => {
         id: 's1',
         name: 'Perimeter',
         description: 'Outer ring',
+        requiredGuardsPerDay: 2,
         isActive: true,
         createdAt: '2026-03-02T14:30:00.000Z',
       },
@@ -60,6 +61,7 @@ describe('SectorsPage', () => {
       expect(sectorsApi.listSectors).toHaveBeenCalledWith(undefined)
     })
     expect(await screen.findByText('Perimeter')).toBeInTheDocument()
+    expect(screen.getByText(/2 positions\/day/i)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /add sector/i })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Perimeter' })).not.toBeInTheDocument()
   })
@@ -101,6 +103,7 @@ describe('SectorsPage', () => {
       id: 's1',
       name: 'Perimeter',
       description: 'Outer ring',
+      requiredGuardsPerDay: 2,
       isActive: true,
       createdAt: '2026-03-02T14:30:00.000Z',
     }
@@ -108,6 +111,7 @@ describe('SectorsPage', () => {
       id: 'new-id',
       name: 'Lobby',
       description: null,
+      requiredGuardsPerDay: 3,
       isActive: true,
       createdAt: '2026-03-02T14:30:00.000Z',
     }
@@ -119,11 +123,14 @@ describe('SectorsPage', () => {
     await user.click(screen.getByRole('button', { name: /add sector/i }))
     await user.type(screen.getByLabelText(/^name$/i), 'Lobby')
     await user.type(screen.getByLabelText(/^description$/i), 'Main entrance')
+    const positions = screen.getByLabelText(/^positions per day$/i)
+    await user.clear(positions)
+    await user.type(positions, '3')
 
     await user.click(within(screen.getByRole('form')).getByRole('button', { name: /^create$/i }))
 
     await waitFor(() => {
-      expect(sectorsApi.createSector).toHaveBeenCalledWith('Lobby', 'Main entrance')
+      expect(sectorsApi.createSector).toHaveBeenCalledWith('Lobby', 'Main entrance', 3)
     })
 
     await waitFor(() => {

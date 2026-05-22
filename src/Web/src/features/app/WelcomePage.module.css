@@ -414,6 +414,15 @@
   color: #041627;
 }
 
+.shiftSector {
+  margin: 0 0 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #5c6570;
+}
+
 .shiftMeta {
   margin: 0 0 0.35rem;
   font-size: 0.75rem;

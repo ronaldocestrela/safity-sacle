@@ -339,6 +339,7 @@ export function SchedulesPage() {
                     <div className={styles.rowMain}>
                       <span className={styles.rowMeta}>ASSIGNMENT</span>
                       <p className={styles.rowName}>{item.securityGuardName || '—'}</p>
+                      <p className={styles.rowSector}>{item.sectorName || '—'}</p>
                     </div>
                     <div className={styles.rowDate}>{displayDateLabel(item.date)}</div>
                     <div className={styles.badges}>

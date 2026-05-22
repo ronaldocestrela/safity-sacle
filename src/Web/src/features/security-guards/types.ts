@@ -3,6 +3,7 @@ export type SectorNestedDto = {
   id: string
   name: string
   description: string | null
+  requiredGuardsPerDay: number
   isActive: boolean
   createdAt: string
 }

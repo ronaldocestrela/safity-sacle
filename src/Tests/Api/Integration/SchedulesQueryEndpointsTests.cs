@@ -36,6 +36,8 @@ public class SchedulesQueryEndpointsTests
         {
             i.SecurityGuardId.Should().NotBe(Guid.Empty);
             i.SecurityGuardName.Should().NotBeNullOrWhiteSpace();
+            i.SectorId.Should().NotBe(Guid.Empty);
+            i.SectorName.Should().NotBeNullOrWhiteSpace();
         });
         schedule.Items.Select(i => i.Date).Should().BeInAscendingOrder();
     }
@@ -189,6 +191,8 @@ public class SchedulesQueryEndpointsTests
         Guid SecurityGuardId,
         string SecurityGuardName,
         bool SecurityGuardIsActive,
+        Guid SectorId,
+        string SectorName,
         DateOnly Date,
         bool IsWeekend);
 }

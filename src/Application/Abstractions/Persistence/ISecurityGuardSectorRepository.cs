@@ -6,4 +6,9 @@ public interface ISecurityGuardSectorRepository
         Guid securityGuardId,
         IReadOnlyList<Guid> sectorIds,
         CancellationToken cancellationToken = default);
+
+    Task EnsureGuardLinkedToSectorAsync(
+        Guid securityGuardId,
+        Guid sectorId,
+        CancellationToken cancellationToken = default);
 }

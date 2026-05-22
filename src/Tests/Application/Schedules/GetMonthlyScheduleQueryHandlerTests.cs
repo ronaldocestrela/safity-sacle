@@ -28,24 +28,30 @@ public class GetMonthlyScheduleQueryHandlerTests
             Name = "Guard A",
             IsActive = true,
         };
+        var sectorId = Guid.NewGuid();
+        var sector = new Sector { Id = sectorId, Name = "North Gate", RequiredGuardsPerDay = 1, IsActive = true };
         var scheduleId = Guid.NewGuid();
         var item1 = new ScheduleItem
         {
             Id = Guid.NewGuid(),
             MonthlyScheduleId = scheduleId,
             SecurityGuardId = guardId,
+            SectorId = sectorId,
             Date = new DateOnly(2042, 7, 15),
             IsWeekend = false,
             SecurityGuard = guard,
+            Sector = sector,
         };
         var item2 = new ScheduleItem
         {
             Id = Guid.NewGuid(),
             MonthlyScheduleId = scheduleId,
             SecurityGuardId = guardId,
+            SectorId = sectorId,
             Date = new DateOnly(2042, 7, 2),
             IsWeekend = false,
             SecurityGuard = guard,
+            Sector = sector,
         };
         var schedule = new MonthlySchedule
         {
@@ -71,6 +77,8 @@ public class GetMonthlyScheduleQueryHandlerTests
             x.SecurityGuardId.Should().Be(guardId);
             x.SecurityGuardName.Should().Be("Guard A");
             x.SecurityGuardIsActive.Should().BeTrue();
+            x.SectorId.Should().Be(sectorId);
+            x.SectorName.Should().Be("North Gate");
         });
     }
 

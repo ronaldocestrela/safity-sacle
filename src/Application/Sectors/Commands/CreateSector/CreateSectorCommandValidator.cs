@@ -13,5 +13,8 @@ public sealed class CreateSectorCommandValidator : AbstractValidator<CreateSecto
         RuleFor(x => x.Description)
             .MaximumLength(500)
             .When(x => x.Description is not null);
+
+        RuleFor(x => x.RequiredGuardsPerDay)
+            .InclusiveBetween(1, 500);
     }
 }

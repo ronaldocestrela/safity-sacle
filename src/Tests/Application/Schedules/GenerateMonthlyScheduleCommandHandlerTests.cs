@@ -15,12 +15,14 @@ public class GenerateMonthlyScheduleCommandHandlerTests
         var scheduleRepo = new InMemoryMonthlyScheduleRepository(existing);
         var guardRepo = new InMemorySecurityGuardRepository(
             new SecurityGuard { Id = Guid.NewGuid(), Name = "A", IsActive = true });
+        var sectorRepo = new StubSectorRepository();
         var unavailableRepo = new InMemoryUnavailableDayRepository();
         var unitOfWork = new FakeUnitOfWork();
 
         var handler = new GenerateMonthlyScheduleCommandHandler(
             scheduleRepo,
             guardRepo,
+            sectorRepo,
             unavailableRepo,
             unitOfWork,
             NullLogger<GenerateMonthlyScheduleCommandHandler>.Instance);
@@ -38,12 +40,14 @@ public class GenerateMonthlyScheduleCommandHandlerTests
         var scheduleRepo = new InMemoryMonthlyScheduleRepository();
         var guardRepo = new InMemorySecurityGuardRepository(
             new SecurityGuard { Id = Guid.NewGuid(), Name = "X", IsActive = false });
+        var sectorRepo = new StubSectorRepository();
         var unavailableRepo = new InMemoryUnavailableDayRepository();
         var unitOfWork = new FakeUnitOfWork();
 
         var handler = new GenerateMonthlyScheduleCommandHandler(
             scheduleRepo,
             guardRepo,
+            sectorRepo,
             unavailableRepo,
             unitOfWork,
             NullLogger<GenerateMonthlyScheduleCommandHandler>.Instance);
@@ -55,20 +59,73 @@ public class GenerateMonthlyScheduleCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_ShouldPersist_WhenGenerationSucceeds()
+    public async Task Handle_ShouldReturnNoWorkload_WhenNoSectorsWithRequirementsConfigured()
     {
         var scheduleRepo = new InMemoryMonthlyScheduleRepository();
-        var g1 = Guid.NewGuid();
-        var g2 = Guid.NewGuid();
         var guardRepo = new InMemorySecurityGuardRepository(
-            new SecurityGuard { Id = g1, Name = "Alpha", IsActive = true },
-            new SecurityGuard { Id = g2, Name = "Bravo", IsActive = true });
+            new SecurityGuard { Id = Guid.NewGuid(), Name = "A", IsActive = true });
+        var sectorRepo = new StubSectorRepository(); // workload empty
         var unavailableRepo = new InMemoryUnavailableDayRepository();
         var unitOfWork = new FakeUnitOfWork();
 
         var handler = new GenerateMonthlyScheduleCommandHandler(
             scheduleRepo,
             guardRepo,
+            sectorRepo,
+            unavailableRepo,
+            unitOfWork,
+            NullLogger<GenerateMonthlyScheduleCommandHandler>.Instance);
+
+        var result = await handler.Handle(new GenerateMonthlyScheduleCommand(1, 2035), CancellationToken.None);
+
+        result.Status.Should().Be(GenerateMonthlyScheduleStatus.NoWorkloadSectorsConfigured);
+        scheduleRepo.Items.Should().BeEmpty();
+        unitOfWork.SaveChangesCalls.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Handle_ShouldPersist_WhenGenerationSucceeds()
+    {
+        var scheduleRepo = new InMemoryMonthlyScheduleRepository();
+        var g1 = Guid.NewGuid();
+        var g2 = Guid.NewGuid();
+        var ga = new SecurityGuard { Id = g1, Name = "Alpha", IsActive = true };
+        var gb = new SecurityGuard { Id = g2, Name = "Bravo", IsActive = true };
+        var guardRepo = new InMemorySecurityGuardRepository(ga, gb);
+        var unavailableRepo = new InMemoryUnavailableDayRepository();
+        var unitOfWork = new FakeUnitOfWork();
+
+        var sid = Guid.NewGuid();
+        var sector = new Sector
+        {
+            Id = sid,
+            Name = "Primary",
+            RequiredGuardsPerDay = 1,
+            IsActive = true,
+            SecurityGuardSectors = new List<SecurityGuardSector>
+            {
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    SecurityGuardId = g1,
+                    SectorId = sid,
+                    SecurityGuard = ga,
+                },
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    SecurityGuardId = g2,
+                    SectorId = sid,
+                    SecurityGuard = gb,
+                },
+            },
+        };
+        var sectorRepo = new StubSectorRepository(sector);
+
+        var handler = new GenerateMonthlyScheduleCommandHandler(
+            scheduleRepo,
+            guardRepo,
+            sectorRepo,
             unavailableRepo,
             unitOfWork,
             NullLogger<GenerateMonthlyScheduleCommandHandler>.Instance);
@@ -87,8 +144,29 @@ public class GenerateMonthlyScheduleCommandHandlerTests
     {
         var scheduleRepo = new InMemoryMonthlyScheduleRepository();
         var guardId = Guid.NewGuid();
-        var guardRepo = new InMemorySecurityGuardRepository(
-            new SecurityGuard { Id = guardId, Name = "Only", IsActive = true });
+        var guard = new SecurityGuard { Id = guardId, Name = "Only", IsActive = true };
+
+        var sectorId = Guid.NewGuid();
+        var sector = new Sector
+        {
+            Id = sectorId,
+            Name = "Primary",
+            RequiredGuardsPerDay = 1,
+            IsActive = true,
+            SecurityGuardSectors = new List<SecurityGuardSector>
+            {
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    SecurityGuardId = guardId,
+                    SectorId = sectorId,
+                    SecurityGuard = guard,
+                },
+            },
+        };
+        var sectorRepo = new StubSectorRepository(sector);
+
+        var guardRepo = new InMemorySecurityGuardRepository(guard);
 
         var unavailable = new List<UnavailableDay>();
         var start = new DateOnly(2034, 6, 1);
@@ -109,6 +187,7 @@ public class GenerateMonthlyScheduleCommandHandlerTests
         var handler = new GenerateMonthlyScheduleCommandHandler(
             scheduleRepo,
             guardRepo,
+            sectorRepo,
             unavailableRepo,
             unitOfWork,
             NullLogger<GenerateMonthlyScheduleCommandHandler>.Instance);
@@ -119,6 +198,38 @@ public class GenerateMonthlyScheduleCommandHandlerTests
         result.FailedDate.Should().NotBeNull();
         scheduleRepo.Items.Should().BeEmpty();
         unitOfWork.SaveChangesCalls.Should().Be(0);
+    }
+
+    private sealed class StubSectorRepository : ISectorRepository
+    {
+        private readonly IReadOnlyList<Sector> _workload;
+
+        public StubSectorRepository(params Sector[] workloadConfigured)
+            => _workload = workloadConfigured;
+
+        public Task AddAsync(Sector sector, CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+        public Task<Sector?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+            => Task.FromResult(_workload.FirstOrDefault(x => x.Id == id));
+
+        public Task<IReadOnlyList<Sector>> GetAllAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult((IReadOnlyList<Sector>)_workload.ToList());
+
+        public void Update(Sector sector)
+        {
+        }
+
+        public Task<bool> AllExistAndActiveAsync(IReadOnlyList<Guid> sectorIds, CancellationToken cancellationToken = default)
+            => Task.FromResult(true);
+
+        public Task<Guid?> GetDefaultSchedulingSectorIdAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult<Guid?>(null);
+
+        public Task<IReadOnlyList<Sector>> GetActiveWorkloadSectorsWithLinksAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult((IReadOnlyList<Sector>)_workload
+                .Where(s => s.IsActive && s.RequiredGuardsPerDay >= 1)
+                .OrderBy(s => s.Name)
+                .ToList());
     }
 
     private sealed class InMemoryMonthlyScheduleRepository(params MonthlySchedule[] initial) : IMonthlyScheduleRepository

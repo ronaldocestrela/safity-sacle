@@ -29,4 +29,28 @@ public sealed class SecurityGuardSectorRepository(ApplicationDbContext dbContext
             }, cancellationToken);
         }
     }
+
+    public async Task EnsureGuardLinkedToSectorAsync(
+        Guid securityGuardId,
+        Guid sectorId,
+        CancellationToken cancellationToken = default)
+    {
+        var exists = await dbContext.SecurityGuardSectors
+            .AnyAsync(
+                x => x.SecurityGuardId == securityGuardId && x.SectorId == sectorId,
+                cancellationToken);
+        if (exists)
+        {
+            return;
+        }
+
+        await dbContext.SecurityGuardSectors.AddAsync(
+            new SecurityGuardSector
+            {
+                Id = Guid.NewGuid(),
+                SecurityGuardId = securityGuardId,
+                SectorId = sectorId,
+            },
+            cancellationToken);
+    }
 }

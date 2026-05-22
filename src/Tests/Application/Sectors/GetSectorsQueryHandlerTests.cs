@@ -52,5 +52,11 @@ public class GetSectorsQueryHandlerTests
 
         public Task<bool> AllExistAndActiveAsync(IReadOnlyList<Guid> sectorIds, CancellationToken cancellationToken = default)
             => Task.FromResult(true);
+
+        public Task<Guid?> GetDefaultSchedulingSectorIdAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult<Guid?>(null);
+
+        public Task<IReadOnlyList<Sector>> GetActiveWorkloadSectorsWithLinksAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult((IReadOnlyList<Sector>)_items.Where(s => s.IsActive && s.RequiredGuardsPerDay >= 1).ToList());
     }
 }

@@ -21,7 +21,7 @@ public sealed class SectorsController(ISender sender) : ControllerBase
         CancellationToken cancellationToken)
     {
         var id = await sender.Send(
-            new CreateSectorCommand(request.Name, request.Description),
+            new CreateSectorCommand(request.Name, request.Description, request.RequiredGuardsPerDay),
             cancellationToken);
         return Created($"/api/sectors/{id}", new { id });
     }
@@ -43,7 +43,9 @@ public sealed class SectorsController(ISender sender) : ControllerBase
         [FromBody] UpdateSectorRequest request,
         CancellationToken cancellationToken)
     {
-        var updated = await sender.Send(new UpdateSectorCommand(id, request.Name, request.Description), cancellationToken);
+        var updated = await sender.Send(
+            new UpdateSectorCommand(id, request.Name, request.Description, request.RequiredGuardsPerDay),
+            cancellationToken);
         return updated ? NoContent() : NotFound();
     }
 

@@ -75,7 +75,9 @@ function assignmentsForSelectedDate(items: ScheduleItemDto[] | undefined, select
     .filter((i) => i.date === selectedKey)
     .sort(
       (a, b) =>
-        a.securityGuardName.localeCompare(b.securityGuardName) || a.id.localeCompare(b.id),
+        a.sectorName.localeCompare(b.sectorName, undefined, { sensitivity: 'base' }) ||
+        a.securityGuardName.localeCompare(b.securityGuardName, undefined, { sensitivity: 'base' }) ||
+        a.id.localeCompare(b.id),
     )
 }
 
@@ -353,6 +355,7 @@ export function WelcomePage() {
                             <span className={styles.shiftStripe} aria-hidden />
                             <div className={styles.shiftBody}>
                               <p className={styles.shiftName}>{item.securityGuardName}</p>
+                              <p className={styles.shiftSector}>{item.sectorName}</p>
                               <p className={styles.shiftMeta}>
                                 <span className={styles.mono}>ID {shortGuardId(item.securityGuardId)}</span>
                                 <span className={styles.shiftDot} aria-hidden>

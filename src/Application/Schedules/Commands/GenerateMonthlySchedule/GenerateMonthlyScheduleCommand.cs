@@ -10,6 +10,7 @@ public enum GenerateMonthlyScheduleStatus
     Success,
     AlreadyExists,
     NoActiveGuards,
+    NoWorkloadSectorsConfigured,
     ImpossibleToGenerate,
 }
 
@@ -24,6 +25,7 @@ public sealed record GenerateMonthlyScheduleCommand(int Month, int Year)
 public sealed class GenerateMonthlyScheduleCommandHandler(
     IMonthlyScheduleRepository monthlyScheduleRepository,
     ISecurityGuardRepository securityGuardRepository,
+    ISectorRepository sectorRepository,
     IUnavailableDayRepository unavailableDayRepository,
     IUnitOfWork unitOfWork,
     ILogger<GenerateMonthlyScheduleCommandHandler> logger) : IRequestHandler<GenerateMonthlyScheduleCommand, GenerateMonthlyScheduleResult>
@@ -53,6 +55,34 @@ public sealed class GenerateMonthlyScheduleCommandHandler(
             return new GenerateMonthlyScheduleResult(GenerateMonthlyScheduleStatus.NoActiveGuards);
         }
 
+        var workloadSectors = await sectorRepository.GetActiveWorkloadSectorsWithLinksAsync(cancellationToken);
+        var activeGuardIds = activeGuards.Select(g => g.Id).ToHashSet();
+
+        var sectorDefinitions = new List<SectorWorkloadDefinition>();
+        foreach (var sector in workloadSectors)
+        {
+            var eligible = sector.SecurityGuardSectors?
+                .Where(l => l.SecurityGuard is { IsActive: true } && activeGuardIds.Contains(l.SecurityGuardId))
+                .Select(l => l.SecurityGuardId)
+                .Distinct()
+                .OrderBy(id => id)
+                .ToList() ?? [];
+
+            sectorDefinitions.Add(new SectorWorkloadDefinition(
+                sector.Id,
+                sector.RequiredGuardsPerDay,
+                eligible));
+        }
+
+        if (sectorDefinitions.Count == 0)
+        {
+            logger.LogWarning(
+                "No active sectors configured with staffing requirements for {Month}/{Year}",
+                request.Month,
+                request.Year);
+            return new GenerateMonthlyScheduleResult(GenerateMonthlyScheduleStatus.NoWorkloadSectorsConfigured);
+        }
+
         var start = new DateOnly(request.Year, request.Month, 1);
         var end = new DateOnly(request.Year, request.Month, DateTime.DaysInMonth(request.Year, request.Month));
         var unavailableRows =
@@ -62,23 +92,23 @@ public sealed class GenerateMonthlyScheduleCommandHandler(
             .GroupBy(x => x.SecurityGuardId)
             .ToDictionary(g => g.Key, g => g.Select(u => u.Date).ToHashSet());
 
-        var activeIds = activeGuards.Select(g => g.Id).ToList();
-
         var generator = new ScheduleGeneratorService();
-        var generated = generator.Generate(request.Month, request.Year, activeIds, unavailableByGuard);
+        var generated = generator.Generate(request.Month, request.Year, sectorDefinitions, unavailableByGuard);
 
         if (!generated.Success)
         {
-            if (generated.FailureReason == ScheduleGenerationFailureReason.NoActiveGuards)
-            {
-                return new GenerateMonthlyScheduleResult(GenerateMonthlyScheduleStatus.NoActiveGuards);
-            }
-
             logger.LogWarning(
-                "Could not cover date {FailedDate} for schedule {Month}/{Year}",
-                generated.FailedDate,
+                "Generation failed ({Reason}) for {Month}/{Year} on date {FailedDate}",
+                generated.FailureReason,
                 request.Month,
-                request.Year);
+                request.Year,
+                generated.FailedDate);
+
+            if (generated.FailureReason is ScheduleGenerationFailureReason.NoConfiguredSectors
+                or ScheduleGenerationFailureReason.NoEligibleGuardsForSectors)
+            {
+                return new GenerateMonthlyScheduleResult(GenerateMonthlyScheduleStatus.NoWorkloadSectorsConfigured);
+            }
 
             return new GenerateMonthlyScheduleResult(
                 GenerateMonthlyScheduleStatus.ImpossibleToGenerate,

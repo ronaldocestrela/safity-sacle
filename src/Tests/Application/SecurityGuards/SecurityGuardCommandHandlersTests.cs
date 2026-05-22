@@ -14,8 +14,14 @@ public class SecurityGuardCommandHandlersTests
     public async Task CreateCommand_ShouldPersistActiveSecurityGuard()
     {
         var repository = new InMemorySecurityGuardRepository();
+        var sectorRepository = new MinimalSectorRepository();
+        var guardSectorRepository = new CreateGuardSectorLinkRecordingRepository();
         var unitOfWork = new FakeUnitOfWork();
-        var handler = new CreateSecurityGuardCommandHandler(repository, unitOfWork);
+        var handler = new CreateSecurityGuardCommandHandler(
+            repository,
+            sectorRepository,
+            guardSectorRepository,
+            unitOfWork);
 
         var id = await handler.Handle(new CreateSecurityGuardCommand("  Maria Silva  "), CancellationToken.None);
 
@@ -23,6 +29,27 @@ public class SecurityGuardCommandHandlersTests
         repository.Items.Single().Name.Should().Be("Maria Silva");
         repository.Items.Single().IsActive.Should().BeTrue();
         unitOfWork.SaveChangesCalls.Should().Be(1);
+        guardSectorRepository.EnsureCalls.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task CreateCommand_ShouldLinkDefaultSector_WhenConfigured()
+    {
+        var defaultSectorId = Guid.NewGuid();
+        var repository = new InMemorySecurityGuardRepository();
+        var sectorRepository = new MinimalSectorRepository(defaultSectorId);
+        var guardSectorRepository = new CreateGuardSectorLinkRecordingRepository();
+        var unitOfWork = new FakeUnitOfWork();
+        var handler = new CreateSecurityGuardCommandHandler(
+            repository,
+            sectorRepository,
+            guardSectorRepository,
+            unitOfWork);
+
+        var id = await handler.Handle(new CreateSecurityGuardCommand("Link Test"), CancellationToken.None);
+
+        unitOfWork.SaveChangesCalls.Should().Be(2);
+        guardSectorRepository.EnsureCalls.Should().ContainSingle(c => c.GuardId == id && c.SectorId == defaultSectorId);
     }
 
     [Fact]
@@ -150,6 +177,50 @@ public class SecurityGuardCommandHandlersTests
         {
             SaveChangesCalls++;
             return Task.FromResult(1);
+        }
+    }
+
+    private sealed class MinimalSectorRepository(Guid? defaultSchedulingSectorId = null) : ISectorRepository
+    {
+        public Task AddAsync(Sector sector, CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+        public Task<Sector?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+            => Task.FromResult<Sector?>(null);
+
+        public Task<IReadOnlyList<Sector>> GetAllAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult((IReadOnlyList<Sector>)Array.Empty<Sector>());
+
+        public void Update(Sector sector)
+        {
+        }
+
+        public Task<Guid?> GetDefaultSchedulingSectorIdAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult(defaultSchedulingSectorId);
+
+        public Task<IReadOnlyList<Sector>> GetActiveWorkloadSectorsWithLinksAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult((IReadOnlyList<Sector>)Array.Empty<Sector>());
+
+        public Task<bool> AllExistAndActiveAsync(IReadOnlyList<Guid> sectorIds, CancellationToken cancellationToken = default)
+            => Task.FromResult(true);
+    }
+
+    private sealed class CreateGuardSectorLinkRecordingRepository : ISecurityGuardSectorRepository
+    {
+        public List<(Guid GuardId, Guid SectorId)> EnsureCalls { get; } = [];
+
+        public Task ReplaceAssignmentsForGuardAsync(
+            Guid securityGuardId,
+            IReadOnlyList<Guid> sectorIds,
+            CancellationToken cancellationToken = default)
+            => Task.CompletedTask;
+
+        public Task EnsureGuardLinkedToSectorAsync(
+            Guid securityGuardId,
+            Guid sectorId,
+            CancellationToken cancellationToken = default)
+        {
+            EnsureCalls.Add((securityGuardId, sectorId));
+            return Task.CompletedTask;
         }
     }
 }

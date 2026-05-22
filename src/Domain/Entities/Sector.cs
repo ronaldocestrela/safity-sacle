@@ -7,6 +7,10 @@ public class Sector : ITenantOwnedEntity
 
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
+
+    /// <summary>Positions to fill daily for schedule generation.</summary>
+    public int RequiredGuardsPerDay { get; set; } = 1;
+
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

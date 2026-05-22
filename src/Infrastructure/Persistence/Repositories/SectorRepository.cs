@@ -20,6 +20,28 @@ public sealed class SectorRepository(ApplicationDbContext dbContext) : ISectorRe
 
     public void Update(Sector sector) => dbContext.Sectors.Update(sector);
 
+    public async Task<Guid?> GetDefaultSchedulingSectorIdAsync(CancellationToken cancellationToken = default)
+    {
+        var id = await dbContext.Sectors
+            .AsNoTracking()
+            .Where(s => s.IsActive && s.RequiredGuardsPerDay >= 1)
+            .OrderByDescending(s => s.Name == "Primary")
+            .ThenBy(s => s.Name)
+            .Select(s => (Guid?)s.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+        return id;
+    }
+
+    public async Task<IReadOnlyList<Sector>> GetActiveWorkloadSectorsWithLinksAsync(
+        CancellationToken cancellationToken = default)
+        => await dbContext.Sectors
+            .AsNoTracking()
+            .Include(s => s.SecurityGuardSectors)
+            .ThenInclude(l => l.SecurityGuard)
+            .Where(s => s.IsActive && s.RequiredGuardsPerDay >= 1)
+            .OrderBy(s => s.Name)
+            .ToListAsync(cancellationToken);
+
     public async Task<bool> AllExistAndActiveAsync(
         IReadOnlyList<Guid> sectorIds,
         CancellationToken cancellationToken = default)

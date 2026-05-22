@@ -79,6 +79,18 @@ public sealed class TenantRegistrationService(
             dbContext.Tenants.Add(tenant);
             await dbContext.SaveChangesAsync(cancellationToken);
 
+            dbContext.Sectors.Add(new Sector
+            {
+                Id = Guid.NewGuid(),
+                TenantId = tenant.Id,
+                Name = "Primary",
+                Description = null,
+                RequiredGuardsPerDay = 1,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+            });
+            await dbContext.SaveChangesAsync(cancellationToken);
+
             var admin = new AppUser
             {
                 UserName = rawEmail,

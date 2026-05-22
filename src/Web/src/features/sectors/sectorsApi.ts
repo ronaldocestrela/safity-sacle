@@ -38,22 +38,39 @@ export async function listSectors(isActive?: boolean): Promise<SectorDto[]> {
   return (await res.json()) as SectorDto[]
 }
 
-export async function createSector(name: string, description: string | null): Promise<{ id: string }> {
+export async function createSector(
+  name: string,
+  description: string | null,
+  requiredGuardsPerDay = 1,
+): Promise<{ id: string }> {
   const res = await apiFetch('/api/sectors', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, description: description?.trim() ? description.trim() : null }),
+    body: JSON.stringify({
+      name,
+      description: description?.trim() ? description.trim() : null,
+      requiredGuardsPerDay,
+    }),
   })
   await ensureOk(res, 'Não foi possível criar setor.')
   const data = (await res.json()) as { id: string }
   return data
 }
 
-export async function updateSector(id: string, name: string, description: string | null): Promise<void> {
+export async function updateSector(
+  id: string,
+  name: string,
+  description: string | null,
+  requiredGuardsPerDay: number,
+): Promise<void> {
   const res = await apiFetch(`/api/sectors/${encodeURIComponent(id)}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, description: description?.trim() ? description.trim() : null }),
+    body: JSON.stringify({
+      name,
+      description: description?.trim() ? description.trim() : null,
+      requiredGuardsPerDay,
+    }),
   })
   await ensureOk(res, 'Não foi possível salvar alterações.')
 }

@@ -1,6 +1,8 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using FluentAssertions;
+using SafetyScale.Api.Contracts.Schedules;
 
 namespace SafetyScale.Tests.Api.Integration;
 
@@ -66,6 +68,35 @@ public class SchedulesGenerateEndpointsTests
         var response = await client.PostAsJsonAsync("/api/schedules/generate", new { month = 7, year = 2041 });
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Post_ShouldReturnCoverageFailurePayload_WhenNoEligibleGuardForSectorWorkload()
+    {
+        using var factory = new TestWebApplicationFactory();
+        using var client = CreateHttpsClient(factory);
+        await AuthTestHelper.AuthenticateAsAdminAsync(client);
+
+        // Active sector alphabetically before "Primary", with staffing but no guard links ⇒ first day fails.
+        var heavy = await client.PostAsJsonAsync(
+            "/api/sectors",
+            new { name = "HeavyUnstaffed", description = (string?)null, requiredGuardsPerDay = 1 });
+        heavy.EnsureSuccessStatusCode();
+
+        await CreateGuardAsync(client, "Cov Guard A");
+        await CreateGuardAsync(client, "Cov Guard B");
+
+        var response = await client.PostAsJsonAsync("/api/schedules/generate", new { month = 5, year = 2090 });
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var payload = await response.Content.ReadFromJsonAsync<ScheduleCoverageFailureResponse>(
+            new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        payload.Should().NotBeNull();
+        payload!.Code.Should().Be("ScheduleCoverageFailed");
+        payload.FailedDate.Should().NotBeNull();
+        payload.Message.Should().Contain(payload.FailedDate!.Value.ToString("dd/MM/yyyy"));
+
+        payload.Message.Should().Contain("não há seguranças elegíveis suficientes");
     }
 
     private static HttpClient CreateHttpsClient(TestWebApplicationFactory factory)

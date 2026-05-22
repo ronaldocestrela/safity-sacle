@@ -23,6 +23,8 @@ public class GetMonthlySchedulesQueryHandlerTests
     {
         var guardId = Guid.NewGuid();
         var guard = new SecurityGuard { Id = guardId, Name = "Beta", IsActive = false };
+        var sectorId = Guid.NewGuid();
+        var sector = new Sector { Id = sectorId, Name = "Lobby", RequiredGuardsPerDay = 1, IsActive = true };
         var scheduleId = Guid.NewGuid();
         var schedule = new MonthlySchedule
         {
@@ -37,9 +39,11 @@ public class GetMonthlySchedulesQueryHandlerTests
                     Id = Guid.NewGuid(),
                     MonthlyScheduleId = scheduleId,
                     SecurityGuardId = guardId,
+                    SectorId = sectorId,
                     Date = new DateOnly(2051, 10, 5),
                     IsWeekend = false,
                     SecurityGuard = guard,
+                    Sector = sector,
                 },
             },
         };
@@ -54,7 +58,9 @@ public class GetMonthlySchedulesQueryHandlerTests
         result.Items.Should().ContainSingle(i =>
             i.SecurityGuardName == "Beta" &&
             !i.SecurityGuardIsActive &&
-            i.SecurityGuardId == guardId);
+            i.SecurityGuardId == guardId &&
+            i.SectorId == sectorId &&
+            i.SectorName == "Lobby");
     }
 
     private sealed class InMemoryMonthlyScheduleRepository(params MonthlySchedule[] initial) : IMonthlyScheduleRepository

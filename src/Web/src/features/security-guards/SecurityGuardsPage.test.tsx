@@ -10,12 +10,14 @@ import { ApiError } from './securityGuardsApi'
 import * as securityGuardsApi from './securityGuardsApi'
 import { SecurityGuardsPage } from './SecurityGuardsPage'
 import { expSoon, makeUnsignedJwt } from '../../test/jwtTestUtils'
+import type { SectorNestedDto, SecurityGuardDto } from './types'
 
 const mockSectorPick = [
   {
     id: 's1',
     name: 'Sector A',
     description: null,
+    requiredGuardsPerDay: 1,
     isActive: true,
     createdAt: '2026-03-02T14:30:00.000Z',
   },
@@ -110,27 +112,27 @@ describe('SecurityGuardsPage', () => {
   it('submits create, assigns sectors, and refreshes list', async () => {
     const user = userEvent.setup()
     vi.mocked(securityGuardsApi.listSecurityGuards).mockReset()
-    const ana = {
+    const ana: SecurityGuardDto = {
       id: 'a1',
       name: 'Ana Costa',
       isActive: true,
       createdAt: '2026-03-02T14:30:00.000Z',
-      sectors: [] as const,
+      sectors: [],
     }
-    const maria = {
+    const nested: SectorNestedDto = {
+      id: 's1',
+      name: 'Sector A',
+      description: null,
+      requiredGuardsPerDay: 1,
+      isActive: true,
+      createdAt: '2026-03-02T14:30:00.000Z',
+    }
+    const maria: SecurityGuardDto = {
       id: 'new-id',
       name: 'Maria Souza',
       isActive: true,
       createdAt: '2026-03-02T14:30:00.000Z',
-      sectors: [
-        {
-          id: 's1',
-          name: 'Sector A',
-          description: null,
-          isActive: true,
-          createdAt: '2026-03-02T14:30:00.000Z',
-        },
-      ],
+      sectors: [nested],
     }
     vi.mocked(securityGuardsApi.listSecurityGuards)
       .mockResolvedValueOnce([ana])

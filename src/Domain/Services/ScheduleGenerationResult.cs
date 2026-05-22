@@ -5,6 +5,8 @@ namespace SafetyScale.Domain.Services;
 public enum ScheduleGenerationFailureReason
 {
     NoActiveGuards,
+    NoConfiguredSectors,
+    NoEligibleGuardsForSectors,
     CouldNotCoverDay,
 }
 

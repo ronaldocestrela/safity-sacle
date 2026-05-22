@@ -127,6 +127,21 @@ public class SetSecurityGuardSectorsCommandHandlerTests
             var ok = distinct.All(id => _items.Any(s => s.Id == id && s.IsActive));
             return Task.FromResult(ok);
         }
+
+        public Task<Guid?> GetDefaultSchedulingSectorIdAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult<Guid?>(
+                _items
+                    .Where(s => s.IsActive && s.RequiredGuardsPerDay >= 1)
+                    .OrderByDescending(s => s.Name == "Primary")
+                    .ThenBy(s => s.Name)
+                    .Select(s => (Guid?)s.Id)
+                    .FirstOrDefault());
+
+        public Task<IReadOnlyList<Sector>> GetActiveWorkloadSectorsWithLinksAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult((IReadOnlyList<Sector>)_items
+                .Where(s => s.IsActive && s.RequiredGuardsPerDay >= 1)
+                .OrderBy(s => s.Name)
+                .ToList());
     }
 
     private sealed class RecordingSecurityGuardSectorRepository : ISecurityGuardSectorRepository
@@ -143,5 +158,11 @@ public class SetSecurityGuardSectorsCommandHandlerTests
             LastSectorIds = sectorIds;
             return Task.CompletedTask;
         }
+
+        public Task EnsureGuardLinkedToSectorAsync(
+            Guid securityGuardId,
+            Guid sectorId,
+            CancellationToken cancellationToken = default)
+            => Task.CompletedTask;
     }
 }

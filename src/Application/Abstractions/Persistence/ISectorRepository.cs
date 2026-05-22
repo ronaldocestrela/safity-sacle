@@ -9,6 +9,10 @@ public interface ISectorRepository
     Task<IReadOnlyList<Sector>> GetAllAsync(CancellationToken cancellationToken = default);
     void Update(Sector sector);
 
+    Task<Guid?> GetDefaultSchedulingSectorIdAsync(CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<Sector>> GetActiveWorkloadSectorsWithLinksAsync(CancellationToken cancellationToken = default);
+
     /// <summary>
     /// True when every distinct id references an existing, active sector in the tenant.
     /// Vacuous truth when ids is empty.

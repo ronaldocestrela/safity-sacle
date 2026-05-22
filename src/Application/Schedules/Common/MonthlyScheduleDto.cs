@@ -7,6 +7,8 @@ public sealed record ScheduleItemDto(
     Guid SecurityGuardId,
     string SecurityGuardName,
     bool SecurityGuardIsActive,
+    Guid SectorId,
+    string SectorName,
     DateOnly Date,
     bool IsWeekend);
 
@@ -37,11 +39,14 @@ public static class MonthlyScheduleMappings
     private static ScheduleItemDto ToScheduleItemDto(ScheduleItem item)
     {
         var guard = item.SecurityGuard;
+        var sector = item.Sector;
         return new ScheduleItemDto(
             item.Id,
             item.SecurityGuardId,
             guard?.Name ?? string.Empty,
             guard?.IsActive ?? false,
+            item.SectorId,
+            sector?.Name ?? string.Empty,
             item.Date,
             item.IsWeekend);
     }
