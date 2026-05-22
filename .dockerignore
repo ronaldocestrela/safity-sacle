@@ -1,0 +1,38 @@
+# Git / IDE
+.git
+.gitignore
+**/.vscode
+**/.idea
+**/*.user
+**/*.suo
+
+# Build outputs
+**/bin
+**/obj
+**/out
+**/publish
+**/dist
+**/coverage
+**/TestResults
+
+# Frontend
+**/node_modules
+**/npm-debug.log*
+
+# Secrets / env (Compose uses its own `.env`; never bake these into contexts)
+.env
+.env.*
+
+# SQLite legado (opcional)
+**/*.db
+**/*.db-wal
+**/*.db-shm
+
+# Docs não necessários ao build da API
+**/README.md
+roadmap.md
+agents.md
+
+# Plans / tooling locals
+.cursor
+**/.vite

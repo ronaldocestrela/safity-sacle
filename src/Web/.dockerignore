@@ -1,0 +1,18 @@
+# Build
+node_modules
+npm-debug.log*
+
+# Output
+dist
+
+# Tooling
+.vite
+coverage
+
+# Env (não deve ir para a imagem de build)
+.env
+.env.*
+
+# Git
+.git
+.gitignore

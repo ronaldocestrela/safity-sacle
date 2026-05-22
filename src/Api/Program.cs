@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.HttpOverrides;
 using SafetyScale.Api.Extensions;
 using SafetyScale.Api.Middleware;
 using SafetyScale.Application;
@@ -19,6 +20,22 @@ builder.Services
     .AddApplicationLayer()
     .AddInfrastructureLayer(builder.Configuration);
 
+var useForwardedHeaders = builder.Configuration.GetValue("ForwardedHeaders:Enabled", false);
+if (useForwardedHeaders)
+{
+    builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    {
+        options.ForwardedHeaders =
+            ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        // Rede Compose / proxies internos apenas (nunca exponha a API direta à Internet com esta config).
+#pragma warning disable ASPDEPR005
+        options.KnownNetworks.Clear();
+#pragma warning restore ASPDEPR005
+        options.KnownIPNetworks.Clear();
+        options.KnownProxies.Clear();
+    });
+}
+
 var app = builder.Build();
 var corsOrigins =
     builder.Configuration.GetSection("Cors:Origins").Get<string[]>()
@@ -30,6 +47,11 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+}
+
+if (useForwardedHeaders)
+{
+    app.UseForwardedHeaders();
 }
 
 app.UseSerilogRequestLogging();

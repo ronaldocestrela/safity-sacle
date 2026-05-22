@@ -36,6 +36,7 @@ node_modules/
 # Environment and secrets
 .env
 .env.*
+!.env.example
 secrets.json
 appsettings.Local.json
 appsettings.*.local.json
