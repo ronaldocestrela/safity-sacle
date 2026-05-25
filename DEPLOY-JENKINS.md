@@ -51,9 +51,9 @@ Para semântica das variáveis de aplicação, veja também [`.env.example`](.en
 ### 5. `Prepare Env`
 
 - Usa **`withCredentials`** + bindings **`string`** (credenciais abaixo). Cada binding expõe variáveis `CRED_*` **apenas dentro** dos passos envelopados pelo `withCredentials`.
-- Escreve **`./.env`** na raiz com as chaves usadas pelo Compose (ver tabela mais abaixo).
-- **`umask 077`** e **`chmod 600 .env`** restringem leituras locais óbvias por outros usuários do SO (além das permissões já normais da pasta workspace).
-- O conteúdo do `.env` **não** deve ser ecoado nos logs pelos comandos utilizados atualmente (`printf ... > .env`).
+- Escreve **`./.env`** na raiz com `writeFile` + script Groovy (concatenação de strings), assim **segredos com aspas, `$` ou quebras não quebram o shell**.
+- **`chmod 600 .env`** após criar.
+- O conteúdo do `.env` **não** deve aparecer nos logs (**nunca** usar `println`/`echo` do conteúdo em produção).
 - **`JWT_EXPIRY_MINUTES`** é fixado em **120** no `Jenkinsfile` (alinhado ao padrão de [`.env.example`](.env.example)). **`MSSQL_PID`** usa o padrão do compose (**Developer**) a menos que você estenda manualmente esse estágio no `Jenkinsfile`.
 
 ### 6. `Deploy`

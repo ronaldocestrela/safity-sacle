@@ -59,25 +59,22 @@ pipeline {
           string(credentialsId: 'safetyscale-api-port', variable: 'CRED_API_PORT'),
           string(credentialsId: 'safetyscale-web-port', variable: 'CRED_WEB_PORT'),
         ]) {
-          sh '''
-            set -eu
-            umask 077
-            rm -f .env
-            {
-              printf '%s\n' "MSSQL_SA_PASSWORD=${CRED_MSSQL_SA_PASSWORD}"
-              printf '%s\n' "SQLSERVER_PORT=${CRED_SQLSERVER_PORT}"
-              printf '%s\n' "SAFETYSCALE_DB_NAME=${CRED_DB_NAME}"
-              printf '%s\n' "JWT_ISSUER=${CRED_JWT_ISSUER}"
-              printf '%s\n' "JWT_AUDIENCE=${CRED_JWT_AUDIENCE}"
-              printf '%s\n' "JWT_KEY=${CRED_JWT_KEY}"
-              printf '%s\n' "JWT_EXPIRY_MINUTES=120"
-              printf '%s\n' "API_PORT=${CRED_API_PORT}"
-              printf '%s\n' "WEB_PORT=${CRED_WEB_PORT}"
-              # Opcional — descomente se precisar SKU diferente do padrão Developer:
-              # printf '%s\n' "MSSQL_PID=Developer"
-            } > .env
-            chmod 600 .env
-          '''
+          // writeFile via Groovy evita erro de shell "Unterminated quoted string" quando
+          // algum secret contém aspas, `$`, etc. (`printf "...${CRED}..."` no sh quebrava.)
+          script {
+            def content =
+              ('MSSQL_SA_PASSWORD=' + (env.CRED_MSSQL_SA_PASSWORD ?: '') + '\n'
+                + 'SQLSERVER_PORT=' + (env.CRED_SQLSERVER_PORT ?: '') + '\n'
+                + 'SAFETYSCALE_DB_NAME=' + (env.CRED_DB_NAME ?: '') + '\n'
+                + 'JWT_ISSUER=' + (env.CRED_JWT_ISSUER ?: '') + '\n'
+                + 'JWT_AUDIENCE=' + (env.CRED_JWT_AUDIENCE ?: '') + '\n'
+                + 'JWT_KEY=' + (env.CRED_JWT_KEY ?: '') + '\n'
+                + 'JWT_EXPIRY_MINUTES=120\n'
+                + 'API_PORT=' + (env.CRED_API_PORT ?: '') + '\n'
+                + 'WEB_PORT=' + (env.CRED_WEB_PORT ?: '') + '\n')
+            writeFile file: '.env', text: content, encoding: 'UTF-8'
+            sh 'chmod 600 .env'
+          }
         }
       }
     }
