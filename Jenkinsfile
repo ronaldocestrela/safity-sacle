@@ -1,0 +1,170 @@
+/*
+ * SafetyScale — deploy local com Docker Compose (servidor onde o Jenkins roda).
+ *
+ * Crie estas credenciais no Jenkins (tipo "Secret text" ou equivalente) com estes IDs:
+ *
+ *   safetyscale-mssql-sa-password  → senha forte do SQL Server (usuário sa)
+ *   safetyscale-sqlserver-port     → porta TCP do SQL Server exposta no host (ex.: 1433 → 1433 no contêiner)
+ *   safetyscale-jwt-key            → chave JWT (≥ 32 caracteres recomendado)
+ *   safetyscale-jwt-issuer         → Jwt:Issuer (ex.: SafetyScale)
+ *   safetyscale-jwt-audience       → Jwt:Audience (ex.: SafetyScale.Api)
+ *   safetyscale-db-name            → nome lógico do banco (ex.: SafetyScale)
+ *   safetyscale-api-port           → porta da API exposta no host (ex.: 8081 → 8080 no contêiner)
+ *   safetyscale-web-port           → porta HTTP publicada pelo Nginx do front (ex.: 80)
+ *
+ * Opcionalmente ajuste JWT_EXPIRY_MINUTES e MSSQL_PID no estágio Prepare Env se precisar
+ * diferente dos padrões (120 e Developer).
+ */
+
+pipeline {
+  agent any
+
+  options {
+    timestamps()
+    // Evita dois deploys concorrentes no mesmo workspace/servidor
+    disableConcurrentBuilds(abortPrevious: false)
+  }
+
+  environment {
+    COMPOSE_FILE = 'docker-compose.prod.yml'
+  }
+
+  stages {
+    stage('Checkout') {
+      steps {
+        checkout scm
+      }
+    }
+
+    stage('Validate Tools') {
+      steps {
+        sh '''
+          set -eu
+          command -v docker
+          docker version
+          docker compose version
+          command -v curl
+          command -v dotnet
+          dotnet_ver="$(dotnet --version)"
+          case "${dotnet_ver}" in
+            10.*) ;;
+            *)
+              echo "ERROR: Esperado SDK .NET 10.x no agent Jenkins. Versão: ${dotnet_ver}"
+              exit 1
+              ;;
+          esac
+          echo "dotnet ${dotnet_ver}"
+          command -v node
+          node --version
+          command -v npm
+          npm --version
+        '''
+      }
+    }
+
+    stage('Backend Tests') {
+      steps {
+        sh '''
+          set -eu
+          dotnet restore src/Tests/SafetyScale.Tests.csproj
+          dotnet build src/Tests/SafetyScale.Tests.csproj -c Release --no-restore
+          dotnet test src/Tests/SafetyScale.Tests.csproj -c Release --no-build
+        '''
+      }
+    }
+
+    stage('Frontend Tests') {
+      steps {
+        dir('src/Web') {
+          sh '''
+            set -eu
+            npm ci
+            npm run lint
+            npm run test
+            npm run build
+          '''
+        }
+      }
+    }
+
+    stage('Prepare Env') {
+      steps {
+        withCredentials([
+          string(credentialsId: 'safetyscale-mssql-sa-password', variable: 'CRED_MSSQL_SA_PASSWORD'),
+          string(credentialsId: 'safetyscale-sqlserver-port', variable: 'CRED_SQLSERVER_PORT'),
+          string(credentialsId: 'safetyscale-jwt-key', variable: 'CRED_JWT_KEY'),
+          string(credentialsId: 'safetyscale-jwt-issuer', variable: 'CRED_JWT_ISSUER'),
+          string(credentialsId: 'safetyscale-jwt-audience', variable: 'CRED_JWT_AUDIENCE'),
+          string(credentialsId: 'safetyscale-db-name', variable: 'CRED_DB_NAME'),
+          string(credentialsId: 'safetyscale-api-port', variable: 'CRED_API_PORT'),
+          string(credentialsId: 'safetyscale-web-port', variable: 'CRED_WEB_PORT'),
+        ]) {
+          sh '''
+            set -eu
+            umask 077
+            rm -f .env
+            {
+              printf '%s\n' "MSSQL_SA_PASSWORD=${CRED_MSSQL_SA_PASSWORD}"
+              printf '%s\n' "SQLSERVER_PORT=${CRED_SQLSERVER_PORT}"
+              printf '%s\n' "SAFETYSCALE_DB_NAME=${CRED_DB_NAME}"
+              printf '%s\n' "JWT_ISSUER=${CRED_JWT_ISSUER}"
+              printf '%s\n' "JWT_AUDIENCE=${CRED_JWT_AUDIENCE}"
+              printf '%s\n' "JWT_KEY=${CRED_JWT_KEY}"
+              printf '%s\n' "JWT_EXPIRY_MINUTES=120"
+              printf '%s\n' "API_PORT=${CRED_API_PORT}"
+              printf '%s\n' "WEB_PORT=${CRED_WEB_PORT}"
+              # Opcional — descomente se precisar SKU diferente do padrão Developer:
+              # printf '%s\n' "MSSQL_PID=Developer"
+            } > .env
+            chmod 600 .env
+          '''
+        }
+      }
+    }
+
+    stage('Deploy') {
+      steps {
+        sh '''
+          set -eu
+          docker compose -f "${COMPOSE_FILE}" up -d --build --remove-orphans
+        '''
+      }
+    }
+
+    stage('Verify') {
+      steps {
+        sh '''
+          set -eu
+          docker compose -f "${COMPOSE_FILE}" ps
+          set -a
+          # shellcheck disable=SC1091
+          . ./.env
+          set +a
+          ok=0
+          i=0
+          while [ "$i" -lt 30 ]; do
+            code="$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:${WEB_PORT}/api/health" || true)"
+            if [ "$code" = "401" ] || [ "$code" = "200" ]; then
+              echo "Health check OK (HTTP ${code})"
+              ok=1
+              break
+            fi
+            echo "Aguardando API (HTTP ${code:-000})..."
+            sleep 5
+            i=$((i + 1))
+          done
+          if [ "$ok" -ne 1 ]; then
+            echo "ERROR: Health check falhou após tentativas."
+            exit 1
+          fi
+        '''
+      }
+    }
+  }
+
+  post {
+    always {
+      sh 'rm -f .env 2>/dev/null || true'
+    }
+  }
+}

@@ -379,7 +379,7 @@ Artefatos:
 - Frontend (Nginx + build Vite): [`src/Web/Dockerfile`](src/Web/Dockerfile), [`src/Web/nginx.conf`](src/Web/nginx.conf)
 - Variaveis de exemplo: [`.env.example`](.env.example) (copie para `.env` na raiz; nao commitar `.env`)
 
-O servico **`web`** publica **HTTP na porta configurada por `WEB_PORT` (padrao 80)** e encaminha `/api/*` para a API (`api:8080`) na rede interna. O **SQL Server nao expoe porta** para fora por padrao; persistencia via volume Docker `sqlserver-data`. A cada subida da API, **migrations EF** aplicam-se automaticamente.
+O servico **`web`** publica **HTTP na porta configurada por `WEB_PORT` (padrao 80)** e encaminha `/api/*` para a API (`api:8080`) na rede interna. O servico **`api`** tambem pode ser acessado **diretamente no host** na porta **`API_PORT`** (padrao **8081**), mapeamento **`${API_PORT:-8081}:8080`**. O **`sqlserver`** expoe **`SQLSERVER_PORT`** no host (padrao **1433**), formato **`${SQLSERVER_PORT:-1433}:1433`**; dentro da Compose a API usa **`sqlserver:1433`**. Persistencia do SQL Server via volume Docker **`sqlserver-data`**. A cada subida da API, **migrations EF** aplicam-se automaticamente.
 
 **Ambiente Production:** usuarios **`Admin`** de desenvolvimento nao sao seeded; onboarding de empresa via **`/signup`** na SPA (`POST /api/tenants/register`).
 
@@ -393,7 +393,7 @@ docker compose -f docker-compose.prod.yml build
 docker compose -f docker-compose.prod.yml up -d
 ```
 
-Verifique `http://localhost:${WEB_PORT:-80}/api/health` (ou apenas `/api/health` com `WEB_PORT=80`). Coloque terminacao **TLS** (Traefik / cloud LB / Ingress) à frente do `web` quando for expor à Internet — a Compose entrega apenas HTTP entre contêineres.
+Verifique **`http://localhost:${WEB_PORT:-80}/api/health`** vindo do Nginx (ou apenas `/api/health` com `WEB_PORT=80`). Opcionalmente, via API exposta diretamente: **`http://localhost:${API_PORT:-8081}/api/health`** (mesmas regras HTTP da API). Coloque terminacao **TLS** (Traefik / cloud LB / Ingress) à frente do `web` quando for expor à Internet — a Compose entrega apenas HTTP entre contêineres.
 
 ## Regras de qualidade
 
