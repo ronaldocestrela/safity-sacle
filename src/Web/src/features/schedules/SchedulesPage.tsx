@@ -184,10 +184,10 @@ export function SchedulesPage() {
       <main className={styles.main}>
         <section className={styles.sectionIntro} aria-labelledby="sched-rules-heading">
           <h2 id="sched-rules-heading" className={styles.displayTitle}>
-            Scheduling Rules
+            Regras de Agendamento
           </h2>
           <p className={styles.subtitle}>
-            Configure the algorithmic parameters for automated personnel distribution across Sector 7 posts.
+            Configure os parâmetros algorítmicos para a distribuição automática de pessoal em postos do Sector 7.
           </p>
         </section>
 
@@ -206,9 +206,9 @@ export function SchedulesPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                 <div className={styles.engineAccent} />
                 <div>
-                  <span className={styles.labelCaps}>Engine Status</span>
+                  <span className={styles.labelCaps}>Status do Motor</span>
                   <p className={styles.headlineSm} style={{ margin: '4px 0 0' }}>
-                    {loading ? 'Synchronizing…' : 'Active Optimization'}
+                    {loading ? 'Sincronizando…' : 'Otimização ativa'}
                   </p>
                 </div>
               </div>
@@ -220,14 +220,14 @@ export function SchedulesPage() {
             <div className={styles.cardHeaderRow}>
               <span className={`${styles.materialIcon} material-symbols-outlined`}>calendar_month</span>
               <h3 className={styles.headlineSm} style={{ margin: 0 }}>
-                Target period &amp; roster
+                Período alvo &amp; rotação
               </h3>
             </div>
             <form onSubmit={onSubmitPeriod}>
               <div className={styles.fieldGrid}>
                 <div className={styles.field}>
                   <label className={`${styles.labelCaps} ${styles.labelCapsMuted}`} htmlFor="schedule-month">
-                    Month
+                    Mês
                   </label>
                   <select
                     id="schedule-month"
@@ -244,7 +244,7 @@ export function SchedulesPage() {
                 </div>
                 <div className={styles.field}>
                   <label className={`${styles.labelCaps} ${styles.labelCapsMuted}`} htmlFor="schedule-year">
-                    Year
+                    Ano
                   </label>
                   <input
                     id="schedule-year"
@@ -264,7 +264,7 @@ export function SchedulesPage() {
               ) : null}
               <div className={styles.btnRow}>
                 <button type="submit" className={styles.btnSecondary} disabled={loading}>
-                  {loading ? 'Loading…' : 'Load roster'}
+                  {loading ? 'Carregando…' : 'Carregar rotação'}
                 </button>
                 {isAdmin ? (
                   <button
@@ -273,7 +273,7 @@ export function SchedulesPage() {
                     disabled={generating || loading}
                     onClick={() => void onGenerate()}
                   >
-                    {generating ? 'Generating…' : 'Generate schedule'}
+                    {generating ? 'Gerando…' : 'Gerar agendamento'}
                   </button>
                 ) : null}
               </div>
@@ -285,16 +285,16 @@ export function SchedulesPage() {
               <div className={styles.cardHeaderRow}>
                 <span className={`${styles.materialIcon} material-symbols-outlined`}>balance</span>
                 <h3 className={styles.headlineSm} style={{ margin: 0 }}>
-                  Weekend balancing
+                  Balanceamento de final de semana
                 </h3>
               </div>
               <p className={styles.bodyText}>
-                Evenly distribute Saturday and Sunday rotations across all active personnel.
+                Distribui uniformemente as rotações de sábado e domingo em todos os pessoais ativos.
               </p>
             </div>
             <div className={styles.toggleShell}>
               <span className={styles.bodyText} style={{ margin: 0, fontWeight: 700 }}>
-                {weekendBalancing ? 'Enabled' : 'Disabled'}
+                {weekendBalancing ? 'Habilitado' : 'Desabilitado'}
               </span>
               <label className={styles.switch}>
                 <input
@@ -311,24 +311,23 @@ export function SchedulesPage() {
             <div className={styles.assignmentsHead}>
               <span className={`${styles.materialIcon} material-symbols-outlined`}>bedtime</span>
               <h3 className={styles.headlineSm} style={{ margin: 0 }}>
-                Monthly assignments
+                Agendamentos mensais
               </h3>
             </div>
             <p className={styles.hint}>
-              Regulatory standards recommend validating roster coverage before publishing to Sector 7 operations.
+              Padrões regulatórios recomendam validar a cobertura da rotação antes de publicar para operações do Sector 7.
             </p>
             <div className={styles.infoBox}>
               <span className={`${styles.materialIcon} material-symbols-outlined`} style={{ color: '#fd8b00' }}>
                 info
               </span>
               <p>
-                Live data from the SafetyScale API. Items preserve historical guard names even if a guard is now
-                inactive.
+                Dados em tempo real da API SafetyScale. Os itens preservam os nomes históricos dos seguranças mesmo se eles estiverem inativos.
               </p>
             </div>
             <div className={styles.listScroll} aria-busy={loading} aria-label="Assignment list">
               {loading ? (
-                <div className={styles.emptyList}>Loading assignments…</div>
+                <div className={styles.emptyList}>Carregando agendamentos…</div>
               ) : schedule && schedule.items.length > 0 ? (
                 schedule.items.map((item) => (
                   <div key={item.id} className={styles.listRow}>
@@ -337,15 +336,15 @@ export function SchedulesPage() {
                       aria-hidden
                     />
                     <div className={styles.rowMain}>
-                      <span className={styles.rowMeta}>ASSIGNMENT</span>
+                      <span className={styles.rowMeta}>AGENDAMENTO</span>
                       <p className={styles.rowName}>{item.securityGuardName || '—'}</p>
                       <p className={styles.rowSector}>{item.sectorName || '—'}</p>
                     </div>
                     <div className={styles.rowDate}>{displayDateLabel(item.date)}</div>
                     <div className={styles.badges}>
-                      {item.isWeekend ? <span className={`${styles.badge} ${styles.badgeWeekend}`}>Weekend</span> : null}
+                      {item.isWeekend ? <span className={`${styles.badge} ${styles.badgeWeekend}`}>Final de semana</span> : null}
                       {!item.securityGuardIsActive ? (
-                        <span className={`${styles.badge} ${styles.badgeInactive}`}>Inactive</span>
+                        <span className={`${styles.badge} ${styles.badgeInactive}`}>Inativo</span>
                       ) : null}
                     </div>
                   </div>
@@ -353,8 +352,8 @@ export function SchedulesPage() {
               ) : (
                 <div className={styles.emptyList}>
                   {schedule && schedule.items.length === 0
-                    ? 'No assignment rows for this schedule.'
-                    : 'Load a generated month to see assignments.'}
+                    ? 'Não há agendamentos para este agendamento.'
+                    : 'Carregue um mês gerado para ver os agendamentos.'}
                 </div>
               )}
             </div>
@@ -366,7 +365,7 @@ export function SchedulesPage() {
                 className={`${styles.labelCaps} ${styles.labelCapsMuted}`}
                 style={{ display: 'block', marginBottom: 16 }}
               >
-                PREFERENCES
+                PREFERÊNCIAS
               </span>
               <button
                 type="button"
@@ -374,7 +373,7 @@ export function SchedulesPage() {
                 onClick={() => setPrefStrictOvertime((v) => !v)}
                 style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
               >
-                <span>Strict Overtime Cap</span>
+                <span>Limite de Horas Extras Estrito</span>
                 <span
                   className={`material-symbols-outlined ${styles.materialIconFill}`}
                   style={{ color: prefStrictOvertime ? '#fd8b00' : '#74777d' }}
@@ -388,7 +387,7 @@ export function SchedulesPage() {
                 onClick={() => setPrefSeniority((v) => !v)}
                 style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
               >
-                <span>Seniority Priority</span>
+                <span>Prioridade de Senioridade</span>
                 <span
                   className={`material-symbols-outlined ${styles.materialIconFill}`}
                   style={{ color: prefSeniority ? '#fd8b00' : '#74777d' }}
@@ -402,7 +401,7 @@ export function SchedulesPage() {
                 onClick={() => setPrefManualOverride((v) => !v)}
                 style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
               >
-                <span>Manual Override</span>
+                <span>Sobrescrever Manual</span>
                 <span
                   className={`material-symbols-outlined ${styles.materialIconFill}`}
                   style={{ color: prefManualOverride ? '#fd8b00' : '#74777d' }}

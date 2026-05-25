@@ -204,7 +204,7 @@ export function WelcomePage() {
           <div role="alert" className={`${styles.banner} ${styles.bannerError}`}>
             <span>{guardsError}</span>
             <button type="button" className={styles.retryBtn} onClick={() => void refresh()}>
-              Retry
+              Tentar novamente
             </button>
           </div>
         ) : null}
@@ -231,7 +231,7 @@ export function WelcomePage() {
         ) : (
           <>
             <p className={styles.sectionIntro}>
-              Operational snapshot for <strong>{periodLabel}</strong>. KPIs use live API data; schedule may be missing
+              Snapshot operacional para <strong>{periodLabel}</strong>. As KPIs usam dados da API em tempo real; os agendamentos podem estar ausentes
               until generated.
             </p>
 
@@ -264,24 +264,24 @@ export function WelcomePage() {
 
             <section className={styles.rosterSection} aria-labelledby="roster-heading">
               <h2 id="roster-heading" className={styles.sectionTitle}>
-                Current month roster
+                Rotação mensal atual
               </h2>
               {!schedule ? (
                 <div className={styles.emptyCard}>
                   <span className={`material-symbols-outlined ${styles.emptyIcon}`} aria-hidden>
                     event_busy
                   </span>
-                  <p className={styles.emptyTitle}>No schedule for {periodLabel}</p>
+                  <p className={styles.emptyTitle}>Não há agendamentos para {periodLabel}</p>
                   <p className={styles.emptySub}>
                     {isAdmin
-                      ? 'Generate the monthly roster from Schedules when your team is ready.'
+                      ? 'Gere a rotação mensal a partir de Agendamentos quando seu time estiver pronto.'
                       : 'Ask an administrator to generate the schedule, or open Schedules to review when available.'}
                   </p>
                   <Link
                     className={isAdmin ? styles.ctaPrimary : styles.ctaSecondary}
                     to="/app/schedules"
                   >
-                    {isAdmin ? 'Open schedules to generate' : 'View schedules'}
+                    {isAdmin ? 'Abrir agendamentos para gerar' : 'Visualizar agendamentos'}
                   </Link>
                 </div>
               ) : (
@@ -295,7 +295,7 @@ export function WelcomePage() {
                     gridClassName={styles.calendarGrid}
                     topContent={
                       <p className={styles.calendarHint}>
-                        Tap a date to see who is assigned. Dots mark days with coverage.
+                        Toque em um dia para ver quem está agendado. Os pontos marcam dias com cobertura.
                       </p>
                     }
                     renderCell={(cell) => {
@@ -337,17 +337,17 @@ export function WelcomePage() {
                     aria-labelledby="day-detail-heading"
                   >
                     <h3 id="day-detail-heading" className={styles.dayDetailTitle}>
-                      {selectedDateKey ? displayAssignmentDate(selectedDateKey) : 'Select a date'}
+                      {selectedDateKey ? displayAssignmentDate(selectedDateKey) : 'Selecione um dia'}
                     </h3>
                     {selectedDateKey && selectedDayItems.some((i) => i.isWeekend) ? (
                       <p className={styles.dayDetailWeekend} data-testid="weekend-day-hint">
-                        Weekend shift
+                        Turno de final de semana
                       </p>
                     ) : null}
                     {!selectedDateKey ? (
-                      <p className={styles.dayDetailEmpty}>Choose a day on the calendar.</p>
+                      <p className={styles.dayDetailEmpty}>Escolha um dia no calendário.</p>
                     ) : selectedDayItems.length === 0 ? (
-                      <p className={styles.dayDetailEmpty}>No assignments on this day.</p>
+                      <p className={styles.dayDetailEmpty}>Não há agendamentos para este dia.</p>
                     ) : (
                       <ul className={styles.shiftList}>
                         {selectedDayItems.map((item) => (
@@ -361,7 +361,7 @@ export function WelcomePage() {
                                 <span className={styles.shiftDot} aria-hidden>
                                   ·
                                 </span>
-                                <span>{item.securityGuardIsActive ? 'Active roster' : 'Inactive guard'}</span>
+                                <span>{item.securityGuardIsActive ? 'Rotação ativa' : 'Segurança inativa'}</span>
                               </p>
                             </div>
                           </li>
@@ -372,31 +372,31 @@ export function WelcomePage() {
 
                   <p className={styles.rosterFooter}>
                     <Link className={styles.rosterFooterLink} to="/app/schedules">
-                      Open full schedule view
+                      Abrir visualização completa de agendamentos
                     </Link>
                   </p>
                 </>
               )}
             </section>
 
-            <section className={styles.shortcutsSection} aria-label="Quick navigation">
-              <h2 className={styles.sectionTitle}>Shortcuts</h2>
+            <section className={styles.shortcutsSection} aria-label="Navegação rápida">
+              <h2 className={styles.sectionTitle}>Atalhos</h2>
               <div className={styles.shortcutsGrid}>
                 <Link className={styles.shortcut} to="/app/sectors">
                   <span className={`material-symbols-outlined ${styles.shortcutIcon}`}>map</span>
-                  <span className={styles.shortcutLabel}>Sectors</span>
+                  <span className={styles.shortcutLabel}>Setores</span>
                 </Link>
                 <Link className={styles.shortcut} to="/app/security-guards">
                   <span className={`material-symbols-outlined ${styles.shortcutIcon}`}>shield_person</span>
-                  <span className={styles.shortcutLabel}>Guards</span>
+                  <span className={styles.shortcutLabel}>Seguranças</span>
                 </Link>
                 <Link className={styles.shortcut} to="/app/unavailable-days">
                   <span className={`material-symbols-outlined ${styles.shortcutIcon}`}>event_available</span>
-                  <span className={styles.shortcutLabel}>Availability</span>
+                  <span className={styles.shortcutLabel}>Disponibilidade</span>
                 </Link>
                 <Link className={styles.shortcut} to="/app/schedules">
                   <span className={`material-symbols-outlined ${styles.shortcutIcon}`}>settings_suggest</span>
-                  <span className={styles.shortcutLabel}>Schedules</span>
+                  <span className={styles.shortcutLabel}>Agendamentos</span>
                 </Link>
               </div>
             </section>

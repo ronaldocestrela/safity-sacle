@@ -86,13 +86,13 @@ describe('SchedulesPage', () => {
 
   it('shows Generate schedule for Admin only', async () => {
     renderPage('Admin')
-    expect(await screen.findByRole('button', { name: /generate schedule/i })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /gerar agendamento/i })).toBeInTheDocument()
   })
 
   it('hides Generate schedule for Supervisor', async () => {
     renderPage('Supervisor')
     await waitFor(() => expect(schedulesApi.getScheduleByMonthYear).toHaveBeenCalled())
-    expect(screen.queryByRole('button', { name: /generate schedule/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /gerar agendamento/i })).not.toBeInTheDocument()
   })
 
   it('shows assignments when API returns data', async () => {
@@ -101,8 +101,8 @@ describe('SchedulesPage', () => {
     expect(await screen.findByText('Pat Smith')).toBeInTheDocument()
     expect(screen.getByText('Alex Inactive')).toBeInTheDocument()
     expect(screen.getAllByText('Primary').length).toBe(2)
-    expect(screen.getByText('Weekend')).toBeInTheDocument()
-    expect(screen.getByText('Inactive')).toBeInTheDocument()
+    expect(screen.getByText('Final de semana')).toBeInTheDocument()
+    expect(screen.getByText('Inativo')).toBeInTheDocument()
   })
 
   it('shows not-found banner when schedule is missing', async () => {
@@ -118,7 +118,7 @@ describe('SchedulesPage', () => {
     renderPage('Admin')
     await waitFor(() => expect(schedulesApi.getScheduleByMonthYear).toHaveBeenCalled())
 
-    await user.click(screen.getByRole('button', { name: /generate schedule/i }))
+    await user.click(screen.getByRole('button', { name: /gerar agendamento/i }))
 
     await waitFor(() => {
       expect(schedulesApi.generateSchedule).toHaveBeenCalledWith(expect.any(Number), expect.any(Number))
@@ -140,7 +140,7 @@ describe('SchedulesPage', () => {
     renderPage('Admin')
     await waitFor(() => expect(schedulesApi.getScheduleByMonthYear).toHaveBeenCalled())
 
-    await user.click(screen.getByRole('button', { name: /generate schedule/i }))
+    await user.click(screen.getByRole('button', { name: /gerar agendamento/i }))
 
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent(/não foi possível gerar a escala/i)

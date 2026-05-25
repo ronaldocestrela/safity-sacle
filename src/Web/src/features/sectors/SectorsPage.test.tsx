@@ -62,20 +62,20 @@ describe('SectorsPage', () => {
     })
     expect(await screen.findByText('Perimeter')).toBeInTheDocument()
     expect(screen.getByText(/2 positions\/day/i)).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /add sector/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /adicionar setor/i })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Perimeter' })).not.toBeInTheDocument()
   })
 
   it('shows admin actions for Admin user', async () => {
     renderPage('Admin')
-    expect(await screen.findByRole('button', { name: /add sector/i })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /adicionar setor/i })).toBeInTheDocument()
     expect(await screen.findByRole('button', { name: 'Perimeter' })).toBeInTheDocument()
   })
 
   it('shows empty message when nothing returned', async () => {
     vi.mocked(sectorsApi.listSectors).mockResolvedValueOnce([])
     renderPage('Supervisor')
-    expect(await screen.findByText(/no sectors found for this filter/i)).toBeInTheDocument()
+    expect(await screen.findByText(/não há setores encontrados para este filtro/i)).toBeInTheDocument()
   })
 
   it('shows load error message from ApiError when fetch fails', async () => {
@@ -89,10 +89,10 @@ describe('SectorsPage', () => {
     renderPage('Admin')
     await screen.findByText('Perimeter')
 
-    await user.click(screen.getByRole('button', { name: /add sector/i }))
-    await user.click(within(screen.getByRole('form')).getByRole('button', { name: /^create$/i }))
+    await user.click(screen.getByRole('button', { name: /adicionar setor/i }))
+    await user.click(within(screen.getByRole('form')).getByRole('button', { name: /^criar$/i }))
 
-    expect(await screen.findByText(/enter a name/i)).toBeInTheDocument()
+    expect(await screen.findByText(/informe um nome/i)).toBeInTheDocument()
     expect(sectorsApi.createSector).not.toHaveBeenCalled()
   })
 
@@ -120,14 +120,14 @@ describe('SectorsPage', () => {
     renderPage('Admin')
     expect(await screen.findByText('Perimeter')).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: /add sector/i }))
-    await user.type(screen.getByLabelText(/^name$/i), 'Lobby')
-    await user.type(screen.getByLabelText(/^description$/i), 'Main entrance')
-    const positions = screen.getByLabelText(/^positions per day$/i)
+    await user.click(screen.getByRole('button', { name: /adicionar setor/i }))
+    await user.type(screen.getByLabelText(/^nome$/i), 'Lobby')
+    await user.type(screen.getByLabelText(/^descrição$/i), 'Main entrance')
+    const positions = screen.getByLabelText(/^posições por dia$/i)
     await user.clear(positions)
     await user.type(positions, '3')
 
-    await user.click(within(screen.getByRole('form')).getByRole('button', { name: /^create$/i }))
+    await user.click(within(screen.getByRole('form')).getByRole('button', { name: /^criar$/i }))
 
     await waitFor(() => {
       expect(sectorsApi.createSector).toHaveBeenCalledWith('Lobby', 'Main entrance', 3)

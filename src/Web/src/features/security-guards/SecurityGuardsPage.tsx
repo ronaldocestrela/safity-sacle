@@ -275,7 +275,7 @@ export function SecurityGuardsPage() {
   return (
     <div className={styles.page}>
       <AppHeader
-        title="SentryOps Management"
+        title="Gestão de seguranças"
         email={session?.email}
         showNotifications
         showLogout
@@ -288,12 +288,12 @@ export function SecurityGuardsPage() {
           <input
             className={styles.searchInput}
             type="search"
-            placeholder="Search guards by name, ID or sector..."
+            placeholder="Pesquisar seguranças por nome, ID ou setor..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            aria-label="Search guards by name, ID or sector"
+            aria-label="Pesquisar seguranças por nome, ID ou setor"
           />
-          <button type="button" className={styles.tuneBtn} aria-label="Filter tune" title="Filters">
+          <button type="button" className={styles.tuneBtn} aria-label="Filtro de ajuste" title="Filtros">
             <span className={`material-symbols-outlined ${styles.iconMd}`}>tune</span>
           </button>
         </div>
@@ -310,20 +310,20 @@ export function SecurityGuardsPage() {
           ))}
           <label style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.35rem', flexShrink: 0 }}>
             <span className={styles.cardLocation} style={{ fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 700 }}>
-              Sector
+              Setor
             </span>
             <select
               className={styles.input}
               style={{ minWidth: '8rem', fontSize: '0.75rem', padding: '0.35rem 0.5rem' }}
-              aria-label="Filter by sector"
+              aria-label="Filtrar por setor"
               value={sectorFilterId}
               onChange={(ev) => setSectorFilterId(ev.target.value)}
             >
-              <option value="">All sectors</option>
+              <option value="">Todos os setores</option>
               {sectorsCatalog.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
-                  {!s.isActive ? ' (inactive)' : ''}
+                  {!s.isActive ? ' (inativo)' : ''}
                 </option>
               ))}
             </select>
@@ -337,7 +337,7 @@ export function SecurityGuardsPage() {
           role="status"
         >
           <span className={styles.bannerText}>{banner.message}</span>
-          <button type="button" className={styles.bannerDismiss} onClick={() => dismissBanner()} aria-label="Dismiss">
+          <button type="button" className={styles.bannerDismiss} onClick={() => dismissBanner()} aria-label="Dispensar">
             ✕
           </button>
         </div>
@@ -348,18 +348,18 @@ export function SecurityGuardsPage() {
           <span>
             {loadError}{' '}
             <button type="button" className={styles.linkBtn} onClick={() => void refreshList()}>
-              Retry
+              Tentar novamente
             </button>
           </span>
         </div>
       ) : null}
 
       <section className={styles.listSection} aria-busy={loading} aria-label="Personnel list">
-        {loading && displayedRows.length === 0 ? <p className={styles.muted}>Loading…</p> : null}
+        {loading && displayedRows.length === 0 ? <p className={styles.muted}>Carregando…</p> : null}
 
         {!loading && displayedRows.length === 0 && !loadError ? (
           <p className={styles.muted} role="status">
-            No personnel found for this filter.
+            Não há seguranças encontradas para este filtro.
           </p>
         ) : null}
 
@@ -378,7 +378,7 @@ export function SecurityGuardsPage() {
       </section>
 
       {isAdmin ? (
-        <button type="button" className={styles.fab} aria-label="Add personnel" onClick={() => openCreate()}>
+        <button type="button" className={styles.fab} aria-label="Adicionar segurança" onClick={() => openCreate()}>
           <span className={`material-symbols-outlined ${styles.fabIcon}`}>person_add</span>
         </button>
       ) : null}
@@ -395,7 +395,7 @@ export function SecurityGuardsPage() {
         >
           <div className={styles.dialogInner}>
             <h2 id="sg-form-title" className={styles.dialogTitle}>
-              {nameFormOpen === 'create' ? 'New personnel' : 'Edit personnel'}
+              {nameFormOpen === 'create' ? 'Nova segurança' : 'Editar segurança'}
             </h2>
 
             <form aria-labelledby="sg-form-title" onSubmit={(e) => void handleSubmitName(e)}>
@@ -423,7 +423,7 @@ export function SecurityGuardsPage() {
               {isAdmin ? (
                 <fieldset style={{ marginTop: '0.85rem', border: '1px solid #e2e8f0', borderRadius: '0.35rem', padding: '0.65rem' }}>
                   <legend className={styles.label} style={{ padding: '0 0.25rem' }}>
-                    Sectors (active)
+                    Setores (ativos)
                   </legend>
                   {sectorPickError ? (
                     <p className={styles.fieldErr} role="alert">
@@ -431,7 +431,7 @@ export function SecurityGuardsPage() {
                     </p>
                   ) : null}
                   {sectorsPickList.length === 0 && !sectorPickError ? (
-                    <p className={styles.cardLocation}>No active sectors. Create sectors first.</p>
+                    <p className={styles.cardLocation}>Não há setores ativos. Crie setores primeiro.</p>
                   ) : (
                     <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                       {sectorsPickList.map((s) => (
@@ -454,10 +454,10 @@ export function SecurityGuardsPage() {
 
               <div className={styles.dialogFooter}>
                 <button type="button" className={styles.btnGhost} onClick={() => closeNameForm()} disabled={submitting}>
-                  Cancel
+                  Cancelar
                 </button>
                 <button type="submit" className={styles.btnPrimary} disabled={submitting}>
-                  {submitting ? 'Saving…' : nameFormOpen === 'create' ? 'Create' : 'Save'}
+                  {submitting ? 'Salvando…' : nameFormOpen === 'create' ? 'Criar' : 'Salvar'}
                 </button>
               </div>
             </form>
@@ -476,9 +476,9 @@ export function SecurityGuardsPage() {
           }}
         >
           <div className={styles.dialogInner}>
-            <h2 className={styles.dialogTitle}>Deactivate personnel</h2>
+            <h2 className={styles.dialogTitle}>Desativar segurança</h2>
             <p className={styles.confirmBody}>
-              Confirm deactivation of <strong>{inactivateTarget.name}</strong>. Existing schedule history is kept.
+              Confirmar desativação de <strong>{inactivateTarget.name}</strong>. O histórico de agendamentos permanece.
             </p>
             <div className={styles.dialogFooter}>
               <button
@@ -487,7 +487,7 @@ export function SecurityGuardsPage() {
                 onClick={() => setInactivateTarget(null)}
                 disabled={inactivateSubmitting}
               >
-                Cancel
+                Cancelar
               </button>
               <button
                 type="button"
@@ -495,7 +495,7 @@ export function SecurityGuardsPage() {
                 onClick={() => void confirmInactivate()}
                 disabled={inactivateSubmitting}
               >
-                {inactivateSubmitting ? 'Processing…' : 'Confirm'}
+                {inactivateSubmitting ? 'Processando…' : 'Confirmar'}
               </button>
             </div>
           </div>
@@ -524,7 +524,7 @@ function PersonnelCard({
           .map((s) => s.name)
           .sort((a, b) => a.localeCompare(b))
           .join(', ')
-      : 'No sectors assigned'
+      : 'Não há setores atribuídos'
 
   return (
     <li
@@ -538,7 +538,7 @@ function PersonnelCard({
         <div className={styles.cardTitleRow}>
           <h3 className={styles.cardName}>
             {isAdmin ? (
-              <button type="button" className={styles.nameBtn} onClick={onEdit} title="Edit personnel">
+              <button type="button" className={styles.nameBtn} onClick={onEdit} title="Editar segurança">
                 {row.name}
               </button>
             ) : (
@@ -548,8 +548,8 @@ function PersonnelCard({
           <span className={styles.cardId}>{displayGuardId(row.id)}</span>
         </div>
         <div className={styles.cardMetaRow}>
-          {row.isActive ? <span className={styles.badgeActive}>Active</span> : <span className={styles.badgeInactive}>Inactive</span>}
-          <span className={styles.cardLocation}>{row.isActive ? sectorLabel : 'Off duty'}</span>
+          {row.isActive ? <span className={styles.badgeActive}>Ativo</span> : <span className={styles.badgeInactive}>Inativo</span>}
+          <span className={styles.cardLocation}>{row.isActive ? sectorLabel : 'Férias'}</span>
         </div>
       </div>
       <div className={styles.cardToggleCol}>

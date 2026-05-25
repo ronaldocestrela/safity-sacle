@@ -116,7 +116,7 @@ describe('WelcomePage (dashboard)', () => {
     expect(screen.getByTestId('kpi-weekend')).toHaveTextContent('1')
 
     await waitFor(() => {
-      expect(screen.getByText(/no assignments on this day/i)).toBeInTheDocument()
+      expect(screen.getByText(/não há agendamentos para este dia/i)).toBeInTheDocument()
     })
 
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
@@ -127,7 +127,7 @@ describe('WelcomePage (dashboard)', () => {
 
     await user.click(screen.getByRole('button', { name: /May 17, 2026, 1 assignment/i }))
     expect(screen.getAllByText('Bruno Silva').length).toBeGreaterThan(0)
-    expect(screen.getByTestId('weekend-day-hint')).toHaveTextContent('Weekend shift')
+    expect(screen.getByTestId('weekend-day-hint')).toHaveTextContent('Turno de final de semana')
   })
 
   it('shows empty schedule state with Admin CTA', async () => {
@@ -138,8 +138,8 @@ describe('WelcomePage (dashboard)', () => {
       expect(screen.queryByLabelText(/loading dashboard/i)).not.toBeInTheDocument()
     })
 
-    expect(screen.getByText(/no schedule for may 2026/i)).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /open schedules to generate/i })).toHaveAttribute(
+    expect(screen.getByText(/não há agendamentos para may 2026/i)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /abrir agendamentos para gerar/i })).toHaveAttribute(
       'href',
       '/app/schedules',
     )
@@ -153,8 +153,8 @@ describe('WelcomePage (dashboard)', () => {
       expect(screen.queryByLabelText(/loading dashboard/i)).not.toBeInTheDocument()
     })
 
-    expect(screen.getByRole('link', { name: /view schedules/i })).toBeInTheDocument()
-    expect(screen.queryByRole('link', { name: /open schedules to generate/i })).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /visualizar agendamentos/i })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /abrir agendamentos para gerar/i })).not.toBeInTheDocument()
   })
 
   it('shows guards error banner and retry refetches', async () => {
@@ -177,7 +177,7 @@ describe('WelcomePage (dashboard)', () => {
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent(/sem permissão/i)
 
-    const retryButtons = within(document.body).getAllByRole('button', { name: /retry/i })
+    const retryButtons = within(document.body).getAllByRole('button', { name: /tentar novamente/i })
     await user.click(retryButtons[0])
 
     await waitFor(() => {

@@ -61,7 +61,7 @@ export function SectorsPage() {
       if (loadTokenRef.current !== token) {
         return
       }
-      const fallback = 'Could not load sectors.'
+      const fallback = 'Não foi possível carregar setores.'
       if (e instanceof ApiError) {
         setLoadError(e.message || fallback)
       } else {
@@ -142,7 +142,7 @@ export function SectorsPage() {
       return
     }
     if (positionsInvalid) {
-      setFormError('Positions per day must be a whole number from 1 to 500.')
+      setFormError('As posições por dia devem ser um número inteiro de 1 a 500.')
       return
     }
 
@@ -152,18 +152,18 @@ export function SectorsPage() {
       const descPayload = descTrim.length > 0 ? descTrim : null
       if (formOpen === 'create') {
         await createSector(nameDraft.trim(), descPayload, positionsDraft)
-        setBanner({ kind: 'success', message: 'Sector created.' })
+        setBanner({ kind: 'success', message: 'Setor criado.' })
       } else if (formOpen === 'edit' && editing) {
         await updateSector(editing.id, nameDraft.trim(), descPayload, positionsDraft)
-        setBanner({ kind: 'success', message: 'Changes saved.' })
+        setBanner({ kind: 'success', message: 'Alterações salvas.' })
       }
       closeForm()
       await refreshList()
     } catch (err: unknown) {
       if (err instanceof ApiError) {
-        setFormError(err.message || 'Save failed.')
+        setFormError(err.message || 'Falha ao salvar.')
       } else {
-        setFormError('Save failed.')
+        setFormError('Falha ao salvar.')
       }
     } finally {
       setSubmitting(false)
@@ -178,14 +178,14 @@ export function SectorsPage() {
     setBanner(null)
     try {
       await inactivateSector(inactivateTarget.id)
-      setBanner({ kind: 'success', message: 'Sector deactivated.' })
+      setBanner({ kind: 'success', message: 'Setor desativado.' })
       setInactivateTarget(null)
       await refreshList()
     } catch (err: unknown) {
       if (err instanceof ApiError) {
         setBanner({ kind: 'error', message: err.message })
       } else {
-        setBanner({ kind: 'error', message: 'Could not deactivate.' })
+        setBanner({ kind: 'error', message: 'Não foi possível desativar.' })
       }
     } finally {
       setInactivateSubmitting(false)
@@ -196,13 +196,13 @@ export function SectorsPage() {
     setBanner(null)
     try {
       await activateSector(sectorId)
-      setBanner({ kind: 'success', message: 'Sector activated.' })
+      setBanner({ kind: 'success', message: 'Setor ativado.' })
       await refreshList()
     } catch (err: unknown) {
       if (err instanceof ApiError) {
         setBanner({ kind: 'error', message: err.message })
       } else {
-        setBanner({ kind: 'error', message: 'Could not activate.' })
+        setBanner({ kind: 'error', message: 'Não foi possível ativar.' })
       }
     }
   }
@@ -212,14 +212,14 @@ export function SectorsPage() {
   }
 
   const chips: { id: ChipFilter; label: string }[] = [
-    { id: 'all', label: 'All sectors' },
-    { id: 'activeOnly', label: 'Active only' },
+    { id: 'all', label: 'Todos os setores' },
+    { id: 'activeOnly', label: 'Apenas ativos' },
   ]
 
   return (
     <div className={styles.page}>
       <AppHeader
-        title="Sector management"
+        title="Gestão de setores"
         email={session?.email}
         showNotifications
         showLogout
@@ -232,12 +232,12 @@ export function SectorsPage() {
           <input
             className={styles.searchInput}
             type="search"
-            placeholder="Search sectors by name or description..."
+            placeholder="Pesquisar setores por nome ou descrição..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            aria-label="Search sectors by name or description"
+            aria-label="Pesquisar setores por nome ou descrição"
           />
-          <button type="button" className={styles.tuneBtn} aria-label="Filter tune" title="Filters">
+          <button type="button" className={styles.tuneBtn} aria-label="Filtro de ajuste" title="Filtros">
             <span className={`material-symbols-outlined ${styles.iconMd}`}>tune</span>
           </button>
         </div>
@@ -261,7 +261,7 @@ export function SectorsPage() {
           role="status"
         >
           <span className={styles.bannerText}>{banner.message}</span>
-          <button type="button" className={styles.bannerDismiss} onClick={() => dismissBanner()} aria-label="Dismiss">
+          <button type="button" className={styles.bannerDismiss} onClick={() => dismissBanner()} aria-label="Dispensar">
             ✕
           </button>
         </div>
@@ -272,18 +272,18 @@ export function SectorsPage() {
           <span>
             {loadError}{' '}
             <button type="button" className={styles.linkBtn} onClick={() => void refreshList()}>
-              Retry
+              Tentar novamente
             </button>
           </span>
         </div>
       ) : null}
 
       <section className={styles.listSection} aria-busy={loading} aria-label="Sectors list">
-        {loading && displayedRows.length === 0 ? <p className={styles.muted}>Loading…</p> : null}
+        {loading && displayedRows.length === 0 ? <p className={styles.muted}>Carregando…</p> : null}
 
         {!loading && displayedRows.length === 0 && !loadError ? (
           <p className={styles.muted} role="status">
-            No sectors found for this filter.
+            Não há setores encontrados para este filtro.
           </p>
         ) : null}
 
@@ -302,7 +302,7 @@ export function SectorsPage() {
       </section>
 
       {isAdmin ? (
-        <button type="button" className={styles.fab} aria-label="Add sector" onClick={() => openCreate()}>
+        <button type="button" className={styles.fab} aria-label="Adicionar setor" onClick={() => openCreate()}>
           <span className={`material-symbols-outlined ${styles.fabIcon}`}>business</span>
         </button>
       ) : null}
@@ -319,7 +319,7 @@ export function SectorsPage() {
         >
           <div className={styles.dialogInner}>
             <h2 id="sector-form-title" className={styles.dialogTitle}>
-              {formOpen === 'create' ? 'New sector' : 'Edit sector'}
+              {formOpen === 'create' ? 'Novo setor' : 'Editar setor'}
             </h2>
 
             <form aria-labelledby="sector-form-title" onSubmit={(e) => void handleSubmit(e)}>
@@ -330,7 +330,7 @@ export function SectorsPage() {
               ) : null}
 
               <label className={styles.label} htmlFor="sector-name-input">
-                Name
+                Nome
                 <input
                   id="sector-name-input"
                   className={`${styles.input} ${nameInvalid ? styles.inputInvalid : ''}`}
@@ -342,10 +342,10 @@ export function SectorsPage() {
                   disabled={submitting}
                 />
               </label>
-              {nameInvalid ? <span className={styles.fieldErr}>Enter a name.</span> : null}
+              {nameInvalid ? <span className={styles.fieldErr}>Informe um nome.</span> : null}
 
               <label className={styles.label} htmlFor="sector-desc-input">
-                Description
+                Descrição
                 <textarea
                   id="sector-desc-input"
                   className={styles.input}
@@ -357,7 +357,7 @@ export function SectorsPage() {
               </label>
 
               <label className={styles.label} htmlFor="sector-positions-input">
-                Positions per day
+                Posições por dia
                 <input
                   id="sector-positions-input"
                   className={`${styles.input} ${positionsShowError ? styles.inputInvalid : ''}`}
@@ -376,15 +376,15 @@ export function SectorsPage() {
                 />
               </label>
               {positionsShowError ? (
-                <span className={styles.fieldErr}>Use a whole number between 1 and 500.</span>
+                <span className={styles.fieldErr}>Use um número inteiro entre 1 e 500.</span>
               ) : null}
 
               <div className={styles.dialogFooter}>
                 <button type="button" className={styles.btnGhost} onClick={() => closeForm()} disabled={submitting}>
-                  Cancel
+                  Cancelar
                 </button>
                 <button type="submit" className={styles.btnPrimary} disabled={submitting}>
-                  {submitting ? 'Saving…' : formOpen === 'create' ? 'Create' : 'Save'}
+                  {submitting ? 'Salvando…' : formOpen === 'create' ? 'Criar' : 'Salvar'}
                 </button>
               </div>
             </form>
@@ -403,10 +403,10 @@ export function SectorsPage() {
           }}
         >
           <div className={styles.dialogInner}>
-            <h2 className={styles.dialogTitle}>Deactivate sector</h2>
+            <h2 className={styles.dialogTitle}>Desativar setor</h2>
             <p className={styles.confirmBody}>
-              Confirm deactivation of <strong>{inactivateTarget.name}</strong>. Guard assignments linked to this
-              sector remain until changed.
+              Confirmar desativação de <strong>{inactivateTarget.name}</strong>. Agendamentos ligados a este
+              setor permanecem até serem alterados.
             </p>
             <div className={styles.dialogFooter}>
               <button
@@ -415,7 +415,7 @@ export function SectorsPage() {
                 onClick={() => setInactivateTarget(null)}
                 disabled={inactivateSubmitting}
               >
-                Cancel
+                Cancelar
               </button>
               <button
                 type="button"
@@ -423,7 +423,7 @@ export function SectorsPage() {
                 onClick={() => void confirmInactivate()}
                 disabled={inactivateSubmitting}
               >
-                {inactivateSubmitting ? 'Processing…' : 'Confirm'}
+                {inactivateSubmitting ? 'Processando…' : 'Confirmar'}
               </button>
             </div>
           </div>
@@ -458,7 +458,7 @@ function SectorCard({
         <div className={styles.cardTitleRow}>
           <h3 className={styles.cardName}>
             {isAdmin ? (
-              <button type="button" className={styles.nameBtn} onClick={onEdit} title="Edit sector">
+              <button type="button" className={styles.nameBtn} onClick={onEdit} title="Editar setor">
                 {row.name}
               </button>
             ) : (
@@ -470,11 +470,11 @@ function SectorCard({
           </span>
         </div>
         <div className={styles.cardMetaRow}>
-          {row.isActive ? <span className={styles.badgeActive}>Active</span> : <span className={styles.badgeInactive}>Inactive</span>}
+          {row.isActive ? <span className={styles.badgeActive}>Ativo</span> : <span className={styles.badgeInactive}>Inativo</span>}
           <span className={styles.cardLocation}>
             {row.requiredGuardsPerDay} position{row.requiredGuardsPerDay === 1 ? '' : 's'}/day
             {' · '}
-            {row.description?.trim() ? row.description : 'No description'}
+            {row.description?.trim() ? row.description : 'Sem descrição'}
           </span>
         </div>
       </div>
@@ -484,7 +484,7 @@ function SectorCard({
           disabled={!isAdmin}
           onActivateOff={onToggleOff}
           onActivateOn={onToggleOn}
-          label={`Active status for ${row.name}`}
+          label={`Status ativo para ${row.name}`}
         />
       </div>
     </li>
