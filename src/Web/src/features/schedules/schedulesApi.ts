@@ -66,4 +66,5 @@ export async function generateSchedule(month: number, year: number): Promise<{ i
   }
 
   await ensureOk(res, `Não foi possível gerar a escala para ${monthYearMessage(month, year)}.`)
+  throw new ApiError(res.status, 'Resposta inesperada ao gerar a escala.')
 }
