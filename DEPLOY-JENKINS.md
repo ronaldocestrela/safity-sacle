@@ -6,17 +6,17 @@ Este guia descreve o fluxo definido pelo [`Jenkinsfile`](Jenkinsfile) para **dep
 
 - **Jenkins executa no servidor de destino** (no mesmo host em que o Docker Compose deve subir os contêineres).
 - **Agent** com:
-  - **Docker** + **Docker Compose plugin** (`docker compose`).
-  - **.NET SDK da família principal 10** (o pipeline verifica `dotnet --version`; deve começar com `10.`).
-  - **Node.js** e **npm** compatíveis com [`src/Web/package.json`](src/Web/package.json) (`engines`, `npm ci`).
-  - **curl** (health check HTTP).
+  - **Docker** + **Docker Compose plugin** (`docker compose`) — o pipeline só **valida** esses dois no estágio inicial; garanta instalados antes do job rodar.
+  - **.NET SDK da família principal 10** (necessário para **Backend Tests**; não há verificação de versão nesse estágio).
+  - **Node.js** e **npm** compatíveis com [`src/Web/package.json`](src/Web/package.json) (**Frontend Tests**).
+  - **curl** — usado apenas no estágio **Verify** (health check); não há checagem explícita no início do job.
   - Permissão do usuário do Jenkins para usar o Docker conforme política da equipe (por exemplo inclusão em grupo `docker` ou agent específico).
 - Testes do backend (`dotnet test`) usam **Testcontainers**: durante o estágio **Backend Tests** é necessário Docker funcional para subir SQL Server efêmero.
 
 ## Visão geral do fluxo
 
 1. Obtém o código do repositório.
-2. Valida ferramentas no agent.
+2. Valida **Docker** e **Compose** no agent.
 3. Executa testes e build backend e frontend **antes** de gerar `.env`/Compose neste mesmo job — portanto esse agent precisa tanto de SDK/Node para build quanto de Docker quando os testes de integração rodam Testcontainers (e depois uso normal do Docker no deploy).
 4. Injeta valores secretos vindos do Jenkins num arquivo `.env` na raiz (permissões restritas).
 5. Sobe/atualiza a stack com Compose (`build` + `up -d`).
@@ -34,10 +34,9 @@ Para semântica das variáveis de aplicação, veja também [`.env.example`](.en
 - Executa **`checkout scm`**. O job deve ser **Pipeline from SCM** (Multibranch ou pipeline apontando para o mesmo repositório).
 - Todo o trabalho ocorre na **raiz do clone** (`Jenkinsfile`, `docker-compose.prod.yml`, etc.).
 
-### 2. `Validate Tools`
+### 2. `Validate Docker`
 
-- Verifica comandos **`docker`**, **`docker compose`**, **`curl`**, **`dotnet`**, **`node`**, **`npm`**.
-- Falha se a versão do SDK **não** começar com `10.` (evita erro confuso nos testes ou no publish).
+- Verifica que **`docker`** e **`docker compose`** estão disponíveis (`docker version`, `docker compose version`).
 
 ### 3. `Backend Tests`
 

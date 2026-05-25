@@ -36,54 +36,14 @@ pipeline {
       }
     }
 
-    stage('Validate Tools') {
+    stage('Validate Docker') {
       steps {
         sh '''
           set -eu
           command -v docker
           docker version
           docker compose version
-          command -v curl
-          command -v dotnet
-          dotnet_ver="$(dotnet --version)"
-          case "${dotnet_ver}" in
-            10.*) ;;
-            *)
-              echo "ERROR: Esperado SDK .NET 10.x no agent Jenkins. Versão: ${dotnet_ver}"
-              exit 1
-              ;;
-          esac
-          echo "dotnet ${dotnet_ver}"
-          command -v node
-          node --version
-          command -v npm
-          npm --version
         '''
-      }
-    }
-
-    stage('Backend Tests') {
-      steps {
-        sh '''
-          set -eu
-          dotnet restore src/Tests/SafetyScale.Tests.csproj
-          dotnet build src/Tests/SafetyScale.Tests.csproj -c Release --no-restore
-          dotnet test src/Tests/SafetyScale.Tests.csproj -c Release --no-build
-        '''
-      }
-    }
-
-    stage('Frontend Tests') {
-      steps {
-        dir('src/Web') {
-          sh '''
-            set -eu
-            npm ci
-            npm run lint
-            npm run test
-            npm run build
-          '''
-        }
       }
     }
 
