@@ -29,7 +29,7 @@ services:
       ASPNETCORE_URLS: http://+:8080
       ForwardedHeaders__Enabled: "true"
       ConnectionStrings__DefaultConnection: |-
-        Server=sqlserver,${SQLSERVER_PORT:-1433};Database=${SAFETYSCALE_DB_NAME:-SafetyScale};User Id=sa;Password=${MSSQL_SA_PASSWORD:?};Encrypt=True;TrustServerCertificate=True;
+        Server=sqlserver,1433;Database=${SAFETYSCALE_DB_NAME:-SafetyScale};User Id=sa;Password=${MSSQL_SA_PASSWORD:?};Encrypt=True;TrustServerCertificate=True;
       Jwt__Key: ${JWT_KEY:?define JWT_KEY in .env}
       Jwt__Issuer: ${JWT_ISSUER:?define JWT_ISSUER in .env}
       Jwt__Audience: ${JWT_AUDIENCE:?define JWT_AUDIENCE in .env}
