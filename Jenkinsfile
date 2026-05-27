@@ -11,6 +11,8 @@
  *   safetyscale-db-name            → nome lógico do banco (ex.: SafetyScale)
  *   safetyscale-api-port           → porta da API exposta no host (ex.: 8081 → 8080 no contêiner)
  *   safetyscale-web-port           → porta HTTP publicada pelo Nginx do front (ex.: 80)
+ *   safetyscale-cors-origins       → origens CORS da API separadas por vírgula (pode ser vazio = não usa CORS)
+ *   safetyscale-vite-api-base-url → URL absoluta da API na build da SPA Vite (vazio = /api pelo Nginx)
  *
  * Opcionalmente ajuste JWT_EXPIRY_MINUTES e MSSQL_PID no estágio Prepare Env se precisar
  * diferente dos padrões (120 e Developer).
@@ -58,10 +60,20 @@ pipeline {
           string(credentialsId: 'safetyscale-db-name', variable: 'CRED_DB_NAME'),
           string(credentialsId: 'safetyscale-api-port', variable: 'CRED_API_PORT'),
           string(credentialsId: 'safetyscale-web-port', variable: 'CRED_WEB_PORT'),
+          string(credentialsId: 'safetyscale-cors-origins', variable: 'CRED_CORS_ORIGINS'),
+          string(credentialsId: 'safetyscale-vite-api-base-url', variable: 'CRED_VITE_API_BASE_URL'),
         ]) {
           // writeFile via Groovy evita erro de shell "Unterminated quoted string" quando
           // algum secret contém aspas, `$`, etc. (`printf "...${CRED}..."` no sh quebrava.)
           script {
+            def normalizeOptionalCred = { raw ->
+              if (raw == null) return ''
+              String s = raw.toString().trim()
+              if (s.isEmpty() || s == '-') return ''
+              return s
+            }
+            def cors = normalizeOptionalCred(env.CRED_CORS_ORIGINS)
+            def vite = normalizeOptionalCred(env.CRED_VITE_API_BASE_URL)
             def content =
               ('MSSQL_SA_PASSWORD=' + (env.CRED_MSSQL_SA_PASSWORD ?: '') + '\n'
                 + 'SQLSERVER_PORT=' + (env.CRED_SQLSERVER_PORT ?: '') + '\n'
@@ -71,7 +83,9 @@ pipeline {
                 + 'JWT_KEY=' + (env.CRED_JWT_KEY ?: '') + '\n'
                 + 'JWT_EXPIRY_MINUTES=120\n'
                 + 'API_PORT=' + (env.CRED_API_PORT ?: '') + '\n'
-                + 'WEB_PORT=' + (env.CRED_WEB_PORT ?: '') + '\n')
+                + 'WEB_PORT=' + (env.CRED_WEB_PORT ?: '') + '\n'
+                + 'CORS_ORIGINS=' + cors + '\n'
+                + 'VITE_API_BASE_URL=' + vite + '\n')
             writeFile file: '.env', text: content, encoding: 'UTF-8'
             sh 'chmod 600 .env'
           }

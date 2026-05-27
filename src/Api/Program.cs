@@ -37,9 +37,7 @@ if (useForwardedHeaders)
 }
 
 var app = builder.Build();
-var corsOrigins =
-    builder.Configuration.GetSection("Cors:Origins").Get<string[]>()
-    ?? Array.Empty<string>();
+var corsOrigins = CorsConfigurationHelper.ResolveAllowedOrigins(builder.Configuration);
 
 await app.Services.InitializeInfrastructureAsync(app.Environment.IsDevelopment());
 

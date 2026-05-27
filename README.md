@@ -379,7 +379,13 @@ Artefatos:
 - Frontend (Nginx + build Vite): [`src/Web/Dockerfile`](src/Web/Dockerfile), [`src/Web/nginx.conf`](src/Web/nginx.conf)
 - Variaveis de exemplo: [`.env.example`](.env.example) (copie para `.env` na raiz; nao commitar `.env`)
 
-O servico **`web`** publica **HTTP na porta configurada por `WEB_PORT` (padrao 80)** e encaminha `/api/*` para a API (`api:8080`) na rede interna. O servico **`api`** tambem pode ser acessado **diretamente no host** na porta **`API_PORT`** (padrao **8081**), mapeamento **`${API_PORT:-8081}:8080`**. O **`sqlserver`** expoe **`SQLSERVER_PORT`** no host (padrao **1433**), formato **`${SQLSERVER_PORT:-1433}:1433`**; dentro da Compose a API usa **`sqlserver:1433`**. Persistencia do SQL Server via volume Docker **`sqlserver-data`**. A cada subida da API, **migrations EF** aplicam-se automaticamente.
+O servico **`web`** publica **HTTP na porta configurada por `WEB_PORT` (padrao 80)** e encaminha `/api/*` para a API (`api:8080`) na rede interna. O servico **`api`** tambem pode ser acessado **diretamente no host** na porta **`API_PORT`** (padrao **8081**), mapeamento **`${API_PORT:-8081}:8080`**. O **`sqlserver`** expoe **`SQLSERVER_PORT`** no host (padrao **1433**), formato **`${SQLSERVER_PORT:-1433}:1433`**; dentro da Compose a API usa **`sqlserver:1433`**. Persistencia do SQL Server via volume Docker **`sqlserver-data`**.
+
+- **`VITE_API_BASE_URL`** (`${VITE_API_BASE_URL:-}`): **build-arg** da imagem do front [**`src/Web/Dockerfile`**](src/Web/Dockerfile). Define a base absoluta chamada pela SPA (**`import.meta.env.VITE_API_BASE_URL`**). **Vazio** ⇒ requests relativos **`/api/...`** (mesma origem atraves do Nginx). Preencha (ex.: `https://api.sua-instancia`) se o SPA for servido por origem diferente da API sem proxy reverso comum — e configure **`CORS_ORIGINS`** de acordo na API.
+
+- **`CORS_ORIGINS`** (`${CORS_ORIGINS:-}`): vira **`Cors__OriginsCsv`** na API (lista CSV de origens; ver [`appsettings.json`](src/Api/appsettings.json)). Vazio ⇒ array vazio ⇒ **middleware CORS nao registra**, adequado quando o navegador so fala **`/api` na mesma origem**. Se o SPA chamar **`VITE_API_BASE_URL`** direto contra a API (`API_PORT`/URL publica da API), preencha com a origem da SPA (**esquema + host + porta**), pode haver mais de uma separadas por vírgula.
+
+A cada subida da API, **migrations EF** aplicam-se automaticamente.
 
 **Ambiente Production:** usuarios **`Admin`** de desenvolvimento nao sao seeded; onboarding de empresa via **`/signup`** na SPA (`POST /api/tenants/register`).
 

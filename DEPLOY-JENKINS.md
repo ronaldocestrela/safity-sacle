@@ -63,6 +63,8 @@ docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
 ```
 
 - O Compose interpola **`${...}`** a partir do `.env` na mesma pasta.
+- A **`api`** recebe **`Cors__OriginsCsv`** (`CORS_ORIGINS`) — lista CSV de origens para o navegador. Vazio ⇒ middleware CORS desligado (caso uso só pela mesma origem com proxy **`/api`**).
+- **`web`** recebe **`VITE_API_BASE_URL`** como **build-arg** no `docker compose build`; vazio ⇒ SPA usa **`/api` relativo**, alinhado ao Nginx atual.
 - O **`sqlserver`** publica **`SQLSERVER_PORT`** no host (**`${SQLSERVER_PORT:-1433}:1433`**). A **`api`** continua usando o hostname **`sqlserver`** e a porta **`1433`** dentro da rede Compose.
 - O **`api`** publica **`API_PORT`** no host (**`${API_PORT:-8081}:8080`**). O **`web`** encaminha `/api/*` para **`api:8080`** na rede interna.
 - O SQL Server mantém dados no volume **`sqlserver-data`**; este pipeline **não** inclui comandos para apagar esse volume.
@@ -96,6 +98,8 @@ Tipo usual: credencial compatível com o step **`withCredentials`** + **`string(
 | `safetyscale-db-name` | `CRED_DB_NAME` | `SAFETYSCALE_DB_NAME` | Nome do banco na connection string (`Database=`). |
 | `safetyscale-api-port` | `CRED_API_PORT` | `API_PORT` | Porta host mapeada para a API (**ex.: `8081`** → contêiner `8080`; ver [`docker-compose.prod.yml`](docker-compose.prod.yml)). |
 | `safetyscale-web-port` | `CRED_WEB_PORT` | `WEB_PORT` | Porta host do Nginx (**ex.: `80`**); usada também no verificação de saúde. |
+| `safetyscale-cors-origins` | `CRED_CORS_ORIGINS` | `CORS_ORIGINS` | Origens CORS (**CSV** que vira **`Cors__OriginsCsv`** na API); use **`-`** como valor sentinel se não puder usar credencial vazia mas quiser arquivo sem origens. |
+| `safetyscale-vite-api-base-url` | `CRED_VITE_API_BASE_URL` | `VITE_API_BASE_URL` | Base URL injetada no **build** da SPA; vazio ⇒ `/api`; use **`-`** como sentinel igual acima. |
 
 **Variáveis no `.env` sem credencial própria no Jenkins (atualmente)**
 

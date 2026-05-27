@@ -46,8 +46,7 @@ public static class ServiceCollectionExtensions
         services.AddAuthorization();
         services.AddSwaggerGen();
 
-        var corsOrigins = configuration.GetSection("Cors:Origins").Get<string[]>()
-            ?? Array.Empty<string>();
+        var corsOrigins = CorsConfigurationHelper.ResolveAllowedOrigins(configuration);
         if (corsOrigins.Length > 0)
         {
             services.AddCors(options =>
