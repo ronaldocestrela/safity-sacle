@@ -39,6 +39,7 @@ A migração é **incremental e calma**: o React permanece em produção até a 
 | Config API | **`ApiBaseUrl`** em `wwwroot/appsettings.json` | Substitui `VITE_API_BASE_URL` — ver matriz abaixo |
 | Testes UI | **bUnit** + smoke E2E onde fizer sentido | Substituir Vitest/RTL gradualmente |
 | Coexistência dev | React **4863**, Blazor **4864**, API **5003** | CORS dual: `4863` + `4864` em Development |
+| Convenções do time | [docs/frontend-blazor-conventions.md](docs/frontend-blazor-conventions.md) | B0.3 — estrutura, nomenclatura, CSS, freeze React |
 
 ### Matriz `ApiBaseUrl`
 
@@ -124,15 +125,16 @@ A migração é **incremental e calma**: o React permanece em produção até a 
 
 ### B0.3 — Convenções do time
 
-- [ ] Documentar estrutura de pastas Blazor (ver B1).
-- [ ] Definir padrão de nomenclatura: `*ApiClient`, `*Dto`, páginas em `Pages/App/`.
-- [ ] Definir regra: **scoped CSS** 1:1 com o React; não introduzir biblioteca de UI nesta migração.
-- [ ] Acordar freeze do React (a partir de B4).
+- [x] Documentar estrutura de pastas Blazor (ver B1) — [docs/frontend-blazor-conventions.md](docs/frontend-blazor-conventions.md).
+- [x] Definir padrão de nomenclatura: `*ApiClient`, `*Dto`, páginas em `Pages/App/`.
+- [x] Definir regra: **scoped CSS** 1:1 com o React; não introduzir biblioteca de UI nesta migração.
+- [x] Acordar freeze do React (a partir de B4) — política documentada no guia e em `agents.md`.
 
 ### Critério de pronto (B0)
 
 - POC sobe localmente, consome a API e persiste token em `sessionStorage`.
 - Decisões registradas neste arquivo (seção Premissas) sem pendências bloqueantes.
+- Convenções do time publicadas e referenciadas (B0.3).
 
 ---
 
@@ -644,6 +646,7 @@ A migração só é considerada **concluída** quando:
 ## Referências no repositório
 
 - **ADR 001:** [docs/adr/001-blazor-wasm-frontend.md](docs/adr/001-blazor-wasm-frontend.md)
+- **Convenções Blazor (B0.3):** [docs/frontend-blazor-conventions.md](docs/frontend-blazor-conventions.md)
 - Frontend atual (React): `src/Web`
 - **Spike Blazor (B0.2):** `src/Web.Blazor`
 - Rotas: `src/Web/src/app/routes.tsx`
@@ -661,3 +664,4 @@ A migração só é considerada **concluída** quando:
 | 2026-06-22 | 1.0 | Roadmap inicial da migração React → Blazor WASM |
 | 2026-06-22 | 1.1 | B0.1 concluída — ADR 001; Premissas expandidas; matriz `ApiBaseUrl`; CORS dual dev |
 | 2026-06-22 | 1.2 | B0.2 concluída — POC `src/Web.Blazor` (spike, sessionStorage, CORS 4864, fonts) |
+| 2026-06-22 | 1.3 | B0.3 concluída — guia de convenções; freeze React; fase B0 fechada |

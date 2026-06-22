@@ -62,6 +62,7 @@ A API em Development aceita origens `http://localhost:4863` (React) e `http://lo
 
 ## Próximas fases
 
-- **B0.3** — convenções do time
 - **B1** — bootstrap formal (solution, pastas, README definitivo)
 - **B2** — auth provider, handlers HTTP, parser JWT
+
+Convenções do time: [docs/frontend-blazor-conventions.md](../../docs/frontend-blazor-conventions.md)

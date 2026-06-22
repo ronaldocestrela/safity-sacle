@@ -36,9 +36,9 @@ O sistema deve permitir:
 - FluentAssertions
 - Docker
 
-## Frontend (React)
+## Frontend (React) — legado em migração
 
-> **Status:** **Fases F0–F4 concluídas** — o projeto `src/Web` inclui Vite, React, TypeScript, Router, ESLint, Prettier, Vitest, CSS Modules, **login JWT (`sessionStorage`)** com **`tenantId`** (claim `tenant_id`), **cadastro público de empresa** em **`/signup`**, shell, rotas por perfil e **módulos sectors, security-guards, unavailable-days e schedules**. **Fase F5** (hardening UX e qualidade) **ainda pendente**.
+> **Status:** **Fases F0–F4 concluídas** no `src/Web`. **Migração para Blazor WASM** em andamento — ver [`roadmap-blazor-migration.md`](roadmap-blazor-migration.md). Novo frontend: `src/Web.Blazor`. Convenções Blazor: [`docs/frontend-blazor-conventions.md`](docs/frontend-blazor-conventions.md). **Fase F5** (hardening UX React) **não** será duplicada; melhorias entram no Blazor após cutover.
 
 - React (18+)
 - TypeScript
@@ -54,7 +54,41 @@ O sistema deve permitir:
 - Autorização na UI espelhando perfis **`Admin`** e **`Supervisor`**: rotas, menus e ações condicionais; regras definitivas continuam no backend.
 - Formulários com validação de UX (campos obrigatórios, formatos); **validação de negócio permanece na API** (FluentValidation/handlers).
 - Tratamento padronizado de erros da API (401, 403, 422, 500) e mensagens ao usuário.
-- Base URL da API via variável de ambiente (ex.: `VITE_API_BASE_URL`).
+- Base URL da API via variável de ambiente (ex.: `VITE_API_BASE_URL` no React; `ApiBaseUrl` em `wwwroot/appsettings.json` no Blazor).
+
+---
+
+## Frontend (Blazor WebAssembly) — trilha de migração
+
+> **Status:** **B0 concluída** (decisões ADR 001, spike B0.2, convenções B0.3). Projeto em `src/Web.Blazor`. Bootstrap formal na **B1**.
+
+- Blazor WebAssembly Standalone (.NET 10)
+- Porta dev **4864** (React permanece **4863**)
+- `ApiBaseUrl` + CORS em dev; produção same-origin via Nginx
+- JWT em `sessionStorage` (chave `safetyscale.auth.session`) — paridade React
+- Estilo: **scoped CSS** (`.razor.css`) 1:1 com CSS Modules do React; **sem biblioteca de UI nova** nesta migração
+- Testes: **bUnit** (a partir de B2/B3)
+
+**Convenções obrigatórias:** [`docs/frontend-blazor-conventions.md`](docs/frontend-blazor-conventions.md)
+
+---
+
+## Convivência React + Blazor (transição B0–B11)
+
+| Período | React (`src/Web`) | Blazor (`src/Web.Blazor`) |
+|---|---|---|
+| B0–B3 | Produção / referência de paridade | Spike, bootstrap, infra, layout |
+| **B4+ (freeze)** | Apenas bugfix P0/P1 e manutenção até B11 | Todas as novas features e telas |
+| B10 | Coexistência até cutover | Frontend alvo em produção |
+| B11 | Removido ou arquivado | Frontend oficial único |
+
+### Regra de freeze do React (a partir da fase **B4**)
+
+- **Proibido** no React: novas features, novas telas, F5 UX, refactors amplos.
+- **Permitido** no React: correções críticas (P0/P1), regressões bloqueantes, ajustes mínimos de CI/build até descomissionamento.
+- **Exceção:** PR deve incluir seção **“Exceção freeze React”** com justificativa e impacto.
+
+Detalhes e checklist de PR: [`docs/frontend-blazor-conventions.md`](docs/frontend-blazor-conventions.md) (seções 6 e 7).
 
 ---
 
@@ -81,10 +115,13 @@ src/
  ├── Domain
  ├── Infrastructure
  ├── Tests
- └── Web
+ ├── Web              # SPA React (legado; freeze a partir da fase B4 da migração Blazor)
+ └── Web.Blazor       # SPA Blazor WASM (destino)
 ```
 
 > **`Web`:** aplicação React (SPA) em `src/Web`; estrutura base (`app/`, `features/`, `shared/`, `assets/`) alinhada ao layout sugerido abaixo.
+
+> **`Web.Blazor`:** aplicação Blazor WASM em `src/Web.Blazor`; estrutura-alvo em [`docs/frontend-blazor-conventions.md`](docs/frontend-blazor-conventions.md).
 
 ```text
 src/Web/          # layout atual do repositório
