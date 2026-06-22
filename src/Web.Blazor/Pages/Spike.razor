@@ -1,0 +1,309 @@
+@page "/"
+@inject AppConfiguration AppConfig
+@inject ApiUrlBuilder ApiUrls
+@inject BrowserSessionStorage SessionStorage
+@inject HttpClient Http
+
+<PageTitle>SafetyScale — Spike B0.2</PageTitle>
+
+<div class="spike">
+    <header class="spike-header">
+        <span class="material-symbols-outlined spike-icon" aria-hidden="true">shield_person</span>
+        <div>
+            <h1>SafetyScale Blazor Spike</h1>
+            <p class="spike-subtitle">Fase B0.2 — POC técnica</p>
+        </div>
+    </header>
+
+    <section class="spike-panel">
+        <h2>Configuração</h2>
+        <dl class="spike-dl">
+            <dt>ApiBaseUrl</dt>
+            <dd><code>@(string.IsNullOrEmpty(AppConfig.ApiBaseUrl) ? "(vazio — URLs relativas)" : AppConfig.ApiBaseUrl)</code></dd>
+            <dt>Token em sessionStorage</dt>
+            <dd><code>@(string.IsNullOrEmpty(_storedTokenPreview) ? "(nenhum)" : TruncateToken(_storedTokenPreview))</code></dd>
+        </dl>
+        <button type="button" class="spike-btn" @onclick="RefreshStoredTokenAsync">Atualizar token lido</button>
+    </section>
+
+    <section class="spike-panel">
+        <h2>Health API</h2>
+        <div class="spike-actions">
+            <button type="button" class="spike-btn" disabled="@_busy" @onclick="CheckHealthWithoutTokenAsync">
+                GET /api/health (sem token)
+            </button>
+            <button type="button" class="spike-btn" disabled="@_busy" @onclick="CheckHealthWithFakeTokenAsync">
+                GET /api/health (token inválido)
+            </button>
+            <button type="button" class="spike-btn" disabled="@_busy" @onclick="CheckHealthWithStoredTokenAsync">
+                GET /api/health (token salvo)
+            </button>
+        </div>
+    </section>
+
+    <section class="spike-panel">
+        <h2>SessionStorage interop</h2>
+        <div class="spike-actions">
+            <button type="button" class="spike-btn" disabled="@_busy" @onclick="SaveFakeTokenAsync">
+                Salvar token fake
+            </button>
+            <button type="button" class="spike-btn spike-btn-muted" disabled="@_busy" @onclick="ClearSessionAsync">
+                Limpar sessão
+            </button>
+        </div>
+    </section>
+
+    <section class="spike-panel">
+        <h2>Login dev</h2>
+        <EditForm Model="_loginForm" OnValidSubmit="LoginAndHealthAsync">
+            <div class="spike-field">
+                <label for="email">E-mail</label>
+                <InputText id="email" @bind-Value="_loginForm.Email" class="spike-input" />
+            </div>
+            <div class="spike-field">
+                <label for="password">Senha</label>
+                <InputText id="password" type="password" @bind-Value="_loginForm.Password" class="spike-input" />
+            </div>
+            <button type="submit" class="spike-btn spike-btn-primary" disabled="@_busy">
+                Login + health autenticado
+            </button>
+        </EditForm>
+    </section>
+
+    @if (!string.IsNullOrEmpty(_statusMessage))
+    {
+        <section class="spike-panel spike-result @(_statusIsError ? "spike-result-error" : "spike-result-ok")">
+            <h2>Resultado</h2>
+            <pre>@_statusMessage</pre>
+        </section>
+    }
+</div>
+
+@code {
+    private readonly LoginFormModel _loginForm = new()
+    {
+        Email = "admin@local.com",
+        Password = "Mudar@13",
+    };
+
+    private bool _busy;
+    private bool _statusIsError;
+    private string _statusMessage = string.Empty;
+    private string? _storedTokenPreview;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshStoredTokenAsync();
+    }
+
+    private async Task RefreshStoredTokenAsync()
+    {
+        _storedTokenPreview = await SessionStorage.GetTokenAsync();
+        StateHasChanged();
+    }
+
+    private async Task CheckHealthWithoutTokenAsync()
+    {
+        await RunHealthCheckAsync(null, "GET /api/health sem token");
+    }
+
+    private async Task CheckHealthWithFakeTokenAsync()
+    {
+        await RunHealthCheckAsync("fake.token.here", "GET /api/health com token inválido");
+    }
+
+    private async Task CheckHealthWithStoredTokenAsync()
+    {
+        var token = await SessionStorage.GetTokenAsync();
+        if (string.IsNullOrEmpty(token))
+        {
+            SetStatus(true, "Nenhum token em sessionStorage. Faça login ou salve um token fake.");
+            return;
+        }
+
+        await RunHealthCheckAsync(token, "GET /api/health com token salvo");
+    }
+
+    private async Task SaveFakeTokenAsync()
+    {
+        _busy = true;
+        try
+        {
+            const string fakeToken = "fake.jwt.token";
+            await SessionStorage.SaveTokenAsync(fakeToken);
+            await RefreshStoredTokenAsync();
+            var readBack = await SessionStorage.GetTokenAsync();
+            if (readBack == fakeToken)
+            {
+                SetStatus(false, "Token fake salvo e lido com sucesso via interop.");
+            }
+            else
+            {
+                SetStatus(true, "Falha ao ler token fake após salvar.");
+            }
+        }
+        catch (Exception ex)
+        {
+            SetStatus(true, $"Erro no interop: {ex.Message}");
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task ClearSessionAsync()
+    {
+        _busy = true;
+        try
+        {
+            await SessionStorage.ClearAsync();
+            await RefreshStoredTokenAsync();
+            var readBack = await SessionStorage.GetTokenAsync();
+            SetStatus(
+                readBack is null,
+                readBack is null ? "Sessão limpa com sucesso." : "Token ainda presente após limpar.");
+        }
+        catch (Exception ex)
+        {
+            SetStatus(true, $"Erro ao limpar sessão: {ex.Message}");
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task LoginAndHealthAsync()
+    {
+        _busy = true;
+        try
+        {
+            var loginUrl = ApiUrls.Build("/api/auth/login");
+            using var loginRequest = new HttpRequestMessage(HttpMethod.Post, loginUrl)
+            {
+                Content = JsonContent.Create(new { email = _loginForm.Email.Trim(), password = _loginForm.Password }),
+            };
+            loginRequest.Headers.Accept.ParseAdd("application/json");
+
+            using var loginResponse = await Http.SendAsync(loginRequest);
+            var loginBody = await loginResponse.Content.ReadAsStringAsync();
+
+            if (!loginResponse.IsSuccessStatusCode)
+            {
+                SetStatus(
+                    true,
+                    $"POST /api/auth/login falhou: HTTP {(int)loginResponse.StatusCode}\n{loginBody}");
+                return;
+            }
+
+            using var loginJson = System.Text.Json.JsonDocument.Parse(loginBody);
+            if (!loginJson.RootElement.TryGetProperty("token", out var tokenElement))
+            {
+                SetStatus(true, "Login retornou 200 mas sem campo token.");
+                return;
+            }
+
+            var token = tokenElement.GetString();
+            if (string.IsNullOrEmpty(token))
+            {
+                SetStatus(true, "Campo token vazio na resposta de login.");
+                return;
+            }
+
+            await SessionStorage.SaveTokenAsync(token);
+            await RefreshStoredTokenAsync();
+
+            var healthUrl = ApiUrls.Build("/api/health");
+            using var healthRequest = new HttpRequestMessage(HttpMethod.Get, healthUrl);
+            healthRequest.Headers.Accept.ParseAdd("application/json");
+            healthRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            using var healthResponse = await Http.SendAsync(healthRequest);
+            var healthBody = await healthResponse.Content.ReadAsStringAsync();
+            var code = (int)healthResponse.StatusCode;
+
+            if (healthResponse.IsSuccessStatusCode)
+            {
+                SetStatus(
+                    false,
+                    $"Login OK → token salvo em sessionStorage.\nGET /api/health autenticado: HTTP {code}\n{healthBody}");
+            }
+            else
+            {
+                SetStatus(
+                    true,
+                    $"Login OK e token salvo, mas health falhou: HTTP {code}\n{healthBody}");
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            SetStatus(
+                true,
+                $"Falha de rede ou CORS: {ex.Message}\nSuba a API (dotnet run --project src/Api) e confirme CORS para http://localhost:4864.");
+        }
+        catch (Exception ex)
+        {
+            SetStatus(true, $"Erro inesperado: {ex.Message}");
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task RunHealthCheckAsync(string? bearerToken, string label)
+    {
+        _busy = true;
+        try
+        {
+            var url = ApiUrls.Build("/api/health");
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Accept.ParseAdd("application/json");
+            if (!string.IsNullOrEmpty(bearerToken))
+            {
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", bearerToken);
+            }
+
+            using var response = await Http.SendAsync(request);
+            var body = await response.Content.ReadAsStringAsync();
+            var code = (int)response.StatusCode;
+            var expected401 = bearerToken is null || bearerToken == "fake.token.here";
+            var isExpected = expected401 ? code == 401 : code == 200;
+
+            SetStatus(
+                !isExpected,
+                $"{label}\nHTTP {code}\n{body}" +
+                (expected401 && code == 401 ? "\n(401 esperado — OK)" : string.Empty));
+        }
+        catch (HttpRequestException ex)
+        {
+            SetStatus(
+                true,
+                $"{label}\nFalha de rede ou CORS: {ex.Message}\nSuba a API e confirme CORS para http://localhost:4864.");
+        }
+        catch (Exception ex)
+        {
+            SetStatus(true, $"{label}\nErro: {ex.Message}");
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void SetStatus(bool isError, string message)
+    {
+        _statusIsError = isError;
+        _statusMessage = message;
+    }
+
+    private static string TruncateToken(string token) =>
+        token.Length <= 24 ? token : $"{token[..12]}…{token[^8..]}";
+
+    private sealed class LoginFormModel
+    {
+        public string Email { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+    }
+}

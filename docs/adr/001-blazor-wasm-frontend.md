@@ -69,6 +69,8 @@ O dev server do Blazor WASM **não possui proxy `/api` nativo** equivalente ao V
 - **Dev:** sobrescrever via `wwwroot/appsettings.Development.json` com `"ApiBaseUrl": "http://localhost:5003"` (detalhe fino validado no spike B0.2).
 - **Produção:** `ApiBaseUrl` vazio ⇒ URLs relativas `/api/...`, idêntico ao React com `VITE_API_BASE_URL` vazio.
 
+**Validado em B0.2:** `WebAssemblyHostBuilder.CreateDefault` carrega `appsettings.json` + `appsettings.Development.json` quando `ASPNETCORE_ENVIRONMENT=Development` (definido em `launchSettings.json` do Blazor). Não foi necessário workaround `#if DEBUG`.
+
 **Paridade com React** ([`src/Web/src/shared/config/env.ts`](../../src/Web/src/shared/config/env.ts)):
 
 - Base vazia → path relativo (`/api/health`).

@@ -115,10 +115,12 @@ A migração é **incremental e calma**: o React permanece em produção até a 
 
 ### B0.2 — Spike técnico (POC mínima)
 
-- [ ] Criar projeto WASM vazio que chama `GET /api/health` com token fake ou 401 esperado.
-- [ ] Validar **JS interop** para ler/gravar JWT em `sessionStorage`.
-- [ ] Validar dev Blazor com `ApiBaseUrl` = `http://localhost:5003` + CORS origem **4864** (sem proxy Vite — ver ADR 001).
-- [ ] Validar carregamento de **Material Symbols** + fonte **Inter** no `index.html` / `App.razor`.
+- [x] Criar projeto WASM em `src/Web.Blazor` com página spike que chama `GET /api/health` (401 sem token; 200 após login).
+- [x] Validar **JS interop** para ler/gravar JWT em `sessionStorage` (chave `safetyscale.auth.session`).
+- [x] Validar dev Blazor com `ApiBaseUrl` = `http://localhost:5003` + CORS origem **4864** (sem proxy Vite — ver ADR 001).
+- [x] Validar carregamento de **Material Symbols** + fonte **Inter** no `index.html` / spike UI.
+
+> Spike: [`src/Web.Blazor/README.md`](src/Web.Blazor/README.md) — `dotnet run --project src/Web.Blazor` na porta **4864**.
 
 ### B0.3 — Convenções do time
 
@@ -643,6 +645,7 @@ A migração só é considerada **concluída** quando:
 
 - **ADR 001:** [docs/adr/001-blazor-wasm-frontend.md](docs/adr/001-blazor-wasm-frontend.md)
 - Frontend atual (React): `src/Web`
+- **Spike Blazor (B0.2):** `src/Web.Blazor`
 - Rotas: `src/Web/src/app/routes.tsx`
 - Auth: `src/Web/src/shared/auth/`
 - API (inalterada nesta trilha): `src/Api`
@@ -657,3 +660,4 @@ A migração só é considerada **concluída** quando:
 |---|---|---|
 | 2026-06-22 | 1.0 | Roadmap inicial da migração React → Blazor WASM |
 | 2026-06-22 | 1.1 | B0.1 concluída — ADR 001; Premissas expandidas; matriz `ApiBaseUrl`; CORS dual dev |
+| 2026-06-22 | 1.2 | B0.2 concluída — POC `src/Web.Blazor` (spike, sessionStorage, CORS 4864, fonts) |
