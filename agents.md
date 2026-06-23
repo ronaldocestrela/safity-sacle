@@ -38,7 +38,7 @@ O sistema deve permitir:
 
 ## Frontend (React) — legado em migração
 
-> **Status:** **Fases F0–F4 concluídas** no `src/Web`. **Migração para Blazor WASM** em andamento — ver [`roadmap-blazor-migration.md`](roadmap-blazor-migration.md). Novo frontend: `src/Web.Blazor`. Convenções Blazor: [`docs/frontend-blazor-conventions.md`](docs/frontend-blazor-conventions.md). **Fase F5** (hardening UX React) **não** será duplicada; melhorias entram no Blazor após cutover.
+> **Status:** **Fases F0–F4 concluídas** no React legado (arquivado). **Migração Blazor B0–B11 concluída** — ver [`roadmap-blazor-migration.md`](roadmap-blazor-migration.md). Frontend oficial: `src/Web.Blazor`.
 
 - React (18+)
 - TypeScript
@@ -60,10 +60,10 @@ O sistema deve permitir:
 
 ## Frontend (Blazor WebAssembly) — trilha de migração
 
-> **Status:** **B0–B10 concluídas** — Blazor WASM é o **frontend em produção** (cutover B10, 2026-06-23). React (`src/Web`) permanece legado até **B11**. Convenções Blazor: [`docs/frontend-blazor-conventions.md`](docs/frontend-blazor-conventions.md).
+> **Status:** **B0–B11 concluídas** — Blazor WASM é o **frontend único** (cutover B10, 2026-06-23; React arquivado B11). Projeto em `src/Web.Blazor`. Convenções: [`docs/frontend-blazor-conventions.md`](docs/frontend-blazor-conventions.md).
 
 - Blazor WebAssembly Standalone (.NET 10)
-- Porta dev **4864** (React permanece **4863**)
+- Porta dev **4864**
 - `ApiBaseUrl` + CORS em dev; produção same-origin via Nginx
 - JWT em `sessionStorage` (chave `safetyscale.auth.session`) — paridade React
 - Estilo: **scoped CSS** (`.razor.css`) 1:1 com CSS Modules do React; **sem biblioteca de UI nova** nesta migração
@@ -80,7 +80,7 @@ O sistema deve permitir:
 | B0–B3 | Produção / referência de paridade | Spike, bootstrap, infra, layout |
 | **B4+ (freeze)** | Apenas bugfix P0/P1 e manutenção até B11 | Todas as novas features e telas |
 | B10 | Coexistência até cutover | **Frontend alvo em produção** (cutover 2026-06-23) |
-| B11 | Removido ou arquivado | Frontend oficial único |
+| B11 | Arquivado (`archive/legacy-react-web/`) | Frontend oficial único |
 
 ### Regra de freeze do React (a partir da fase **B4**)
 
@@ -115,23 +115,14 @@ src/
  ├── Domain
  ├── Infrastructure
  ├── Tests
- ├── Web              # SPA React (legado; freeze a partir da fase B4 da migração Blazor)
- └── Web.Blazor       # SPA Blazor WASM (destino)
+ ├── Web.Blazor       # SPA Blazor WASM (frontend oficial)
 ```
 
 Solution .NET na raiz: **`SafetyScale.sln`** (Api, Application, Domain, Infrastructure, Tests, Web.Blazor).
 
-> **`Web`:** aplicação React (SPA) em `src/Web`; estrutura base (`app/`, `features/`, `shared/`, `assets/`) alinhada ao layout sugerido abaixo.
-
 > **`Web.Blazor`:** aplicação Blazor WASM em `src/Web.Blazor`; estrutura-alvo em [`docs/frontend-blazor-conventions.md`](docs/frontend-blazor-conventions.md).
 
-```text
-src/Web/          # layout atual do repositório
- ├── app/           # providers, router, layout raiz
- ├── features/      # módulos por domínio (sectors, security-guards, unavailable-days, schedules)
- ├── shared/        # componentes, hooks, utilitários, tipos API
- └── assets/
-```
+> **React legado (arquivado B11):** [`archive/legacy-react-web/`](archive/legacy-react-web/) — somente referência histórica; não buildar.
 
 ---
 
@@ -239,7 +230,7 @@ Novas telas administrativas (pós-login) devem seguir o **fluxo obrigatório** d
 
 # MCP Google Stitch (fluxo padrão para novas telas)
 
-> **Regra deste repositório:** toda **nova tela** administrativa no `src/Web` deve passar pelo Stitch **antes** da implementação em React, exceto nos casos listados em **Onde é opcional**.
+> **Regra deste repositório:** toda **nova tela** administrativa no frontend deve passar pelo Stitch **antes** da implementação em Blazor, exceto nos casos listados em **Onde é opcional**.
 
 O MCP `user-stitch` é a etapa padrão de descoberta visual e validação de UX; o código React deve **espelhar** a referência já aceita, adaptando-a aos padrões deste arquivo e aos contratos reais da API.
 
@@ -257,7 +248,7 @@ O MCP `user-stitch` é a etapa padrão de descoberta visual e validação de UX;
 1. **Gerar ou revisar** a referência no projeto **SafetyScale Web** (`projectId = 9334796298126275303`).
 2. **Prompt** objetivo, citando: perfil (`Admin` / `Supervisor`), **endpoint(s)** da API envolvidos, estados de **loading**, **empty state**, **erro** (incl. 401/403/422 quando fizer sentido na UX), validações visíveis ao usuário e o que deve estar habilitado ou escondido por perfil.
 3. **Revisar** no Stitch; usar `generate_variants` / `edit_screens` quando precisar de alternativas ou ajustes.
-4. **Só então** implementar em `src/Web` (pastas `features/` / `shared/`, CSS Modules, tipos/DTOs alinhados à API).
+4. **Só então** implementar em `src/Web.Blazor` (pastas `Pages/`, `Components/`, `Services/`, scoped CSS, DTOs alinhados à API).
 5. **Registrar** na descrição do PR ou do trabalho qual tela / nome / identificador Stitch foi usada como base, quando aplicável.
 
 ## Onde é obrigatório
@@ -283,7 +274,7 @@ O MCP `user-stitch` é a etapa padrão de descoberta visual e validação de UX;
 
 - **Não** usar Stitch como fonte de regra de negócio, autorização, validação de domínio ou contrato de API.
 - O **backend** continua sendo a fonte oficial de permissões, validações e contratos.
-- As saídas do Stitch devem ser **adaptadas** aos padrões React/TypeScript deste documento antes de virar código em `src/Web`.
+- As saídas do Stitch devem ser **adaptadas** às convenções Blazor deste documento antes de virar código em `src/Web.Blazor`.
 - **Não** incluir segredos, tokens, senhas reais ou dados sensíveis em prompts ou na documentação do Stitch.
 
 ---
@@ -769,7 +760,7 @@ Deve possuir:
 * Dockerfile
 * docker-compose.yml
 
-Quando fizer sentido na entrega, o `docker-compose.yml` **pode** incluir serviço da SPA em build multi-stage (o projeto `src/Web` já existe; integração compose é opcional).
+Quando fizer sentido na entrega, o `docker-compose.yml` **pode** incluir serviço da SPA Blazor em build multi-stage (`src/Web.Blazor/Dockerfile`).
 
 ---
 
@@ -824,7 +815,7 @@ NÃO fazer:
 
 O sistema deve nascer preparado para:
 
-* **SPA React em `src/Web`** (**Fases F0–F4** implementadas — ver `README.md` / `roadmap.md`; backend cobre até Fase 5 e **isolamento multitenant** com cadastro público)
+* **SPA Blazor em `src/Web.Blazor`** (migração B0–B11 concluída); React arquivado em `archive/legacy-react-web/`
 * **Multiempresa lógica (Tenants)** já em uso — evoluir com governança, faturação e limites por plano quando necessário
 * **`Sector` + vagas combinadas**: **setores já modelam várias vagas/postos simultâneos** — evoluir com turnos diferentes, especialização ou regra de ocupação física quando necessário (ver domínio)
 * Múltiplos postos (conceitos além dos setores atuais, se produto distinguir **posto físico × setor lógico**)

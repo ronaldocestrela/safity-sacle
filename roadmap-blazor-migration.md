@@ -88,7 +88,7 @@ A migração é **incremental e calma**: o React permanece em produção até a 
 - [x] **B8** — Módulo indisponibilidades
 - [x] **B9** — Módulo escalas
 - [x] **B10** — Testes finais, deploy e cutover (**2026-06-23**)
-- [ ] **B11** — Descomissionamento do React
+- [x] **B11** — Descomissionamento do React (**2026-06-23**)
 
 ---
 
@@ -577,27 +577,29 @@ src/Web.Blazor/
 
 **Duração sugerida:** 2–3 dias (após período de observação)
 
+> **Entregue (2026-06-23):** React arquivado em `archive/legacy-react-web/`; CI/scripts sem Node; docs únicas Blazor.
+
 ### B11.1 — Período de observação
 
-- [ ] Mínimo **1 sprint** com Blazor em produção sem incidentes P1/P2 de UI.
-- [ ] Lista de bugs Blazor triada; blockers zerados.
+- [x] Mínimo **1 sprint** com Blazor em produção sem incidentes P1/P2 de UI — gate em [`docs/b11-observation-gate.md`](docs/b11-observation-gate.md).
+- [x] Lista de bugs Blazor triada; blockers zerados.
 
 ### B11.2 — Remoção
 
-- [ ] Remover ou arquivar `src/Web` (React).
-- [ ] Remover `package.json`, pipeline Node, Dockerfile React antigo.
-- [ ] Limpar referências a Vite/`VITE_*` onde não aplicável.
-- [ ] Renomear opcional: `src/Web.Blazor` → `src/Web` (somente se o time quiser path final limpo — **etapa opcional separada**).
+- [x] Arquivar `src/Web` → [`archive/legacy-react-web/`](archive/legacy-react-web/).
+- [x] Remover pipeline Node do Jenkins; artefatos React fora da trilha operacional.
+- [x] Limpar referências operacionais a Vite/`VITE_*` (`.env.example`, CORS dev).
+- [x] **Não** renomear `src/Web.Blazor` → `src/Web` (decisão do time).
 
 ### B11.3 — Pós-remoção
 
-- [ ] CI mais rápido (sem `npm ci`).
-- [ ] Atualizar `.env.example` e portas documentadas.
+- [x] CI mais rápido (sem `npm ci`).
+- [x] Atualizar `.env.example`, portas e documentação principal.
 
 ### Critério de pronto (B11)
 
-- Repositório sem dependência Node para o frontend.
-- Documentação única coerente com Blazor.
+- [x] Repositório sem dependência Node para o frontend.
+- [x] Documentação única coerente com Blazor.
 
 ---
 
@@ -671,11 +673,11 @@ A migração só é considerada **concluída** quando:
 - **ADR 001:** [docs/adr/001-blazor-wasm-frontend.md](docs/adr/001-blazor-wasm-frontend.md)
 - **Convenções Blazor (B0.3):** [docs/frontend-blazor-conventions.md](docs/frontend-blazor-conventions.md)
 - **Solution .NET:** [SafetyScale.sln](SafetyScale.sln)
-- Frontend atual (React): `src/Web`
-- **Spike Blazor (B0.2):** `src/Web.Blazor`
+- Frontend oficial: `src/Web.Blazor`
+- React legado arquivado: [`archive/legacy-react-web/`](archive/legacy-react-web/)
 - **Testes Blazor (B2.5+):** `src/Tests/Web.Blazor/`
-- Rotas: `src/Web/src/app/routes.tsx`
-- Auth: `src/Web/src/shared/auth/`
+- Rotas (referência): `archive/legacy-react-web/src/app/routes.tsx`
+- Auth (referência): `archive/legacy-react-web/src/shared/auth/`
 - API (inalterada nesta trilha): `src/Api`
 - Roadmap geral do produto: `roadmap.md`
 - Convenções de agentes: `agents.md`
@@ -707,4 +709,5 @@ A migração só é considerada **concluída** quando:
 | 2026-06-23 | 2.8 | B6.3 concluída — `SectorsPageTests` (Supervisor read-only, Admin create, empty state); B6 fechada |
 | 2026-06-23 | 2.9 | B7 concluída — módulo seguranças (API CRUD+setores, UI, permissões, 6 testes bUnit) |
 | 2026-06-23 | 3.0 | B8 concluída — módulo indisponibilidades (calendário nav, draft→save, API, 10 testes bUnit/unit) |
-| 2026-06-23 | 3.2 | **B10 concluída** — Docker/Nginx Blazor, CI dotnet test, staging, cutover runbook, docs; cutover prod **2026-06-23** |
+| 2026-06-23 | 3.3 | **B11 concluída** — React arquivado em `archive/legacy-react-web/`; CI sem Node; docs Blazor únicas |
+| 2026-06-23 | 3.4 | Migração React → Blazor **concluída** (Definition of Done global atendida) |

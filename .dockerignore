@@ -36,3 +36,6 @@ agents.md
 # Plans / tooling locals
 .cursor
 **/.vite
+
+# Legado React arquivado (B11) — não necessário ao build API/Blazor
+archive/

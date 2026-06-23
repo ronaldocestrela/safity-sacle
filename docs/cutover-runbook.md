@@ -80,27 +80,15 @@ docker compose -f docker-compose.prod.yml ps
 
 ---
 
-## 4. Rollback
+## 4. Rollback (pós-B11)
 
-Se regressão **P1/P2** na UI Blazor:
+Após o descomissionamento React (**B11**, 2026-06-23), **não há rollback operacional para a SPA React** no working tree.
 
-1. Reverter serviço **`web`** para build React anterior (tag/imagem conhecida) **ou** checkout git anterior ao merge B10 e rebuild:
+- Código React preservado em [`archive/legacy-react-web/`](../archive/legacy-react-web/) (referência histórica).
+- Rollback de UI exige **tag/commit anterior ao cutover B10** ou **imagem Docker** salva antes do cutover Blazor.
+- Procedimento de emergência: restaurar compose/Dockerfile de tag `pre-b10` (se existir) e rebuild do serviço `web` — fora do fluxo padrão pós-B11.
 
-   ```bash
-   # Exemplo: rebuild web a partir de commit/tag com React ainda no compose
-   git checkout <tag-pre-b10> -- docker-compose.prod.yml src/Web/Dockerfile
-   docker compose -f docker-compose.prod.yml up -d --build web
-   ```
+## 5. Encerramento B10 / observação B11
 
-2. Confirmar smoke mínimo React (login + `/app/schedules`).
-3. Abrir incidente; corrigir Blazor em branch; repetir staging antes de novo cutover.
-
-> **Nota:** B11 remove React definitivamente. Rollback só é possível enquanto imagens/commits React estiverem disponíveis.
-
----
-
-## 5. Encerramento B10
-
-- Monitoramento 24–48 h sem P1/P2 de UI.
-- Atualizar [`roadmap-blazor-migration.md`](../roadmap-blazor-migration.md) com data de cutover.
-- Iniciar período de observação B11 (mínimo 1 sprint).
+- B10 encerrado com cutover **2026-06-23**.
+- B11 concluída — ver [`docs/b11-observation-gate.md`](b11-observation-gate.md) e [`roadmap-blazor-migration.md`](../roadmap-blazor-migration.md) B11.

@@ -40,7 +40,7 @@ src/Web.Blazor/
 
 ## Estilos globais (B1.3)
 
-- `wwwroot/css/app.css` — paridade com [`src/Web/src/index.css`](../Web/src/index.css): reset, `body`, Inter, Material Symbols.
+- `wwwroot/css/app.css` — paridade com [`src/Web/src/index.css`](../../archive/legacy-react-web/src/index.css): reset, `body`, Inter, Material Symbols.
 - `wwwroot/index.html` — links Google Fonts (Inter + Material Symbols Outlined), `css/app.css`, `SafetyScale.Web.Blazor.styles.css`.
 - `wwwroot/icons.svg` — copiado de `src/Web/public/icons.svg` (B1.2).
 - **Telas reais (B4+):** estilos por componente/página via `.razor.css` (scoped CSS), copiando `*.module.css` do React.
@@ -102,7 +102,7 @@ Abra `http://localhost:4864`.
 
 ## Home pública (B4.1)
 
-Paridade com [`src/Web/src/features/home/HomePage.tsx`](../Web/src/features/home/HomePage.tsx):
+Paridade com [`src/Web/src/features/home/HomePage.tsx`](../../archive/legacy-react-web/src/features/home/HomePage.tsx):
 
 - Título, lead e painel de smoke da API.
 - Links para `/login` e `/signup`.
@@ -113,7 +113,7 @@ Arquivos: `Pages/Home.razor`, `Pages/Home.razor.css`.
 
 ## Login (B4.2)
 
-Paridade com [`src/Web/src/features/auth/LoginPage.tsx`](../Web/src/features/auth/LoginPage.tsx):
+Paridade com [`src/Web/src/features/auth/LoginPage.tsx`](../../archive/legacy-react-web/src/features/auth/LoginPage.tsx):
 
 - Card Stitch (header escuro, campos e-mail/senha, botão **Entrar**).
 - Submit via `AuthSessionService.LoginAsync` → `POST /api/auth/login`.
@@ -126,7 +126,7 @@ Arquivos: `Pages/Auth/Login.razor`, `Pages/Auth/Login.razor.css`.
 
 ## Signup (B4.3)
 
-Paridade com [`src/Web/src/features/tenant-registration/RegisterTenantPage.tsx`](../Web/src/features/tenant-registration/RegisterTenantPage.tsx):
+Paridade com [`src/Web/src/features/tenant-registration/RegisterTenantPage.tsx`](../../archive/legacy-react-web/src/features/tenant-registration/RegisterTenantPage.tsx):
 
 - Card wide com 5 campos: empresa, administrador, e-mail, senha, confirmação.
 - Validação local (obrigatoriedade + senhas iguais).
@@ -149,7 +149,7 @@ Suíte bUnit para login e signup com HTTP stubado (sem chamadas reais à API):
 
 ## Dashboard (B5.1)
 
-Paridade com [`src/Web/src/features/app/WelcomePage.tsx`](../Web/src/features/app/WelcomePage.tsx):
+Paridade com [`src/Web/src/features/app/WelcomePage.tsx`](../../archive/legacy-react-web/src/features/app/WelcomePage.tsx):
 
 - `AppHeader` com título, avatar/iniciais, notificações e logout.
 - Faixa de sessão: e-mail, perfil (roles) e tenant.
@@ -170,7 +170,7 @@ Arquivos: `Pages/App/Welcome.razor`, `Pages/App/Welcome.razor.css`, `Components/
 
 ## Access denied (B5.2)
 
-Paridade com [`src/Web/src/app/routes/AccessDeniedPage.tsx`](../Web/src/app/routes/AccessDeniedPage.tsx):
+Paridade com [`src/Web/src/app/routes/AccessDeniedPage.tsx`](../../archive/legacy-react-web/src/app/routes/AccessDeniedPage.tsx):
 
 - Mensagem de permissão negada com contexto de perfil Supervisor/Admin.
 - Link **Voltar ao início** → `/app` via `NavLink`.
@@ -220,7 +220,7 @@ Suíte bUnit para Welcome e AccessDenied:
 
 ## Cliente API setores (B6.1)
 
-Paridade com [`src/Web/src/features/sectors/sectorsApi.ts`](../Web/src/features/sectors/sectorsApi.ts):
+Paridade com [`src/Web/src/features/sectors/sectorsApi.ts`](../../archive/legacy-react-web/src/features/sectors/sectorsApi.ts):
 
 | Método | HTTP | Endpoint |
 |---|---|---|
@@ -239,7 +239,7 @@ Arquivos: `Services/Api/SectorsApiClient.cs`, `Models/Sectors/*.cs`.
 
 ## UI setores (B6.2)
 
-Paridade com [`src/Web/src/features/sectors/SectorsPage.tsx`](../Web/src/features/sectors/SectorsPage.tsx):
+Paridade com [`src/Web/src/features/sectors/SectorsPage.tsx`](../../archive/legacy-react-web/src/features/sectors/SectorsPage.tsx):
 
 - Busca client-side por nome/descrição + chips **Todos os setores** / **Apenas ativos** (reload via API).
 - Cards com badge Ativo/Inativo, meta de posições/dia e toggle de status.
@@ -264,7 +264,7 @@ Helper: `TestHelpers/SectorsPageTestHelper.cs` (sessão JWT + stubs `/api/sector
 
 ## Cliente API seguranças (B7.1)
 
-Paridade com [`src/Web/src/features/security-guards/securityGuardsApi.ts`](../Web/src/features/security-guards/securityGuardsApi.ts):
+Paridade com [`src/Web/src/features/security-guards/securityGuardsApi.ts`](../../archive/legacy-react-web/src/features/security-guards/securityGuardsApi.ts):
 
 | Método | HTTP | Endpoint |
 |---|---|---|
@@ -282,7 +282,7 @@ Arquivos: `Services/Api/SecurityGuardsApiClient.cs`, `Models/SecurityGuards/*.cs
 
 ## UI seguranças (B7.2–B7.4)
 
-Paridade com [`src/Web/src/features/security-guards/SecurityGuardsPage.tsx`](../Web/src/features/security-guards/SecurityGuardsPage.tsx):
+Paridade com [`src/Web/src/features/security-guards/SecurityGuardsPage.tsx`](../../archive/legacy-react-web/src/features/security-guards/SecurityGuardsPage.tsx):
 
 - Busca por nome/ID/setor + chips **All Personnel** / **Active Only** + filtro por setor.
 - Cards com ID sintético `#SO-XXXX`, badge Ativo/Inativo, setores ou **Férias** (inativo).
@@ -309,7 +309,7 @@ Helper: `TestHelpers/SecurityGuardsPageTestHelper.cs`.
 
 ## Cliente API indisponibilidades (B8.2)
 
-Paridade com [`src/Web/src/features/unavailable-days/unavailableDaysApi.ts`](../Web/src/features/unavailable-days/unavailableDaysApi.ts):
+Paridade com [`src/Web/src/features/unavailable-days/unavailableDaysApi.ts`](../../archive/legacy-react-web/src/features/unavailable-days/unavailableDaysApi.ts):
 
 | Método | HTTP | Endpoint |
 |---|---|---|
@@ -324,7 +324,7 @@ Arquivos: `Services/Api/UnavailableDaysApiClient.cs`, `Models/UnavailableDays/*.
 
 ## UI indisponibilidades (B8.3)
 
-Paridade com [`src/Web/src/features/unavailable-days/UnavailableDaysPage.tsx`](../Web/src/features/unavailable-days/UnavailableDaysPage.tsx):
+Paridade com [`src/Web/src/features/unavailable-days/UnavailableDaysPage.tsx`](../../archive/legacy-react-web/src/features/unavailable-days/UnavailableDaysPage.tsx):
 
 - Seletor de segurança (lista completa via `SecurityGuardsApiClient.ListAsync()`).
 - Calendário mensal com nav anterior/próximo (`MonthCalendar` + `MonthGrid`).
@@ -354,7 +354,7 @@ Helper: `TestHelpers/UnavailableDaysPageTestHelper.cs`.
 
 ## Cliente API escalas (B9.1)
 
-Paridade com [`src/Web/src/features/schedules/schedulesApi.ts`](../Web/src/features/schedules/schedulesApi.ts):
+Paridade com [`src/Web/src/features/schedules/schedulesApi.ts`](../../archive/legacy-react-web/src/features/schedules/schedulesApi.ts):
 
 | Método | HTTP | Endpoint |
 |---|---|---|
@@ -368,7 +368,7 @@ Arquivos: `Services/Api/SchedulesApiClient.cs`, `Models/Schedules/*.cs`.
 
 ## UI escalas (B9.2)
 
-Paridade com [`src/Web/src/features/schedules/SchedulesPage.tsx`](../Web/src/features/schedules/SchedulesPage.tsx):
+Paridade com [`src/Web/src/features/schedules/SchedulesPage.tsx`](../../archive/legacy-react-web/src/features/schedules/SchedulesPage.tsx):
 
 - Seletores mês/ano + validação de período.
 - Lista de agendamentos com setor, badges **Final de semana** / **Inativo**.
@@ -506,7 +506,7 @@ dotnet test src/Tests/SafetyScale.Tests.csproj --filter "FullyQualifiedName~Safe
 
 ## Roteamento (B3.1)
 
-Paridade estrutural com [`src/Web/src/app/routes.tsx`](../Web/src/app/routes.tsx):
+Paridade estrutural com [`src/Web/src/app/routes.tsx`](../../archive/legacy-react-web/src/app/routes.tsx):
 
 | Rota | Página | Layout |
 |---|---|---|
@@ -523,7 +523,7 @@ Paridade estrutural com [`src/Web/src/app/routes.tsx`](../Web/src/app/routes.tsx
 
 ## AppLayout shell (B3.3)
 
-Paridade com [`src/Web/src/app/AppLayout.tsx`](../Web/src/app/AppLayout.tsx):
+Paridade com [`src/Web/src/app/AppLayout.tsx`](../../archive/legacy-react-web/src/app/AppLayout.tsx):
 
 - **Bottom nav fixa** — 5 itens: Dashboard (`/app`, match exato), Sectors, Guards, Availability, Schedules.
 - **Estado ativo** — `NavLink` + `ActiveClass`; ícones Material Symbols com `FILL 1` no item ativo.
@@ -561,13 +561,13 @@ Arquivos: `Layout/AppLayout.razor`, `Layout/AppLayout.razor.css`.
 
 ## CORS
 
-A API em Development aceita origens `http://localhost:4863` (React) e `http://localhost:4864` (Blazor) — ver `src/Api/appsettings.Development.json`.
+A API em Development aceita origem `http://localhost:4864` (Blazor) — ver `src/Api/appsettings.Development.json`.
 
 ## Dev experience (B1.4)
 
 - Porta dev: **4864** (`Properties/launchSettings.json`).
 - API em dev: `ApiBaseUrl` = `http://localhost:5003` (`wwwroot/appsettings.Development.json`).
-- Sem proxy `/api` no WASM — CORS dual-origin na API (`4863` React + `4864` Blazor).
+- Sem proxy `/api` no WASM — CORS na API para origem `4864`.
 - Script raiz: [`scripts/dev-blazor.sh`](../../scripts/dev-blazor.sh).
 
 ## Produção e cutover (B10)
@@ -585,4 +585,4 @@ Cutover produção registrado em **2026-06-23** — ver [`roadmap-blazor-migrati
 
 ## Próximas fases
 
-- **B11** — Descomissionamento do React
+- Migração React → Blazor **concluída (B0–B11)**. Melhorias de produto seguem em `src/Web.Blazor`.

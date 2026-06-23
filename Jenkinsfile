@@ -59,20 +59,6 @@ pipeline {
       }
     }
 
-    stage('Frontend Tests (React — allow failure until B11)') {
-      steps {
-        catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
-          sh '''
-            set -eu
-            if [ ! -d src/Web/node_modules ]; then
-              npm ci --prefix src/Web
-            fi
-            npm run test --prefix src/Web
-          '''
-        }
-      }
-    }
-
     stage('Prepare Env') {
       steps {
         withCredentials([

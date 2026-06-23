@@ -99,7 +99,7 @@ Root: `SafetyScale.Web.Blazor`
 
 ### Rotas (`@page`)
 
-Espelhar o React em [`src/Web/src/app/routes.tsx`](../src/Web/src/app/routes.tsx):
+Espelhar o React arquivado em [`archive/legacy-react-web/src/app/routes.tsx`](../archive/legacy-react-web/src/app/routes.tsx):
 
 | Rota | Arquivo |
 |---|---|
@@ -141,7 +141,7 @@ Exemplo de nomes alinhados aos módulos React:
 
 1. Cada `.razor` de página ou componente tem par `.razor.css` (isolated CSS do Blazor).
 2. Ao portar uma tela React, copiar valores de `*.module.css` para o `.razor.css` correspondente.
-3. Estilos globais (reset, `body`, `.material-symbols-outlined`) ficam em `wwwroot/css/app.css` — paridade com [`src/Web/src/index.css`](../src/Web/src/index.css).
+3. Estilos globais (reset, `body`, `.material-symbols-outlined`) ficam em `wwwroot/css/app.css` — paridade com [`archive/legacy-react-web/src/index.css`](../archive/legacy-react-web/src/index.css).
 4. Fontes e ícones: **Inter** + **Material Symbols Outlined** via `wwwroot/index.html` (já validado na spike B0.2).
 
 ### O que não fazer
@@ -168,72 +168,36 @@ Antes de implementar telas administrativas novas, manter fluxo Stitch documentad
 | Dev | `appsettings.Development.json` → `http://localhost:5003` |
 | Prod | `ApiBaseUrl` vazio → URLs relativas `/api/...` |
 | SessionStorage | Chave `safetyscale.auth.session`, valor `{ "token": "<jwt>" }` — paridade React |
-| Porta dev Blazor | **4864** (React permanece **4863**) |
+| Porta dev Blazor | **4864** |
 
 Detalhes: [ADR 001](adr/001-blazor-wasm-frontend.md).
 
 ---
 
-## 6. Convivência React + Blazor e freeze do React
+## 6. React arquivado (pós-B11)
 
-### Período atual (B0–B3)
+- Frontend **oficial e único:** `src/Web.Blazor` (Blazor WASM).
+- React legado: [`archive/legacy-react-web/`](../archive/legacy-react-web/) — **somente referência histórica** de paridade; não buildar nem deployar.
+- **Não** renomear `Web.Blazor` → `Web` nesta fase (paths estáveis em compose, CI e scripts).
 
-- **React** (`src/Web`) continua frontend de produção e referência de paridade.
-- **Blazor** (`src/Web.Blazor`) é trilha de migração; spike e infra evoluem em paralelo.
-- Ambos podem rodar em dev (4863 + 4864) contra a mesma API.
+### Checklist de PR (frontend Blazor)
 
-### Antes da fase B4
-
-- React: correções de bugs, ajustes mínimos para manter operação, F5 **não** duplicado no React se já planejado só no Blazor.
-- Blazor: bootstrap (B1), infra (B2), layout (B3).
-
-### A partir da fase B4 (freeze)
-
-| Permitido no React | Proibido no React (salvo exceção) |
-|---|---|
-| Bugfix **P0/P1** em produção | Novas features de produto |
-| Correção de regressão bloqueante | Novas telas ou fluxos |
-| Manutenção de CI/build até B11 | Refactor ou F5 UX |
-| — | Duplicar trabalho já iniciado no Blazor |
-
-**Evolução funcional e novas telas:** somente em `src/Web.Blazor` a partir de B4.
-
-### Exceções ao freeze
-
-Exigem no PR:
-
-1. Label ou seção **“Exceção freeze React”**
-2. Justificativa (P0/P1, produção, prazo)
-3. Confirmação de que a mesma correção **não** será reimplementada no Blazor (ou link para issue Blazor equivalente)
-
-### Fim da convivência
-
-- **B10:** cutover — Blazor vira frontend servido em produção.
-- **B11:** remoção de `src/Web` (React).
-
----
-
-## 7. Checklist de PR (migração Blazor)
-
-Usar ao abrir PR que toca frontend:
-
-- [ ] Rota e perfis (`Admin` / `Supervisor`) espelham React?
-- [ ] DTOs e endpoints alinhados à API (sem regra de negócio no client)?
-- [ ] CSS scoped portado do `.module.css` equivalente?
+- [ ] Rota e perfis (`Admin` / `Supervisor`) corretos?
+- [ ] DTOs e endpoints alinhados à API?
+- [ ] CSS scoped portado do legado React quando aplicável?
 - [ ] Loading, empty state e erros HTTP tratados?
-- [ ] Testes bUnit nas partes críticas (quando aplicável — B2+)?
-- [ ] PR impacta React? Se sim, está dentro da política de freeze (seção 6)?
+- [ ] Testes bUnit nas partes críticas?
 - [ ] Referência Stitch citada quando for tela administrativa nova?
 
 ---
 
-## 8. Referências
+## 7. Referências
 
 - [roadmap-blazor-migration.md](../roadmap-blazor-migration.md) — trilha B0–B11
 - [ADR 001](adr/001-blazor-wasm-frontend.md) — WASM Standalone, portas, ApiBaseUrl
 - [src/Web.Blazor/README.md](../src/Web.Blazor/README.md) — spike e execução local
 - [agents.md](../agents.md) — governança geral e transição React/Blazor
-- React atual: `src/Web/src/features/`, `src/Web/src/shared/`, `src/Web/src/app/routes.tsx`
+- React legado arquivado: [`archive/legacy-react-web/`](../archive/legacy-react-web/)
 
 ---
 

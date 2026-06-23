@@ -37,8 +37,7 @@ O projeto foi definido para:
 - MediatR
 - Serilog
 - xUnit + FluentAssertions
-- SPA em `src/Web`: React, TypeScript, Vite, React Router, Vitest — **legado** (freeze B4–B11); ver [`roadmap-blazor-migration.md`](roadmap-blazor-migration.md)
-- **SPA em `src/Web.Blazor`:** Blazor WebAssembly (.NET 10) — **frontend oficial em produção** (cutover B10)
+- **SPA em `src/Web.Blazor`:** Blazor WebAssembly (.NET 10) — **frontend oficial**
 
 ### Estrutura do projeto
 
@@ -49,7 +48,6 @@ src/
  ├── Domain
  ├── Infrastructure
  ├── Tests
- ├── Web              # SPA React (legado; descomissionamento B11)
  └── Web.Blazor       # SPA Blazor WASM (frontend oficial)
 ```
 
@@ -64,17 +62,10 @@ src/
 - [x] Fase 4 - Motor de geracao de escala
 - [x] Fase 5 - Consultas de escala e historico
 
-### Frontend (`src/Web`)
+### Frontend (`src/Web.Blazor`)
 
-- [x] Fase F0 - Bootstrap e convencoes (Vite, ESLint/Prettier, smoke API, CORS em Development)
-- [x] Fase F1 estendida — cadastro público `/signup`, sessão com `tenantId` no JWT
-- [x] Fase F2 - Seguranças na UI (`/app/security-guards`; `Admin` gerencia, `Supervisor` consulta)
-- [x] Fase F3 - Indisponibilidades na UI (`/app/unavailable-days`; `Admin`: CRUD via calendário + **SAVE RESTRICTIONS**; `Supervisor`: consulta)
-- [x] Fase F4 - Escalas na UI (`/app/schedules`; consulta mês/ano; **`Admin`** geração mensal; mensagens claras quando a API devolve **`ScheduleCoverageFailed`** na geração; listagem por item com **setor**); **telas de setores** (`/app/sectors`; vagas por dia **`requiredGuardsPerDay`**)
-
-### Fases pendentes (frontend)
-
-- [ ] Fase F5 — ver `roadmap.md` (qualidade, UX)
+- [x] Migração Blazor B0–B11 concluída (ver [`roadmap-blazor-migration.md`](roadmap-blazor-migration.md))
+- [x] Paridade funcional F0–F4 (auth, setores, seguranças, indisponibilidades, escalas)
 
 ### Fases pendentes (backend)
 
@@ -99,8 +90,8 @@ src/
 - serialização JSON da API em **camelCase** e leitura com **nome de propriedade case-insensitive** (`AddJsonOptions`), alinhando contratos ao SPA e a clientes JSON;
 - integracao: `TestWebApplicationFactory` sobe **SQL Server** via **Testcontainers** (container compartilhado) e usa **nome de database unico por instancia** (isolamento paralelo + limpeza `DROP DATABASE` ao descartar a factory);
 - tratamento de `ValidationException` com retorno HTTP `400`;
-- **CORS** configuravel (`Cors:Origins`); em Development inclui `http://localhost:4863` (React/Vite) e `http://localhost:4864` (Blazor WASM);
-- SPA em **`src/Web`** (React + Vite): `/login` e **`/signup`** (cadastro de empresa), JWT em `sessionStorage` com **`tenantId`** derivado do token, área `/app` com shell e rotas por perfil; **`/app/sectors`** (gestão de setores e vagas diárias), **`/app/security-guards`** (inclui setores por segurança), **`/app/unavailable-days`** e **`/app/schedules`** (lista mostra **setor** por atribuição; falha na geração exibe **`message`** retornada pela API); **`/app`** dashboard com detalhe do dia mostrando setor; proxy `/api` ou `VITE_API_BASE_URL`, home com smoke de `/api/health`, porta dev **4863**;
+- SPA em **`src/Web.Blazor`**: Blazor WASM — frontend oficial (`/login`, `/signup`, `/app/*`, JWT em `sessionStorage`, porta dev **4864**).
+- **CORS** configuravel (`Cors:Origins`); em Development inclui `http://localhost:4864` (Blazor WASM);
 - testes unitarios e de integracao do backend (**incl.** registro de tenant e isolamento multitenant onde aplicável) passando.
 
 ## Entidades implementadas
@@ -157,118 +148,37 @@ Usuários Identity (`AppUser`) possuem `TenantId` (um tenant por usuário) e `Di
 - **Fase 6 (backend):** entrega endurecida (Docker/`docker-compose`, padronizacao final de observabilidade, checklist operacional — ver [`roadmap.md`](roadmap.md)).
 
 - .NET SDK 10
-- Node.js **20.19+** ou **22.12+** (para `src/Web`: Vite 8 / Vitest 4)
 
-## Frontend (`src/Web`)
+## Frontend (`src/Web.Blazor`)
 
-SPA **React + TypeScript + Vite** com **React Router**, **ESLint**, **Prettier** e **Vitest** com **happy-dom** (evita conflitos ESM com a cadeia `jsdom` + CSS nos testes).
+SPA **Blazor WebAssembly** (.NET 10) — frontend oficial. Detalhes em [`src/Web.Blazor/README.md`](src/Web.Blazor/README.md) e [`docs/frontend-blazor-conventions.md`](docs/frontend-blazor-conventions.md).
 
-### Fase F1 (auth na UI)
+**Fluxos:** `/login`, `/signup`, área `/app/*` (setores, seguranças, indisponibilidades, escalas). JWT em `sessionStorage` (`safetyscale.auth.session`).
 
-- **Login:** `/login` → `POST /api/auth/login`, JWT em `sessionStorage` (expira → limpa sessão e volta ao login). Token inclui **`tenant_id`** para isolamento multitenant nas APIs seguintes.
-- **Cadastro de empresa:** `/signup` → `POST /api/tenants/register` (**anônimo**); após criar tenant e usuário Admin, fluxo sugere voltar ao login com o mesmo e-mail.
-- **Área autenticada:** `/app` com **barra inferior de navegação** (Dashboard, **Sectors**, Guards, Availability, Schedules), header com e-mail / perfil / logout nas telas shell; telas **Sectors**, **Guards**, **Availability** e **Schedules** (`/app/schedules`) usam header próprio estilo Stitch.
-- **Referências Google Stitch usadas como base:** tela **Login de Acesso** (`projects/9334796298126275303/screens/1837019a956541aabb147945bb4378ad`), shell desktop histórico **Shell Administrativo SafetyScale** (`projects/9334796298126275303/screens/7b68e9354acb499f835e008c52c21c57`), **BottomNavBar** da tela MOBILE **Gestão de Seguranças** (`projects/9334796298126275303/screens/1a430c771b494c85baf12207c805be74`), e **Regras de Escala** / aba Schedules (`projects/9334796298126275303/screens/e1026c6a3524415ca5f749c9496b2f5e`) — ícones **Material Symbols**.
+**React legado (arquivado):** [`archive/legacy-react-web/`](archive/legacy-react-web/) — referência histórica apenas.
 
-### Fase F2 (seguranças na UI)
+### Rodar contra a API local
 
-- **Rota:** `/app/security-guards` protegida — `Supervisor`: somente lista e filtro (`GET /api/security-guards`); `Admin`: criar, editar (`PUT`), inativar (`PATCH .../inactive`) e reativar (`PATCH .../active`).
-- Validacoes FluentValidation aparecem na API como HTTP **400** (corpo JSON com lista `errors`).
-- **Stitch (`user-stitch`, projeto SafetyScale Web, id `9334796298126275303`):** antes do merge/publicacao, gere ou revise uma tela de **listagem + formulario segurancas** no Stitch e cole o caminho da tela no PR (ex.: `projects/9334796298126275303/screens/<screenId>`), como ja feito na Fase F1. O codigo desta fase segue CSS Modules em `features/security-guards`. Referencia MOBILE de listagem: **Gestao de Segurancas** (`projects/9334796298126275303/screens/1a430c771b494c85baf12207c805be74`).
-
-### Fase F3 (indisponibilidades na UI)
-
-- **Rota:** `/app/unavailable-days` — `Supervisor`: `GET /api/security-guards/{id}/unavailable-days`; `Admin`: idem + `POST /api/security-guards/{id}/unavailable-days`, `DELETE /api/unavailable-days/{id}` (alterações só após **SAVE RESTRICTIONS**).
-- Layout alinhado ao mock MOBILE **Cadastro de Indisponibilidade**: `projects/9334796298126275303/screens/7e28e88d0da14a70b894a9586c58ee62`.
-
-### Fase F4 (escalas na UI)
-
-- **Rota:** `/app/schedules` — `Supervisor` e `Admin`: `GET /api/schedules/month/{month}/year/{year}`; `Admin`: `POST /api/schedules/generate`. Cada item da lista inclui **`sectorName`** quando a escala existe; erro **`400`** com corpo **`code`**: `ScheduleCoverageFailed` exibe **`message`** devolvida pela API ao usuário.
-- **Telas relacionadas:** `/app/sectors` (CRUD/setores + **`requiredGuardsPerDay`**), `/app/security-guards` (**`PUT`** setores por segurança quando **Admin**) — mesmo domínio de elegibilidade da geração.
-- Layout alinhado ao mock MOBILE **Regras de Escala**: `projects/9334796298126275303/screens/e1026c6a3524415ca5f749c9496b2f5e` (tokens Sentinel Command; lista de plantões integrada à API).
-
-### Novas telas e Google Stitch (padrão)
-
-1. **Antes de codar** uma tela administrativa nova (login, listagem, formulário, fluxo composto), gerar ou revisar a referência no MCP **`user-stitch`**, projeto Stitch **SafetyScale Web** (`projectId` e fluxo completo em [`agents.md`](agents.md)).
-2. O **prompt** deve citar perfil (`Admin` / `Supervisor`), endpoints da API, loading, empty state, erros e comportamento por perfil.
-3. Depois da referência aceita, implementar em `src/features/...` / `shared/` conforme [`agents.md`](agents.md).
-4. Na **descrição do PR**, indicar qual tela Stitch serviu de base, quando fizer sentido.
-
-Exceções (ex.: ajuste pontual em componente existente sem nova composição de tela) estão descritas em [`agents.md`](agents.md).
-
-### Variáveis de ambiente
-
-Copie `src/Web/.env.example` para `src/Web/.env` e ajuste:
-
-- **`VITE_API_BASE_URL`**: em desenvolvimento, deixe **vazio** para o browser chamar `/api/...` no mesmo host do Vite; o servidor de dev **encaminha** esses pedidos para a API (por padrão `http://localhost:5003`, perfil `http` do `dotnet run`). Se subir a API só em HTTPS local (`dotnet run --launch-profile https`), defina no `.env` do Web: `VITE_DEV_API_PROXY_TARGET=https://localhost:7104`.
-- **`VITE_SMOKE_LOGIN_EMAIL`** / **`VITE_SMOKE_LOGIN_PASSWORD`** (opcional): credenciais de smoke na home (ex.: usuário admin de desenvolvimento). Sem elas, a home ainda confirma que a API responde em `/api/health` com 401 (esperado sem token).
-
-### Rodar o Web contra a API local
-
-1. Suba a API (por padrão `dotnet run` usa **HTTP** em `http://localhost:5003`; para HTTPS também em `https://localhost:7104`, use `dotnet run --project src/Api/SafetyScale.Api.csproj --launch-profile https` — ver `src/Api/Properties/launchSettings.json`):
-
-   ```bash
-   dotnet run --project src/Api/SafetyScale.Api.csproj
-   ```
-
-2. Em outro terminal:
-
-   ```bash
-   cd src/Web
-   npm install
-   npm run dev
-   ```
-
-3. Abra `http://localhost:4863` (porta fixa do Vite neste repositório). A página inicial executa o smoke da API (health e, se configurado, login). Use **Ir para login** ou acesse `/login` para autenticar (Fase F1).
-
-### Rodar o Blazor contra a API local
-
-O frontend Blazor (`src/Web.Blazor`) roda na porta **4864** e chama a API diretamente via `ApiBaseUrl` (`http://localhost:5003` em Development), com **CORS** habilitado na API — **sem proxy** `/api` no dev server WASM (decisão [ADR 001](docs/adr/001-blazor-wasm-frontend.md)).
-
-**Opção recomendada — um comando (API + Blazor):**
+**Recomendado:**
 
 ```bash
 ./scripts/dev-blazor.sh
 ```
 
-O script sobe a API em background, aguarda `http://localhost:5003` e inicia o Blazor em foreground. `Ctrl+C` encerra ambos.
+Abra `http://localhost:4864`. A API deve estar em `http://localhost:5003` (CORS habilitado em Development).
 
-**Opção manual — dois terminais:**
-
-1. Suba a API:
-
-   ```bash
-   dotnet run --project src/Api/SafetyScale.Api.csproj
-   ```
-
-2. Em outro terminal:
-
-   ```bash
-   dotnet run --project src/Web.Blazor/SafetyScale.Web.Blazor.csproj
-   ```
-
-3. Abra `http://localhost:4864`. Detalhes em [`src/Web.Blazor/README.md`](src/Web.Blazor/README.md).
-
-### Scripts úteis (`src/Web`)
-
-| Comando              | Descrição        |
-|----------------------|------------------|
-| `npm run dev`        | Servidor Vite    |
-| `npm run build`      | Build produção   |
-| `npm run test`       | Vitest (CI)      |
-| `npm run lint`       | ESLint           |
-| `npm run format`     | Prettier write   |
+**Manual:** `dotnet run --project src/Api/SafetyScale.Api.csproj` + `dotnet run --project src/Web.Blazor/SafetyScale.Web.Blazor.csproj`.
 
 ### Scripts úteis (raiz)
 
 | Script | Descrição |
 |--------|-----------|
-| [`scripts/dev-blazor.sh`](scripts/dev-blazor.sh) | Sobe API + Blazor WASM (4864) para desenvolvimento |
-| [`scripts/test-local.sh`](scripts/test-local.sh) | Testes .NET (gate principal); React opcional (`SKIP_REACT_TESTS=1`) |
-| [`scripts/test-blazor.sh`](scripts/test-blazor.sh) | Gate bUnit Web.Blazor (B10) |
-| [`scripts/verify-blazor-deploy.sh`](scripts/verify-blazor-deploy.sh) | Verificação HTTP pós-deploy Blazor |
+| [`scripts/dev-blazor.sh`](scripts/dev-blazor.sh) | API + Blazor WASM (4864) |
+| [`scripts/test-local.sh`](scripts/test-local.sh) | Testes .NET (inclui bUnit Blazor) |
+| [`scripts/test-blazor.sh`](scripts/test-blazor.sh) | Gate bUnit Web.Blazor |
+| [`scripts/verify-blazor-deploy.sh`](scripts/verify-blazor-deploy.sh) | Verificação HTTP pós-deploy |
 
-> **Produção:** defina `VITE_API_BASE_URL` com a URL pública da API e preencha `Cors:Origins` na API com a origem exata do frontend (esquema + host + porta). Em dev o proxy do Vite ainda pode ser usado sem CORS; o Blazor em dev usa CORS + URL absoluta da API.
+> **Produção:** `ApiBaseUrl` vazio no build Blazor ⇒ `/api` via Nginx. Split-origin: `API_BASE_URL` + `CORS_ORIGINS`.
 
 ## Configuracao
 
@@ -279,7 +189,7 @@ As principais configuracoes estao em `src/Api/appsettings.json` e `src/Api/appse
 - `Jwt:Audience`
 - `Jwt:Key`
 - `Jwt:ExpiryMinutes`
-- `Cors:Origins` — lista de origens do browser autorizadas (ex.: `http://localhost:4863` e `http://localhost:4864` em Development). Vazio desativa o middleware CORS.
+- `Cors:Origins` — lista de origens do browser autorizadas (ex.: `http://localhost:4864` em Development). Vazio desativa o middleware CORS.
 
 > Importante: a chave JWT atual e somente para desenvolvimento. Troque em ambiente real.
 
@@ -412,13 +322,9 @@ Somente unitarios/Application/Domain (sem API integration / sem Docker):
 dotnet test src/Tests/SafetyScale.Tests.csproj --filter "FullyQualifiedName!~SafetyScale.Tests.Api.Integration"
 ```
 
-Frontend (`src/Web`), com dependencias instaladas (legado — nao bloqueia cutover Blazor):
+Frontend legado React (arquivado): ver [`archive/legacy-react-web/`](archive/legacy-react-web/).
 
-```bash
-cd src/Web && npm run test
-```
-
-Gate bUnit Blazor (B10):
+Gate bUnit Blazor:
 
 ```bash
 ./scripts/test-blazor.sh
@@ -432,7 +338,6 @@ Artefatos:
 - Compose staging: [`docker-compose.staging.yml`](docker-compose.staging.yml)
 - API: [`Dockerfile`](Dockerfile)
 - **Frontend Blazor:** [`src/Web.Blazor/Dockerfile`](src/Web.Blazor/Dockerfile), [`src/Web.Blazor/nginx.conf`](src/Web.Blazor/nginx.conf)
-- Legado React: [`src/Web/Dockerfile`](src/Web/Dockerfile) (ate B11)
 - Variaveis: [`.env.example`](.env.example)
 - Smoke: [`docs/smoke-cutover-checklist.md`](docs/smoke-cutover-checklist.md)
 - Runbook: [`docs/cutover-runbook.md`](docs/cutover-runbook.md)
