@@ -2,7 +2,7 @@
 
 Frontend **Blazor WebAssembly** do SafetyScale (migração React → Blazor). Parte da solution [`SafetyScale.sln`](../../SafetyScale.sln) na raiz.
 
-Spike técnica B0.2 validada; bootstrap B1.1 integrado à solution; **estrutura de pastas B1.2** formalizada; **estilos globais B1.3** consolidados; **dev experience B1.4** com script raiz; **configuração B2.1** (`ApiBaseUrl`) formalizada; **cliente HTTP B2.2** com handlers centralizados; **JWT e sessão B2.3** com `AuthenticationStateProvider`; **DTOs e tipos B2.4** com `JsonSerializerOptions` global; **testes unitários B2.5** da infra auth/HTTP; **roteamento B3.1** com paridade `routes.tsx`; **autorização de rotas B3.2** com `AuthorizeRouteView` e `RoleAuthorizeView`; **AppLayout shell B3.3** com bottom nav, header condicional e logout; **testes bUnit B3.4** de guards e nav ativa; **Home pública B4.1** com smoke de API e links login/signup; **Login B4.2** com formulário, erros e redirect; **Signup B4.3** com cadastro de empresa e redirect pós-cadastro; **testes bUnit B4.4** de fluxos públicos login/signup; **Dashboard B5.1** com sessão multitenant, KPIs, calendário e detalhe do dia; **AccessDenied B5.2** com mensagem de permissão e link de retorno ao dashboard; **AppHeader B5.3** compartilhado nas telas administrativas com título, subtítulo e logout; **testes bUnit B5.4** de Welcome e AccessDenied.
+Spike técnica B0.2 validada; bootstrap B1.1 integrado à solution; **estrutura de pastas B1.2** formalizada; **estilos globais B1.3** consolidados; **dev experience B1.4** com script raiz; **configuração B2.1** (`ApiBaseUrl`) formalizada; **cliente HTTP B2.2** com handlers centralizados; **JWT e sessão B2.3** com `AuthenticationStateProvider`; **DTOs e tipos B2.4** com `JsonSerializerOptions` global; **testes unitários B2.5** da infra auth/HTTP; **roteamento B3.1** com paridade `routes.tsx`; **autorização de rotas B3.2** com `AuthorizeRouteView` e `RoleAuthorizeView`; **AppLayout shell B3.3** com bottom nav, header condicional e logout; **testes bUnit B3.4** de guards e nav ativa; **Home pública B4.1** com smoke de API e links login/signup; **Login B4.2** com formulário, erros e redirect; **Signup B4.3** com cadastro de empresa e redirect pós-cadastro; **testes bUnit B4.4** de fluxos públicos login/signup; **Dashboard B5.1** com sessão multitenant, KPIs, calendário e detalhe do dia; **AccessDenied B5.2** com mensagem de permissão e link de retorno ao dashboard; **AppHeader B5.3** compartilhado nas telas administrativas com título, subtítulo e logout; **testes bUnit B5.4** de Welcome e AccessDenied; **cliente API setores B6.1** com `SectorsApiClient` (list/create/update/active/inactive) e DTOs de request/response; **UI setores B6.2** com listagem, filtros, CRUD Admin, leitura Supervisor e paridade visual React.
 
 Decisões de arquitetura: [ADR 001](../../docs/adr/001-blazor-wasm-frontend.md).  
 Convenções: [docs/frontend-blazor-conventions.md](../../docs/frontend-blazor-conventions.md).
@@ -218,6 +218,38 @@ Suíte bUnit para Welcome e AccessDenied:
 | `Pages/AccessDeniedPageTests.cs` | Link **Voltar ao início** aponta para `/app` |
 | `TestHelpers/AppDashboardTestHelper.cs` | Sessão autenticada + stubs de guards/schedules para Welcome |
 
+## Cliente API setores (B6.1)
+
+Paridade com [`src/Web/src/features/sectors/sectorsApi.ts`](../Web/src/features/sectors/sectorsApi.ts):
+
+| Método | HTTP | Endpoint |
+|---|---|---|
+| `ListAsync(isActive?)` | GET | `/api/sectors[?isActive=true\|false]` |
+| `CreateAsync` | POST | `/api/sectors` → `{ id }` |
+| `UpdateAsync` | PUT | `/api/sectors/{id}` |
+| `InactivateAsync` | PATCH | `/api/sectors/{id}/inactive` |
+| `ActivateAsync` | PATCH | `/api/sectors/{id}/active` |
+
+- DTOs: `CreateSectorRequestDto`, `UpdateSectorRequestDto`, `CreateSectorResponseDto` em `Models/Sectors/` (abordagem DTO-first).
+- `Description` normalizada para `null` quando vazia (paridade React).
+- Erros via `ApiClientResponseHelper.EnsureOkAsync` com fallbacks em PT.
+- Registro DI: `AddScoped<SectorsApiClient>()` em `Program.cs`.
+
+Arquivos: `Services/Api/SectorsApiClient.cs`, `Models/Sectors/*.cs`.
+
+## UI setores (B6.2)
+
+Paridade com [`src/Web/src/features/sectors/SectorsPage.tsx`](../Web/src/features/sectors/SectorsPage.tsx):
+
+- Busca client-side por nome/descrição + chips **Todos os setores** / **Apenas ativos** (reload via API).
+- Cards com badge Ativo/Inativo, meta de posições/dia e toggle de status.
+- **Admin:** FAB criar, editar pelo nome, create/edit modal, ativar/inativar (confirmação na inativação).
+- **Supervisor:** leitura completa; toggle e ações de escrita desabilitadas/ocultas.
+- Validação UX: nome obrigatório; posições inteiras 1–500; erros 400 da API no formulário.
+- Banners de sucesso/erro com dismiss; erro de carga com **Tentar novamente**; empty state por filtro.
+
+Arquivos: `Pages/App/Sectors.razor`, `Pages/App/Sectors.razor.css`.
+
 ## Configuração (B2.1)
 
 | Arquivo | Propósito |
@@ -279,7 +311,7 @@ Registro em `Program.cs`: pipeline manual `UnauthorizedRedirectHandler` → `Bea
 | `AppJsonSerializerOptions` | Opções globais: camelCase + case-insensitive (paridade API) |
 | `Models/Auth/` | `LoginRequestDto`, `LoginResponseDto` (+ `AuthSession`, `UserRole`) |
 | `Models/Tenants/` | `RegisterTenantRequestDto`, `RegisterTenantResponseDto` |
-| `Models/Sectors/` | `SectorDto` |
+| `Models/Sectors/` | `SectorDto`, `CreateSectorRequestDto`, `UpdateSectorRequestDto`, `CreateSectorResponseDto` |
 | `Models/SecurityGuards/` | `SecurityGuardDto` |
 | `Models/UnavailableDays/` | `UnavailableDayDto` |
 | `Models/Schedules/` | `ScheduleItemDto`, `MonthlyScheduleDto`, `ScheduleCoverageFailureResponse` |
@@ -384,4 +416,4 @@ A API em Development aceita origens `http://localhost:4863` (React) e `http://lo
 
 ## Próximas fases
 
-- **B6** — Módulo setores (`/app/sectors`)
+- **B6.3** — Testes bUnit do módulo setores (Supervisor read-only, Admin create, empty state)

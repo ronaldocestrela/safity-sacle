@@ -83,7 +83,7 @@ A migração é **incremental e calma**: o React permanece em produção até a 
 - [x] **B3** — Layout, roteamento e navegação
 - [x] **B4** — Telas públicas (home, login, signup)
 - [x] **B5** — Área autenticada base (dashboard, access denied)
-- [ ] **B6** — Módulo setores
+- [ ] **B6** — Módulo setores *(B6.1–B6.2 concluídas; pendente B6.3 — testes bUnit)*
 - [ ] **B7** — Módulo seguranças
 - [ ] **B8** — Módulo indisponibilidades
 - [ ] **B9** — Módulo escalas
@@ -377,19 +377,20 @@ src/Web.Blazor/
 
 **Duração sugerida:** 4–5 dias
 
+> **Progresso:** B6.1 (cliente API) e B6.2 (UI) concluídas. Próximo passo: B6.3 (testes bUnit).  
+> **Arquivos:** `Pages/App/Sectors.razor`, `Pages/App/Sectors.razor.css`, `Services/Api/SectorsApiClient.cs`, `Models/Sectors/*.cs`.
+
 ### B6.1 — Cliente API
 
-- [ ] `SectorsApiClient`: list, create, update, inactive, active.
-- [ ] Filtros de listagem (`isActive`); DTOs base já em `Models/Sectors/` (B2.4).
+- [x] `SectorsApiClient`: list, create, update, inactive, active.
+- [x] Filtros de listagem (`isActive`); DTOs base já em `Models/Sectors/` (B2.4).
 
 ### B6.2 — UI
 
-- [ ] Portar `SectorsPage.tsx` + CSS.
-- [ ] Lista com filtros; formulário create/edit.
-- [ ] Admin: todas ações; Supervisor: somente leitura.
-- [ ] Validação UX (nome, vagas ≥ 1); exibir erros 400 da API.
-
-> **Parcial (B5.3):** `AppHeader` compartilhado com título/subtítulo na rota; corpo da página ainda placeholder.
+- [x] Portar `SectorsPage.tsx` + CSS.
+- [x] Lista com filtros; formulário create/edit.
+- [x] Admin: todas ações; Supervisor: somente leitura.
+- [x] Validação UX (nome, vagas ≥ 1); exibir erros 400 da API.
 
 ### B6.3 — Testes
 
@@ -399,8 +400,9 @@ src/Web.Blazor/
 
 ### Critério de pronto (B6)
 
-- Paridade funcional com `SectorsPage.test.tsx` do React.
-- Revisão visual lado a lado com React.
+- [x] Cliente API e UI operacionais em `/app/sectors` (Admin CRUD; Supervisor read-only).
+- [ ] Paridade funcional com `SectorsPage.test.tsx` do React (B6.3).
+- [ ] Revisão visual lado a lado com React.
 
 ---
 
@@ -415,6 +417,7 @@ src/Web.Blazor/
 - [ ] `SecurityGuardsApiClient`: list, create, update, inactive, active, set sectors.
 - [ ] Integração com catálogo de setores (`SectorsApiClient`).
 
+> **Parcial (B6.1):** `SectorsApiClient` completo (list/create/update/active/inactive) — pronto para B7.
 > **Parcial (B5.1):** `SecurityGuardsApiClient.ListAsync` (read-only) já existe para o Welcome.
 
 ### B7.2 — UI — listagem e filtros
@@ -538,7 +541,7 @@ src/Web.Blazor/
 
 ### B10.3 — CI
 
-- [ ] Pipeline: `dotnet test` inclui **todos** os testes bUnit do Web.Blazor (parcial: 21 testes unitários de infra já em `src/Tests/Web.Blazor/` desde B2.5).
+- [ ] Pipeline: `dotnet test` inclui **todos** os testes bUnit do Web.Blazor (parcial: **31** testes em `src/Tests/Web.Blazor/` — infra B2.5, guards B3.4, públicas B4.4, dashboard B5.4; módulo setores B6.3 pendente).
 - [ ] Remover ou marcar `allow-failure` temporário nos testes npm do React até B11.
 
 ### B10.4 — Cutover (janela controlada)
@@ -692,3 +695,5 @@ A migração só é considerada **concluída** quando:
 | 2026-06-22 | 2.3 | Status geral: B1 e B2 marcadas concluídas; critérios B2 fechados; refs testes |
 | 2026-06-22 | 2.4 | B3.1 concluída — rotas espelhando React, fallback `*` → `/`, `AppLayout` esqueleto |
 | 2026-06-22 | 2.5 | B3.2 concluída — `AuthorizeRouteView`, `RoleAuthorizeView`, `returnUrl`, handler 401 alinhado |
+| 2026-06-23 | 2.6 | B6.1 concluída — `SectorsApiClient` (list/create/update/active/inactive), DTOs setores, DI |
+| 2026-06-23 | 2.7 | B6.2 concluída — UI setores em `Sectors.razor` com paridade React (CRUD, filtros, roles) |

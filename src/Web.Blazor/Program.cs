@@ -23,6 +23,7 @@ builder.Services.AddScoped<AuthSessionService>();
 builder.Services.AddScoped<TenantsRegistrationClient>();
 builder.Services.AddScoped<SecurityGuardsApiClient>();
 builder.Services.AddScoped<SchedulesApiClient>();
+builder.Services.AddScoped<SectorsApiClient>();
 
 builder.Services.AddScoped<ApiHttpClient>(sp =>
 {
