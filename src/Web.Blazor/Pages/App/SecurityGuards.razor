@@ -2,6 +2,10 @@
 @layout AppLayout
 @attribute [Authorize]
 @inject AuthSessionService AuthService
+@inject SecurityGuardsApiClient GuardsClient
+@inject SectorsApiClient SectorsClient
+@using SafetyScale.Web.Blazor.Models.SecurityGuards
+@using SafetyScale.Web.Blazor.Models.Sectors
 
 <PageTitle>SafetyScale — Seguranças</PageTitle>
 
@@ -14,22 +18,649 @@
                    ShowLogout="true"
                    OnLogout="HandleLogoutAsync" />
 
-        <main class="main">
-            <section class="placeholder-panel">
-                <p class="placeholder-lead">Placeholder B3.1 — implementação na fase B7.</p>
-            </section>
-        </main>
+        <div class="sticky-search">
+            <div class="search-field">
+                <span class="material-symbols-outlined search-icon">search</span>
+                <input class="search-input"
+                       type="search"
+                       placeholder="Pesquisar seguranças por nome, ID ou setor..."
+                       aria-label="Pesquisar seguranças por nome, ID ou setor"
+                       @bind="_search"
+                       @bind:event="oninput" />
+                <button type="button" class="tune-btn" aria-label="Filtro de ajuste" title="Filtros">
+                    <span class="material-symbols-outlined icon-md">tune</span>
+                </button>
+            </div>
+            <div class="chip-row chip-row-ext">
+                @foreach (var chip in Chips)
+                {
+                    <button type="button"
+                            class="@(_chip == chip.Id ? "chip-active" : "chip")"
+                            @onclick="() => SetChipAsync(chip.Id)">
+                        @chip.Label
+                    </button>
+                }
+                <label class="sector-filter">
+                    <span class="sector-filter-label card-location">Setor</span>
+                    <select class="input sector-filter-select"
+                            aria-label="Filtrar por setor"
+                            @bind="_sectorFilterId">
+                        <option value="">Todos os setores</option>
+                        @foreach (var sector in _sectorsCatalog)
+                        {
+                            <option value="@sector.Id.ToString()">
+                                @sector.Name@(!sector.IsActive ? " (inativo)" : "")
+                            </option>
+                        }
+                    </select>
+                </label>
+            </div>
+        </div>
+
+        @if (_banner is not null)
+        {
+            <div class="@($"banner-shared {(_banner.Kind == BannerKind.Success ? "banner-success" : "banner-error")}")"
+                 role="status">
+                <span class="banner-text">@_banner.Message</span>
+                <button type="button" class="banner-dismiss" aria-label="Dispensar" @onclick="DismissBanner">✕</button>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(_loadError))
+        {
+            <div class="banner-alt banner-error" role="alert">
+                <span>
+                    @_loadError
+                    <button type="button" class="link-btn" @onclick="RefreshListAsync">Tentar novamente</button>
+                </span>
+            </div>
+        }
+
+        <section class="list-section" aria-busy="@_loading" aria-label="Personnel list">
+            @if (_loading && DisplayedRows.Count == 0)
+            {
+                <p class="muted">Carregando…</p>
+            }
+
+            @if (!_loading && DisplayedRows.Count == 0 && string.IsNullOrEmpty(_loadError))
+            {
+                <p class="muted" role="status">Não há seguranças encontradas para este filtro.</p>
+            }
+
+            <ul class="card-list">
+                @foreach (var row in DisplayedRows)
+                {
+                    <li class="@($"personnel-card {(row.IsActive ? "personnel-card-active" : "personnel-card-inactive")}")">
+                        <div class="@(row.IsActive ? "accent-bar-active" : "accent-bar-inactive")"></div>
+                        <div class="card-avatar" aria-hidden="true">
+                            <span class="card-avatar-text">@GetInitial(row.Name)</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="card-title-row">
+                                <h3 class="card-name">
+                                    @if (IsAdmin)
+                                    {
+                                        <button type="button" class="name-btn" title="Editar segurança" @onclick="() => OpenEdit(row)">
+                                            @row.Name
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        @row.Name
+                                    }
+                                </h3>
+                                <span class="card-id">@DisplayGuardId(row.Id)</span>
+                            </div>
+                            <div class="card-meta-row">
+                                @if (row.IsActive)
+                                {
+                                    <span class="badge-active">Ativo</span>
+                                    <span class="card-location">@FormatSectorLabel(row)</span>
+                                }
+                                else
+                                {
+                                    <span class="badge-inactive">Inativo</span>
+                                    <span class="card-location">Férias</span>
+                                }
+                            </div>
+                        </div>
+                        <div class="card-toggle-col">
+                            <button type="button"
+                                    role="switch"
+                                    aria-checked="@row.IsActive"
+                                    aria-label="@($"Active status for {row.Name}")"
+                                    disabled="@(!IsAdmin)"
+                                    class="toggle-btn"
+                                    @onclick="() => HandleToggleAsync(row)">
+                                <span class="@($"toggle-track {(row.IsActive ? "toggle-track-on" : "")}")">
+                                    <span class="@($"toggle-thumb {(row.IsActive ? "toggle-thumb-on" : "")}")"></span>
+                                </span>
+                            </button>
+                        </div>
+                    </li>
+                }
+            </ul>
+        </section>
+
+        @if (IsAdmin)
+        {
+            <button type="button" class="fab" aria-label="Adicionar segurança" @onclick="OpenCreate">
+                <span class="material-symbols-outlined fab-icon">person_add</span>
+            </button>
+        }
+
+        @if (_nameFormOpen is not null)
+        {
+            <div class="backdrop"
+                 role="presentation"
+                 @onclick="HandleFormBackdropClick">
+                <div class="dialog-inner" @onclick:stopPropagation="true">
+                    <h2 id="sg-form-title" class="dialog-title">
+                        @(_nameFormOpen == FormMode.Create ? "Nova segurança" : "Editar segurança")
+                    </h2>
+
+                    <form aria-labelledby="sg-form-title" @onsubmit="HandleSubmitName" @onsubmit:preventDefault="true">
+                        @if (!string.IsNullOrEmpty(_nameFormError))
+                        {
+                            <p class="alert" role="alert">@_nameFormError</p>
+                        }
+
+                        <label class="label" for="sg-name-input">
+                            Name
+                            <input id="sg-name-input"
+                                   class="@($"input {(_nameInvalid ? "input-invalid" : "")}")"
+                                   value="@_nameDraft"
+                                   @oninput="OnNameInput"
+                                   @onblur="() => _nameTouched = true"
+                                   aria-invalid="@_nameInvalid"
+                                   disabled="@_submitting"
+                                   autofocus />
+                        </label>
+                        @if (_nameInvalid)
+                        {
+                            <span class="field-err">Enter a name.</span>
+                        }
+
+                        @if (IsAdmin)
+                        {
+                            <fieldset class="sector-fieldset">
+                                <legend class="label sector-fieldset-legend">Setores (ativos)</legend>
+                                @if (!string.IsNullOrEmpty(_sectorPickError))
+                                {
+                                    <p class="field-err" role="alert">@_sectorPickError</p>
+                                }
+                                else if (_sectorsPickList.Count == 0)
+                                {
+                                    <p class="card-location">Não há setores ativos. Crie setores primeiro.</p>
+                                }
+                                else
+                                {
+                                    <ul class="sector-pick-list">
+                                        @foreach (var sector in _sectorsPickList)
+                                        {
+                                            <li class="sector-pick-item">
+                                                <label>
+                                                    <input type="checkbox"
+                                                           checked="@IsSectorSelected(sector.Id)"
+                                                           disabled="@_submitting"
+                                                           @onchange="() => ToggleSectorSelection(sector.Id)" />
+                                                    <span>@sector.Name</span>
+                                                </label>
+                                            </li>
+                                        }
+                                    </ul>
+                                }
+                            </fieldset>
+                        }
+
+                        <div class="dialog-footer">
+                            <button type="button" class="btn-ghost" @onclick="CloseNameForm" disabled="@_submitting">Cancelar</button>
+                            <button type="submit" class="btn-primary" disabled="@_submitting">
+                                @(_submitting ? "Salvando…" : _nameFormOpen == FormMode.Create ? "Criar" : "Salvar")
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        }
+
+        @if (_inactivateTarget is not null)
+        {
+            <div class="backdrop"
+                 role="presentation"
+                 @onclick="HandleInactivateBackdropClick">
+                <div class="dialog-inner" @onclick:stopPropagation="true">
+                    <h2 class="dialog-title">Desativar segurança</h2>
+                    <p class="confirm-body">
+                        Confirmar desativação de <strong>@_inactivateTarget.Name</strong>. O histórico de agendamentos permanece.
+                    </p>
+                    <div class="dialog-footer">
+                        <button type="button"
+                                class="btn-ghost"
+                                @onclick="() => _inactivateTarget = null"
+                                disabled="@_inactivateSubmitting">
+                            Cancelar
+                        </button>
+                        <button type="button"
+                                class="btn-danger"
+                                @onclick="ConfirmInactivateAsync"
+                                disabled="@_inactivateSubmitting">
+                            @(_inactivateSubmitting ? "Processando…" : "Confirmar")
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
     </div>
 </RoleAuthorizeView>
 
 @code {
     private static readonly UserRole[] ModuleRoles = [UserRole.Admin, UserRole.Supervisor];
 
-    private AuthSession? _session;
+    private static readonly (ChipFilter Id, string Label)[] Chips =
+    [
+        (ChipFilter.All, "All Personnel"),
+        (ChipFilter.ActiveOnly, "Active Only"),
+    ];
 
-    protected override async Task OnInitializedAsync() =>
+    private AuthSession? _session;
+    private int _loadToken;
+    private bool _loading = true;
+    private string? _loadError;
+    private ChipFilter _chip = ChipFilter.All;
+    private string _search = string.Empty;
+    private string _sectorFilterId = string.Empty;
+    private IReadOnlyList<SecurityGuardDto> _items = [];
+    private IReadOnlyList<SectorDto> _sectorsCatalog = [];
+    private IReadOnlyList<SectorDto> _sectorsPickList = [];
+    private string? _sectorPickError;
+    private BannerState? _banner;
+
+    private FormMode? _nameFormOpen;
+    private SecurityGuardDto? _editing;
+    private string _nameDraft = string.Empty;
+    private HashSet<Guid> _selectedSectorIds = [];
+    private bool _nameTouched;
+    private bool _submitting;
+    private string? _nameFormError;
+
+    private SecurityGuardDto? _inactivateTarget;
+    private bool _inactivateSubmitting;
+
+    private bool IsAdmin => _session?.Roles.Contains(UserRole.Admin) == true;
+
+    private bool _nameInvalid => _nameTouched && string.IsNullOrWhiteSpace(_nameDraft);
+
+    private IReadOnlyList<SecurityGuardDto> DisplayedRows
+    {
+        get
+        {
+            var list = _items;
+
+            if (!string.IsNullOrEmpty(_sectorFilterId) && Guid.TryParse(_sectorFilterId, out var sectorId))
+            {
+                list = list.Where(g => g.Sectors.Any(s => s.Id == sectorId)).ToList();
+            }
+
+            var q = _search.Trim();
+            if (string.IsNullOrEmpty(q))
+            {
+                return list;
+            }
+
+            var lower = q.ToLowerInvariant();
+            return list
+                .Where(g =>
+                    g.Name.ToLowerInvariant().Contains(lower) ||
+                    DisplayGuardId(g.Id).ToLowerInvariant().Contains(lower) ||
+                    g.Sectors.Any(s => s.Name.ToLowerInvariant().Contains(lower)))
+                .ToList();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
         _session = await AuthService.GetSessionAsync();
+        await LoadSectorsCatalogAsync();
+        await RefreshListAsync();
+    }
+
+    private async Task LoadSectorsCatalogAsync()
+    {
+        try
+        {
+            _sectorsCatalog = await SectorsClient.ListAsync();
+        }
+        catch
+        {
+            _sectorsCatalog = [];
+        }
+    }
+
+    private async Task LoadSectorsPickListAsync()
+    {
+        if (_nameFormOpen is null || !IsAdmin)
+        {
+            _sectorsPickList = [];
+            _sectorPickError = null;
+            return;
+        }
+
+        try
+        {
+            _sectorsPickList = await SectorsClient.ListAsync(isActive: true);
+            _sectorPickError = null;
+        }
+        catch (ApiException ex)
+        {
+            _sectorsPickList = [];
+            _sectorPickError = string.IsNullOrWhiteSpace(ex.Message)
+                ? "Could not load active sectors."
+                : ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            _sectorsPickList = [];
+            _sectorPickError = "Could not load active sectors.";
+        }
+    }
+
+    private async Task SetChipAsync(ChipFilter chip)
+    {
+        if (_chip == chip)
+        {
+            return;
+        }
+
+        _chip = chip;
+        await RefreshListAsync();
+    }
+
+    private async Task RefreshListAsync()
+    {
+        var token = ++_loadToken;
+        _loading = true;
+        _loadError = null;
+
+        try
+        {
+            var list = await GuardsClient.ListAsync(ChipToIsActive(_chip));
+            if (token != _loadToken)
+            {
+                return;
+            }
+
+            _items = list;
+        }
+        catch (ApiException ex)
+        {
+            if (token != _loadToken)
+            {
+                return;
+            }
+
+            _loadError = string.IsNullOrWhiteSpace(ex.Message)
+                ? "Could not load personnel."
+                : ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            if (token != _loadToken)
+            {
+                return;
+            }
+
+            _loadError = "Could not load personnel.";
+        }
+        finally
+        {
+            if (token == _loadToken)
+            {
+                _loading = false;
+            }
+        }
+    }
+
+    private static bool? ChipToIsActive(ChipFilter chip) =>
+        chip == ChipFilter.ActiveOnly ? true : null;
+
+    private async Task OpenCreate()
+    {
+        _banner = null;
+        _nameFormOpen = FormMode.Create;
+        _editing = null;
+        _nameDraft = string.Empty;
+        _selectedSectorIds = [];
+        _nameTouched = false;
+        _nameFormError = null;
+        _submitting = false;
+        await LoadSectorsPickListAsync();
+    }
+
+    private async Task OpenEdit(SecurityGuardDto guard)
+    {
+        if (!IsAdmin)
+        {
+            return;
+        }
+
+        _banner = null;
+        _nameFormOpen = FormMode.Edit;
+        _editing = guard;
+        _nameDraft = guard.Name;
+        _selectedSectorIds = guard.Sectors.Select(s => s.Id).ToHashSet();
+        _nameTouched = false;
+        _nameFormError = null;
+        _submitting = false;
+        await LoadSectorsPickListAsync();
+    }
+
+    private void CloseNameForm()
+    {
+        _nameFormOpen = null;
+        _editing = null;
+        _nameDraft = string.Empty;
+        _selectedSectorIds = [];
+        _nameTouched = false;
+        _nameFormError = null;
+        _submitting = false;
+        _sectorsPickList = [];
+        _sectorPickError = null;
+    }
+
+    private void HandleFormBackdropClick(MouseEventArgs _)
+    {
+        if (!_submitting)
+        {
+            CloseNameForm();
+        }
+    }
+
+    private void HandleInactivateBackdropClick(MouseEventArgs _)
+    {
+        if (!_inactivateSubmitting)
+        {
+            _inactivateTarget = null;
+        }
+    }
+
+    private void OnNameInput(ChangeEventArgs e)
+    {
+        _nameDraft = e.Value?.ToString() ?? string.Empty;
+    }
+
+    private bool IsSectorSelected(Guid sectorId) => _selectedSectorIds.Contains(sectorId);
+
+    private void ToggleSectorSelection(Guid sectorId)
+    {
+        var next = new HashSet<Guid>(_selectedSectorIds);
+        if (next.Contains(sectorId))
+        {
+            next.Remove(sectorId);
+        }
+        else
+        {
+            next.Add(sectorId);
+        }
+
+        _selectedSectorIds = next;
+    }
+
+    private async Task HandleSubmitName()
+    {
+        _nameTouched = true;
+        _nameFormError = null;
+
+        if (string.IsNullOrWhiteSpace(_nameDraft))
+        {
+            return;
+        }
+
+        _submitting = true;
+
+        try
+        {
+            var name = _nameDraft.Trim();
+            var sectorIds = _selectedSectorIds.ToList();
+
+            if (_nameFormOpen == FormMode.Create)
+            {
+                var id = await GuardsClient.CreateAsync(new CreateSecurityGuardRequestDto(name));
+                await GuardsClient.SetSectorsAsync(id, new SetSecurityGuardSectorsRequestDto(sectorIds));
+                _banner = new BannerState(BannerKind.Success, "Personnel created.");
+            }
+            else if (_nameFormOpen == FormMode.Edit && _editing is not null)
+            {
+                await GuardsClient.UpdateAsync(_editing.Id, new UpdateSecurityGuardRequestDto(name));
+                await GuardsClient.SetSectorsAsync(_editing.Id, new SetSecurityGuardSectorsRequestDto(sectorIds));
+                _banner = new BannerState(BannerKind.Success, "Changes saved.");
+            }
+
+            CloseNameForm();
+            await RefreshListAsync();
+        }
+        catch (ApiException ex)
+        {
+            _nameFormError = string.IsNullOrWhiteSpace(ex.Message) ? "Save failed." : ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            _nameFormError = "Save failed.";
+        }
+        finally
+        {
+            _submitting = false;
+        }
+    }
+
+    private async Task HandleToggleAsync(SecurityGuardDto row)
+    {
+        if (!IsAdmin)
+        {
+            return;
+        }
+
+        if (row.IsActive)
+        {
+            _inactivateTarget = row;
+            return;
+        }
+
+        await HandleActivateAsync(row.Id);
+    }
+
+    private async Task ConfirmInactivateAsync()
+    {
+        if (_inactivateTarget is null)
+        {
+            return;
+        }
+
+        _inactivateSubmitting = true;
+        _banner = null;
+
+        try
+        {
+            await GuardsClient.InactivateAsync(_inactivateTarget.Id);
+            _banner = new BannerState(BannerKind.Success, "Personnel deactivated.");
+            _inactivateTarget = null;
+            await RefreshListAsync();
+        }
+        catch (ApiException ex)
+        {
+            _banner = new BannerState(
+                BannerKind.Error,
+                string.IsNullOrWhiteSpace(ex.Message) ? "Could not deactivate." : ex.Message);
+        }
+        catch (HttpRequestException)
+        {
+            _banner = new BannerState(BannerKind.Error, "Could not deactivate.");
+        }
+        finally
+        {
+            _inactivateSubmitting = false;
+        }
+    }
+
+    private async Task HandleActivateAsync(Guid guardId)
+    {
+        _banner = null;
+
+        try
+        {
+            await GuardsClient.ActivateAsync(guardId);
+            _banner = new BannerState(BannerKind.Success, "Personnel activated.");
+            await RefreshListAsync();
+        }
+        catch (ApiException ex)
+        {
+            _banner = new BannerState(
+                BannerKind.Error,
+                string.IsNullOrWhiteSpace(ex.Message) ? "Could not activate." : ex.Message);
+        }
+        catch (HttpRequestException)
+        {
+            _banner = new BannerState(BannerKind.Error, "Could not activate.");
+        }
+    }
+
+    private void DismissBanner() => _banner = null;
 
     private Task HandleLogoutAsync() =>
         AuthService.LogoutAsync(navigateToLogin: true);
+
+    private static string GetInitial(string name) =>
+        string.IsNullOrWhiteSpace(name) ? "?" : char.ToUpperInvariant(name[0]).ToString();
+
+    private static string DisplayGuardId(Guid id)
+    {
+        var alnum = new string(id.ToString().Where(char.IsLetterOrDigit).ToArray()).ToUpperInvariant();
+        var core = (alnum + "0000")[..4];
+        return $"#SO-{core}";
+    }
+
+    private static string FormatSectorLabel(SecurityGuardDto guard) =>
+        guard.Sectors.Count > 0
+            ? string.Join(", ", guard.Sectors.Select(s => s.Name).OrderBy(n => n, StringComparer.OrdinalIgnoreCase))
+            : "Não há setores atribuídos";
+
+    private enum ChipFilter
+    {
+        All,
+        ActiveOnly,
+    }
+
+    private enum FormMode
+    {
+        Create,
+        Edit,
+    }
+
+    private enum BannerKind
+    {
+        Success,
+        Error,
+    }
+
+    private sealed record BannerState(BannerKind Kind, string Message);
 }

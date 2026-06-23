@@ -83,8 +83,8 @@ A migração é **incremental e calma**: o React permanece em produção até a 
 - [x] **B3** — Layout, roteamento e navegação
 - [x] **B4** — Telas públicas (home, login, signup)
 - [x] **B5** — Área autenticada base (dashboard, access denied)
-- [ ] **B6** — Módulo setores *(B6.1–B6.2 concluídas; pendente B6.3 — testes bUnit)*
-- [ ] **B7** — Módulo seguranças
+- [x] **B6** — Módulo setores
+- [x] **B7** — Módulo seguranças
 - [ ] **B8** — Módulo indisponibilidades
 - [ ] **B9** — Módulo escalas
 - [ ] **B10** — Testes finais, deploy e cutover
@@ -377,8 +377,8 @@ src/Web.Blazor/
 
 **Duração sugerida:** 4–5 dias
 
-> **Progresso:** B6.1 (cliente API) e B6.2 (UI) concluídas. Próximo passo: B6.3 (testes bUnit).  
-> **Arquivos:** `Pages/App/Sectors.razor`, `Pages/App/Sectors.razor.css`, `Services/Api/SectorsApiClient.cs`, `Models/Sectors/*.cs`.
+> **Entregue:** B6.1 (cliente API), B6.2 (UI) e B6.3 (testes bUnit).  
+> **Arquivos:** `Pages/App/Sectors.razor`, `Pages/App/Sectors.razor.css`, `Services/Api/SectorsApiClient.cs`, `Models/Sectors/*.cs`, `Tests/Web.Blazor/Pages/SectorsPageTests.cs`.
 
 ### B6.1 — Cliente API
 
@@ -394,14 +394,14 @@ src/Web.Blazor/
 
 ### B6.3 — Testes
 
-- [ ] bUnit: Supervisor não vê botões de escrita.
-- [ ] bUnit: Admin cria setor (HTTP mock).
-- [ ] bUnit: empty state sem setores.
+- [x] bUnit: Supervisor não vê botões de escrita.
+- [x] bUnit: Admin cria setor (HTTP mock).
+- [x] bUnit: empty state sem setores.
 
 ### Critério de pronto (B6)
 
 - [x] Cliente API e UI operacionais em `/app/sectors` (Admin CRUD; Supervisor read-only).
-- [ ] Paridade funcional com `SectorsPage.test.tsx` do React (B6.3).
+- [x] Paridade funcional com `SectorsPage.test.tsx` do React (cenários obrigatórios B6.3).
 - [ ] Revisão visual lado a lado com React.
 
 ---
@@ -412,41 +412,42 @@ src/Web.Blazor/
 
 **Duração sugerida:** 5–7 dias
 
+> **Entregue:** B7.1–B7.5 (cliente API completo, UI, permissões, testes bUnit).  
+> **Arquivos:** `Pages/App/SecurityGuards.razor`, `Pages/App/SecurityGuards.razor.css`, `Services/Api/SecurityGuardsApiClient.cs`, `Models/SecurityGuards/*.cs`, `Tests/Web.Blazor/Pages/SecurityGuardsPageTests.cs`.
+
 ### B7.1 — Cliente API
 
-- [ ] `SecurityGuardsApiClient`: list, create, update, inactive, active, set sectors.
-- [ ] Integração com catálogo de setores (`SectorsApiClient`).
-
-> **Parcial (B6.1):** `SectorsApiClient` completo (list/create/update/active/inactive) — pronto para B7.
-> **Parcial (B5.1):** `SecurityGuardsApiClient.ListAsync` (read-only) já existe para o Welcome.
+- [x] `SecurityGuardsApiClient`: list, create, update, inactive, active, set sectors.
+- [x] Integração com catálogo de setores (`SectorsApiClient`).
 
 ### B7.2 — UI — listagem e filtros
 
-- [ ] Portar `SecurityGuardsPage.tsx` + CSS (referência Stitch Gestão de Seguranças).
-- [ ] Chips all/active; filtro por setor; busca por nome.
-- [ ] Banner success/error.
+- [x] Portar `SecurityGuardsPage.tsx` + CSS (referência Stitch Gestão de Seguranças).
+- [x] Chips all/active; filtro por setor; busca por nome.
+- [x] Banner success/error.
 
 ### B7.3 — UI — formulários e modais
 
-- [ ] Modal/sheet create e edit (nome).
-- [ ] Multi-select de setores (Admin).
-- [ ] Confirmação de inativação.
-- [ ] Reativar segurança inativo.
+- [x] Modal/sheet create e edit (nome).
+- [x] Multi-select de setores (Admin).
+- [x] Confirmação de inativação.
+- [x] Reativar segurança inativo.
 
 ### B7.4 — Permissões
 
-- [ ] Supervisor: lista + filtros apenas.
-- [ ] Admin: CRUD completo + setores.
+- [x] Supervisor: lista + filtros apenas.
+- [x] Admin: CRUD completo + setores.
 
 ### B7.5 — Testes
 
-- [ ] Portar cenários principais de `SecurityGuardsPage.test.tsx`.
-- [ ] Teste de atribuição de setores (mock PUT sectors).
+- [x] Portar cenários principais de `SecurityGuardsPage.test.tsx`.
+- [x] Teste de atribuição de setores (mock PUT sectors).
 
 ### Critério de pronto (B7)
 
-- Todos os fluxos Admin/Supervisor validados manualmente.
-- Nenhuma regressão nos filtros e estados loading/error.
+- [x] Todos os fluxos Admin/Supervisor validados via bUnit (cenários principais).
+- [x] Nenhuma regressão nos filtros e estados loading/error (suíte Web.Blazor 40 testes).
+- [ ] Revisão visual lado a lado com React.
 
 ---
 
@@ -541,7 +542,7 @@ src/Web.Blazor/
 
 ### B10.3 — CI
 
-- [ ] Pipeline: `dotnet test` inclui **todos** os testes bUnit do Web.Blazor (parcial: **31** testes em `src/Tests/Web.Blazor/` — infra B2.5, guards B3.4, públicas B4.4, dashboard B5.4; módulo setores B6.3 pendente).
+- [ ] Pipeline: `dotnet test` inclui **todos** os testes bUnit do Web.Blazor (parcial: **40** testes em `src/Tests/Web.Blazor/` — infra B2.5, guards B3.4, públicas B4.4, dashboard B5.4, setores B6.3, seguranças B7.5).
 - [ ] Remover ou marcar `allow-failure` temporário nos testes npm do React até B11.
 
 ### B10.4 — Cutover (janela controlada)
@@ -697,3 +698,5 @@ A migração só é considerada **concluída** quando:
 | 2026-06-22 | 2.5 | B3.2 concluída — `AuthorizeRouteView`, `RoleAuthorizeView`, `returnUrl`, handler 401 alinhado |
 | 2026-06-23 | 2.6 | B6.1 concluída — `SectorsApiClient` (list/create/update/active/inactive), DTOs setores, DI |
 | 2026-06-23 | 2.7 | B6.2 concluída — UI setores em `Sectors.razor` com paridade React (CRUD, filtros, roles) |
+| 2026-06-23 | 2.8 | B6.3 concluída — `SectorsPageTests` (Supervisor read-only, Admin create, empty state); B6 fechada |
+| 2026-06-23 | 2.9 | B7 concluída — módulo seguranças (API CRUD+setores, UI, permissões, 6 testes bUnit) |
