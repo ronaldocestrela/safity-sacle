@@ -18,7 +18,7 @@ RUN dotnet publish SafetyScale.Web.Blazor.csproj -c Release -o /app/publish \
        fi
 
 FROM nginx:1.28-alpine AS runtime
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY src/Web.Blazor/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/publish/wwwroot /usr/share/nginx/html
 
 EXPOSE 80

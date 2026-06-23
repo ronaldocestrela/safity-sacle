@@ -1,6 +1,9 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /build
 
+# TargetFramework vem de Directory.Build.props (net10.0)
+COPY Directory.Build.props ./
+
 # Layer cache-friendly restore
 COPY src/Domain/SafetyScale.Domain.csproj ./src/Domain/
 COPY src/Application/SafetyScale.Application.csproj ./src/Application/
