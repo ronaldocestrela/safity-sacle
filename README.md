@@ -37,7 +37,8 @@ O projeto foi definido para:
 - MediatR
 - Serilog
 - xUnit + FluentAssertions
-- SPA em `src/Web`: React, TypeScript, Vite, React Router, Vitest — **sectors**, security-guards, indisponibilidades e escalas na UI — ver `roadmap.md`
+- SPA em `src/Web`: React, TypeScript, Vite, React Router, Vitest — **legado** (freeze B4–B11); ver [`roadmap-blazor-migration.md`](roadmap-blazor-migration.md)
+- **SPA em `src/Web.Blazor`:** Blazor WebAssembly (.NET 10) — **frontend oficial em produção** (cutover B10)
 
 ### Estrutura do projeto
 
@@ -47,8 +48,9 @@ src/
  ├── Application
  ├── Domain
  ├── Infrastructure
- ├── Web          # SPA React (Vite)
- └── Tests
+ ├── Tests
+ ├── Web              # SPA React (legado; descomissionamento B11)
+ └── Web.Blazor       # SPA Blazor WASM (frontend oficial)
 ```
 
 ## Status de implementacao
@@ -262,7 +264,9 @@ O script sobe a API em background, aguarda `http://localhost:5003` e inicia o Bl
 | Script | Descrição |
 |--------|-----------|
 | [`scripts/dev-blazor.sh`](scripts/dev-blazor.sh) | Sobe API + Blazor WASM (4864) para desenvolvimento |
-| [`scripts/test-local.sh`](scripts/test-local.sh) | Testes backend + frontend React |
+| [`scripts/test-local.sh`](scripts/test-local.sh) | Testes .NET (gate principal); React opcional (`SKIP_REACT_TESTS=1`) |
+| [`scripts/test-blazor.sh`](scripts/test-blazor.sh) | Gate bUnit Web.Blazor (B10) |
+| [`scripts/verify-blazor-deploy.sh`](scripts/verify-blazor-deploy.sh) | Verificação HTTP pós-deploy Blazor |
 
 > **Produção:** defina `VITE_API_BASE_URL` com a URL pública da API e preencha `Cors:Origins` na API com a origem exata do frontend (esquema + host + porta). Em dev o proxy do Vite ainda pode ser usado sem CORS; o Blazor em dev usa CORS + URL absoluta da API.
 
@@ -408,42 +412,49 @@ Somente unitarios/Application/Domain (sem API integration / sem Docker):
 dotnet test src/Tests/SafetyScale.Tests.csproj --filter "FullyQualifiedName!~SafetyScale.Tests.Api.Integration"
 ```
 
-Frontend (`src/Web`), com dependencias instaladas:
+Frontend (`src/Web`), com dependencias instaladas (legado — nao bloqueia cutover Blazor):
 
 ```bash
 cd src/Web && npm run test
+```
+
+Gate bUnit Blazor (B10):
+
+```bash
+./scripts/test-blazor.sh
 ```
 
 ## Docker Compose (producao)
 
 Artefatos:
 
-- Compose: [`docker-compose.prod.yml`](docker-compose.prod.yml)
+- Compose prod: [`docker-compose.prod.yml`](docker-compose.prod.yml)
+- Compose staging: [`docker-compose.staging.yml`](docker-compose.staging.yml)
 - API: [`Dockerfile`](Dockerfile)
-- Frontend (Nginx + build Vite): [`src/Web/Dockerfile`](src/Web/Dockerfile), [`src/Web/nginx.conf`](src/Web/nginx.conf)
-- Variaveis de exemplo: [`.env.example`](.env.example) (copie para `.env` na raiz; nao commitar `.env`)
+- **Frontend Blazor:** [`src/Web.Blazor/Dockerfile`](src/Web.Blazor/Dockerfile), [`src/Web.Blazor/nginx.conf`](src/Web.Blazor/nginx.conf)
+- Legado React: [`src/Web/Dockerfile`](src/Web/Dockerfile) (ate B11)
+- Variaveis: [`.env.example`](.env.example)
+- Smoke: [`docs/smoke-cutover-checklist.md`](docs/smoke-cutover-checklist.md)
+- Runbook: [`docs/cutover-runbook.md`](docs/cutover-runbook.md)
 
 O servico **`web`** publica **HTTP na porta configurada por `WEB_PORT` (padrao 80)** e encaminha `/api/*` para a API (`api:8080`) na rede interna. O servico **`api`** tambem pode ser acessado **diretamente no host** na porta **`API_PORT`** (padrao **8081**), mapeamento **`${API_PORT:-8081}:8080`**. O **`sqlserver`** expoe **`SQLSERVER_PORT`** no host (padrao **1433**), formato **`${SQLSERVER_PORT:-1433}:1433`**; dentro da Compose a API usa **`sqlserver:1433`**. Persistencia do SQL Server via volume Docker **`sqlserver-data`**.
 
-- **`VITE_API_BASE_URL`** (`${VITE_API_BASE_URL:-}`): **build-arg** da imagem do front [**`src/Web/Dockerfile`**](src/Web/Dockerfile). Define a base absoluta chamada pela SPA (**`import.meta.env.VITE_API_BASE_URL`**). **Vazio** ⇒ requests relativos **`/api/...`** (mesma origem atraves do Nginx). Preencha (ex.: `https://api.sua-instancia`) se o SPA for servido por origem diferente da API sem proxy reverso comum — e configure **`CORS_ORIGINS`** de acordo na API.
+- **`API_BASE_URL`**: build-arg Blazor. **Vazio** ⇒ `/api` relativo via Nginx. Split-origin: preencher + **`CORS_ORIGINS`**.
 
-- **`CORS_ORIGINS`** (`${CORS_ORIGINS:-}`): vira **`Cors__OriginsCsv`** na API (lista CSV de origens; ver [`appsettings.json`](src/Api/appsettings.json)). Vazio ⇒ array vazio ⇒ **middleware CORS nao registra**, adequado quando o navegador so fala **`/api` na mesma origem**. Se o SPA chamar **`VITE_API_BASE_URL`** direto contra a API (`API_PORT`/URL publica da API), preencha com a origem da SPA (**esquema + host + porta**), pode haver mais de uma separadas por vírgula.
+- **`CORS_ORIGINS`**: vira **`Cors__OriginsCsv`** na API. Vazio ⇒ sem CORS (adequado com proxy same-origin).
 
 A cada subida da API, **migrations EF** aplicam-se automaticamente.
 
-**Ambiente Production:** usuarios **`Admin`** de desenvolvimento nao sao seeded; onboarding de empresa via **`/signup`** na SPA (`POST /api/tenants/register`).
-
-Fluxo recomendado (na maquina com Docker instalado):
+**Production:** onboarding via **`/signup`** na SPA Blazor.
 
 ```bash
 cp .env.example .env
-# editar .env — senhas e segredo JWT fortes em producao real
-
 docker compose -f docker-compose.prod.yml build
 docker compose -f docker-compose.prod.yml up -d
+./scripts/verify-blazor-deploy.sh
 ```
 
-Verifique **`http://localhost:${WEB_PORT:-80}/api/health`** vindo do Nginx (ou apenas `/api/health` com `WEB_PORT=80`). Opcionalmente, via API exposta diretamente: **`http://localhost:${API_PORT:-8081}/api/health`** (mesmas regras HTTP da API). Coloque terminacao **TLS** (Traefik / cloud LB / Ingress) à frente do `web` quando for expor à Internet — a Compose entrega apenas HTTP entre contêineres.
+Staging: `docker compose -f docker-compose.staging.yml --env-file .env.staging up -d --build`. Deploy Jenkins: [`DEPLOY-JENKINS.md`](DEPLOY-JENKINS.md).
 
 ## Regras de qualidade
 

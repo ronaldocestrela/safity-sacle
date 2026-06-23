@@ -60,7 +60,7 @@ O sistema deve permitir:
 
 ## Frontend (Blazor WebAssembly) — trilha de migração
 
-> **Status:** **B0 concluída** (decisões ADR 001, spike B0.2, convenções B0.3). Projeto em `src/Web.Blazor`. Bootstrap formal na **B1**.
+> **Status:** **B0–B10 concluídas** — Blazor WASM é o **frontend em produção** (cutover B10, 2026-06-23). React (`src/Web`) permanece legado até **B11**. Convenções Blazor: [`docs/frontend-blazor-conventions.md`](docs/frontend-blazor-conventions.md).
 
 - Blazor WebAssembly Standalone (.NET 10)
 - Porta dev **4864** (React permanece **4863**)
@@ -79,7 +79,7 @@ O sistema deve permitir:
 |---|---|---|
 | B0–B3 | Produção / referência de paridade | Spike, bootstrap, infra, layout |
 | **B4+ (freeze)** | Apenas bugfix P0/P1 e manutenção até B11 | Todas as novas features e telas |
-| B10 | Coexistência até cutover | Frontend alvo em produção |
+| B10 | Coexistência até cutover | **Frontend alvo em produção** (cutover 2026-06-23) |
 | B11 | Removido ou arquivado | Frontend oficial único |
 
 ### Regra de freeze do React (a partir da fase **B4**)

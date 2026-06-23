@@ -2,13 +2,13 @@
 
 ## Objetivo
 
-Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capaz de gerar escalas mensais confiáveis por **setor** (várias vagas diárias somadas via **`Sector.RequiredGuardsPerDay`** e elegibilidade via **`SecurityGuardSector`**), balanceamento justo de finais de semana, resposta HTTP clara (**`ScheduleCoverageFailureResponse`**) quando a cobertura de um dia for impossível, respeitando indisponibilidades e histórico, e uma **SPA React em `src/Web`** (especificada em `AGENTS.md`). **Bootstrap do frontend (Fase F0), auth na UI com cadastro público de empresa (`/signup`),** **módulo de setores (`/app/sectors`), security-guards + vínculos, indisponibilidades (Fase F3)** e **escalas na UI (Fase F4)** estão concluídos; hardening de UX e qualidade segue na **Fase F5** (UI). No backend, **Fases 0 a 5 estão concluídas**, com **isolamento multitenant lógico** (Tenant + JWT `tenant_id`) **e `POST /api/tenants/register`** — falta **Fase 6** (endurecimento operacional ampla, incluindo proteções para endpoints públicos e entrega Docker).
+Entregar um monolito modular em .NET 10 com Clean Architecture, CQRS e TDD, capaz de gerar escalas mensais confiáveis por **setor** (várias vagas diárias somadas via **`Sector.RequiredGuardsPerDay`** e elegibilidade via **`SecurityGuardSector`**), balanceamento justo de finais de semana, resposta HTTP clara (**`ScheduleCoverageFailureResponse`**) quando a cobertura de um dia for impossível, respeitando indisponibilidades e histórico. **Frontend oficial em produção:** **Blazor WASM** em `src/Web.Blazor` (cutover **B10**, 2026-06-23 — ver [`roadmap-blazor-migration.md`](roadmap-blazor-migration.md)). React em `src/Web` permanece legado até **B11**. No backend, **Fases 0 a 5 estão concluídas** — falta **Fase 6** (endurecimento operacional).
 
 ## Premissas obrigatorias
 
 - Stack backend: ASP.NET Core Web API, EF Core, SQL Server, Identity + JWT, MediatR, FluentValidation, Serilog, xUnit, FluentAssertions, Docker (inclui Testcontainers nos testes de integracao da API).
-- **Stack frontend em andamento:** React 18+, TypeScript, Vite, React Router, cliente HTTP tipado (TanStack Query recomendado nas fases seguintes); testes com Vitest + React Testing Library — detalhes em `AGENTS.md`. **Fases F0–F4** do `Web` concluídas (**bootstrap**, auth com **`/signup`**, **setores** (`/app/sectors`), **seguranças** + vínculos a setores, **indisponibilidades** UI, **escalas** UI).
-- Estrutura backend: `src/Api`, `src/Application`, `src/Domain`, `src/Infrastructure`, `src/Tests`; **frontend previsto em `src/Web`**.
+- **Stack frontend:** **Blazor WebAssembly** (.NET 10) em `src/Web.Blazor` — **produção** (B10). React (`src/Web`) legado até B11. Migração: [`roadmap-blazor-migration.md`](roadmap-blazor-migration.md).
+- Estrutura: `src/Api`, `src/Application`, `src/Domain`, `src/Infrastructure`, `src/Tests`, `src/Web.Blazor`, `src/Web` (legado).
 - Regras: sem logica de negocio em controller, Domain sem dependencia externa, migrations para toda mudanca de banco.
 - Qualidade: TDD como fluxo padrao no backend; no frontend, testes obrigatorios nas partes criticas quando a trilha for iniciada.
 

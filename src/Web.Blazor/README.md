@@ -570,6 +570,19 @@ A API em Development aceita origens `http://localhost:4863` (React) e `http://lo
 - Sem proxy `/api` no WASM — CORS dual-origin na API (`4863` React + `4864` Blazor).
 - Script raiz: [`scripts/dev-blazor.sh`](../../scripts/dev-blazor.sh).
 
+## Produção e cutover (B10)
+
+- **Dockerfile:** [`Dockerfile`](Dockerfile) — `dotnet publish` WASM + Nginx.
+- **Nginx:** [`nginx.conf`](nginx.conf) — proxy `/api`, MIME WASM, cache `_framework`.
+- **Compose prod:** [`docker-compose.prod.yml`](../../docker-compose.prod.yml) — serviço `web` aponta para este projeto.
+- **Staging:** [`docker-compose.staging.yml`](../../docker-compose.staging.yml).
+- **Gate testes:** [`scripts/test-blazor.sh`](../../scripts/test-blazor.sh) (59 bUnit).
+- **Verify deploy:** [`scripts/verify-blazor-deploy.sh`](../../scripts/verify-blazor-deploy.sh).
+- **Smoke manual:** [`docs/smoke-cutover-checklist.md`](../../docs/smoke-cutover-checklist.md).
+- **Runbook:** [`docs/cutover-runbook.md`](../../docs/cutover-runbook.md).
+
+Cutover produção registrado em **2026-06-23** — ver [`roadmap-blazor-migration.md`](../../roadmap-blazor-migration.md) B10.
+
 ## Próximas fases
 
-- **B10** — Testes finais, deploy e cutover
+- **B11** — Descomissionamento do React
