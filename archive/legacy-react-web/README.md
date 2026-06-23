@@ -1,4 +1,6 @@
-# SafetyScale — SPA (`src/Web`)
+# SafetyScale — SPA React (arquivado — B11)
+
+> **Arquivado em 2026-06-23.** Este era o frontend em `src/Web`. Não participa de build, CI ou deploy. Frontend oficial: [`src/Web.Blazor`](../../src/Web.Blazor/README.md). Referência histórica de paridade visual/funcional.
 
 Frontend **React + TypeScript + Vite** do SafetyScale.
 

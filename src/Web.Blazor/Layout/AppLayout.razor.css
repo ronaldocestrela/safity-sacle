@@ -1,0 +1,200 @@
+/* Shell + bottom nav — paridade src/Web/src/app/AppLayout.module.css */
+
+.shell {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    min-height: 100dvh;
+    background: #f7fafc;
+}
+
+.main-column {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    width: 100%;
+    padding-bottom: 5.5rem;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding: 0.65rem 1rem;
+    background: #f7fafc;
+    border-bottom: 1px solid #c4c6cd;
+    position: sticky;
+    top: 0;
+    z-index: 40;
+}
+
+.header-spacer {
+    flex: 1;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.email {
+    font-size: 0.8125rem;
+    color: #44474c;
+    max-width: min(14rem, 42vw);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.badge {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.25rem 0.5rem;
+    border-radius: 999px;
+    background: #1a2b3c;
+    color: #fff;
+}
+
+.logout {
+    font-family: inherit;
+    font-size: 0.875rem;
+    font-weight: 600;
+    padding: 0.45rem 0.75rem;
+    min-height: 40px;
+    border-radius: 4px;
+    border: 1px solid #904d00;
+    background: #fff;
+    color: #904d00;
+    cursor: pointer;
+}
+
+.logout:hover {
+    background: #fd8b00;
+    border-color: #fd8b00;
+    color: #fff;
+}
+
+.main {
+    flex: 1;
+    padding: 1rem;
+}
+
+.main-flush {
+    padding: 0;
+}
+
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    z-index: 50;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: #f7fafc;
+    border-top: 1px solid #c4c6cd;
+    box-sizing: border-box;
+}
+
+::deep .bottom-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25rem 1rem;
+    min-width: 4rem;
+    min-height: 48px;
+    text-decoration: none;
+    color: #44474c;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    border-radius: 0.5rem;
+    transition:
+        color 0.15s ease,
+        background 0.15s ease;
+}
+
+::deep .bottom-link:hover {
+    color: #041627;
+}
+
+::deep .bottom-link-active {
+    background: #1a2b3c;
+    color: #8192a7;
+}
+
+::deep .bottom-link-active:hover {
+    color: #8192a7;
+}
+
+::deep .bottom-link .material-icon {
+    margin-bottom: 0.25rem;
+}
+
+.material-icon {
+    font-size: 1.5rem;
+    line-height: 1;
+    font-variation-settings:
+        'FILL' 0,
+        'wght' 400,
+        'GRAD' 0,
+        'opsz' 24;
+}
+
+::deep .bottom-link-active .material-icon {
+    font-variation-settings:
+        'FILL' 1,
+        'wght' 400,
+        'GRAD' 0,
+        'opsz' 24;
+}
+
+.bottom-label {
+    text-align: center;
+    max-width: 5.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@media (min-width: 1024px) {
+    .header {
+        padding: 0.75rem 1.5rem;
+        flex-wrap: nowrap;
+    }
+
+    .header-right {
+        gap: 0.75rem;
+    }
+
+    .email {
+        font-size: 0.875rem;
+        max-width: 14rem;
+    }
+
+    .logout {
+        padding: 0.4rem 0.85rem;
+        min-height: unset;
+    }
+
+    .main {
+        padding: 1.5rem;
+    }
+
+    .bottom-nav {
+        padding: 0.5rem 2rem;
+    }
+}

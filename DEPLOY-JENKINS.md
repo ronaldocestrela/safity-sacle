@@ -2,132 +2,97 @@
 
 Este guia descreve o fluxo definido pelo [`Jenkinsfile`](Jenkinsfile) para **deploy no mesmo servidor onde o Jenkins roda**, usando [`docker-compose.prod.yml`](docker-compose.prod.yml). O arquivo `.env` de produção **não vai para o Git**: o pipeline monta esse arquivo em tempo de execução com credenciais guardadas no Jenkins.
 
+**Frontend (B11):** serviço **`web`** serve **Blazor WASM** exclusivamente. **Sem Node/npm** no pipeline.
+
 ## Premissas
 
 - **Jenkins executa no servidor de destino** (no mesmo host em que o Docker Compose deve subir os contêineres).
 - **Agent** com:
-  - **Docker** + **Docker Compose plugin** (`docker compose`) — o pipeline só **valida** esses dois no estágio inicial; garanta instalados antes do job rodar.
-  - **.NET SDK da família principal 10** (necessário para **Backend Tests**; não há verificação de versão nesse estágio).
-  - **Node.js** e **npm** compatíveis com [`src/Web/package.json`](src/Web/package.json) (**Frontend Tests**).
-  - **curl** — usado apenas no estágio **Verify** (health check); não há checagem explícita no início do job.
-  - Permissão do usuário do Jenkins para usar o Docker conforme política da equipe (por exemplo inclusão em grupo `docker` ou agent específico).
-- Testes do backend (`dotnet test`) usam **Testcontainers**: durante o estágio **Backend Tests** é necessário Docker funcional para subir SQL Server efêmero.
+  - **Docker** + **Docker Compose plugin** (`docker compose`).
+  - **.NET SDK 10** (estágio **Backend Tests**).
+  - **curl** — health check e [`scripts/verify-blazor-deploy.sh`](scripts/verify-blazor-deploy.sh).
+  - Permissão do usuário do Jenkins para usar o Docker.
+- Testes backend (`dotnet test`) usam **Testcontainers** — Docker funcional durante **Backend Tests**.
 
 ## Visão geral do fluxo
 
-1. Obtém o código do repositório.
-2. Valida **Docker** e **Compose** no agent.
-3. Executa testes e build backend e frontend **antes** de gerar `.env`/Compose neste mesmo job — portanto esse agent precisa tanto de SDK/Node para build quanto de Docker quando os testes de integração rodam Testcontainers (e depois uso normal do Docker no deploy).
-4. Injeta valores secretos vindos do Jenkins num arquivo `.env` na raiz (permissões restritas).
-5. Sobe/atualiza a stack com Compose (`build` + `up -d`).
-6. Verifica `/api/health` via Nginx/host na porta configurada.
-7. No **`post`**, remove o `.env` do workspace (sucesso ou falha).
+1. Checkout do repositório.
+2. Valida Docker e Compose.
+3. **`dotnet test`** (inclui bUnit `src/Tests/Web.Blazor/`) — **bloqueante**.
+4. Gera `.env` a partir de credenciais Jenkins.
+5. `docker compose up -d --build` (Blazor + API + SQL Server).
+6. Verify: `/api/health` + assets WASM Blazor.
+7. Remove `.env` no `post`.
 
-Para semântica das variáveis de aplicação, veja também [`.env.example`](.env.example).
+Smoke manual pós-deploy: [`docs/smoke-cutover-checklist.md`](docs/smoke-cutover-checklist.md).
 
 ---
 
-## Estágios do pipeline (explicação)
+## Estágios do pipeline
 
 ### 1. `Checkout`
 
-- Executa **`checkout scm`**. O job deve ser **Pipeline from SCM** (Multibranch ou pipeline apontando para o mesmo repositório).
-- Todo o trabalho ocorre na **raiz do clone** (`Jenkinsfile`, `docker-compose.prod.yml`, etc.).
+`checkout scm` — raiz do clone.
 
 ### 2. `Validate Docker`
 
-- Verifica que **`docker`** e **`docker compose`** estão disponíveis (`docker version`, `docker compose version`).
+Verifica `docker` e `docker compose`.
 
 ### 3. `Backend Tests`
 
-- `dotnet restore`, `dotnet build`, `dotnet test` em [`src/Tests/SafetyScale.Tests.csproj`](src/Tests/SafetyScale.Tests.csproj).
-- Qualquer falha **interrompe o pipeline** antes de **Prepare Env** / **Deploy**.
+```bash
+dotnet restore SafetyScale.sln
+dotnet build SafetyScale.sln --configuration Release --no-restore
+dotnet test src/Tests/SafetyScale.Tests.csproj --configuration Release --no-build
+```
 
-### 4. `Frontend Tests`
+Inclui **todos** os testes em [`src/Tests/Web.Blazor/`](src/Tests/Web.Blazor/). Falha **interrompe** o pipeline.
 
-- Em [`src/Web`](src/Web): `npm ci`, `npm run lint`, `npm run test`, `npm run build`.
-- Valida código e artefatos da SPA antes de reconstruir a imagem **`web`** no Compose.
+### 4. `Prepare Env`
 
-### 5. `Prepare Env`
+Credenciais → `./.env` via `writeFile` (seguro para caracteres especiais). **`chmod 600`**.
 
-- Usa **`withCredentials`** + bindings **`string`** (credenciais abaixo). Cada binding expõe variáveis `CRED_*` **apenas dentro** dos passos envelopados pelo `withCredentials`.
-- Escreve **`./.env`** na raiz com `writeFile` + script Groovy (concatenação de strings), assim **segredos com aspas, `$` ou quebras não quebram o shell**.
-- **`chmod 600 .env`** após criar.
-- O conteúdo do `.env` **não** deve aparecer nos logs (**nunca** usar `println`/`echo` do conteúdo em produção).
-- **`JWT_EXPIRY_MINUTES`** é fixado em **120** no `Jenkinsfile` (alinhado ao padrão de [`.env.example`](.env.example)). **`MSSQL_PID`** usa o padrão do compose (**Developer**) a menos que você estenda manualmente esse estágio no `Jenkinsfile`.
+| Chave `.env` | Credencial Jenkins |
+|--------------|-------------------|
+| `MSSQL_SA_PASSWORD` | `safetyscale-mssql-sa-password` |
+| `SQLSERVER_PORT` | `safetyscale-sqlserver-port` |
+| `JWT_KEY` | `safetyscale-jwt-key` |
+| `JWT_ISSUER` | `safetyscale-jwt-issuer` |
+| `JWT_AUDIENCE` | `safetyscale-jwt-audience` |
+| `SAFETYSCALE_DB_NAME` | `safetyscale-db-name` |
+| `API_PORT` | `safetyscale-api-port` |
+| `WEB_PORT` | `safetyscale-web-port` |
+| `CORS_ORIGINS` | `safetyscale-cors-origins` |
+| `API_BASE_URL` | `safetyscale-api-base-url` |
 
-### 6. `Deploy`
+Use **`-`** como sentinel em credenciais opcionais (`CORS_ORIGINS`, `API_BASE_URL`) se o Jenkins não aceitar valor vazio.
+
+### 5. `Deploy`
 
 ```bash
 docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
 ```
 
-- O Compose interpola **`${...}`** a partir do `.env` na mesma pasta.
-- A **`api`** recebe **`Cors__OriginsCsv`** (`CORS_ORIGINS`) — lista CSV de origens para o navegador. Vazio ⇒ middleware CORS desligado (caso uso só pela mesma origem com proxy **`/api`**).
-- **`web`** recebe **`VITE_API_BASE_URL`** como **build-arg** no `docker compose build`; vazio ⇒ SPA usa **`/api` relativo**, alinhado ao Nginx atual.
-- O **`sqlserver`** publica **`SQLSERVER_PORT`** no host (**`${SQLSERVER_PORT:-1433}:1433`**). A **`api`** continua usando o hostname **`sqlserver`** e a porta **`1433`** dentro da rede Compose.
-- O **`api`** publica **`API_PORT`** no host (**`${API_PORT:-8081}:8080`**). O **`web`** encaminha `/api/*` para **`api:8080`** na rede interna.
-- O SQL Server mantém dados no volume **`sqlserver-data`**; este pipeline **não** inclui comandos para apagar esse volume.
+- **`web`**: build `src/Web.Blazor/Dockerfile`; `API_BASE_URL` vazio ⇒ `/api` relativo via Nginx.
+- **`api`**: `Cors__OriginsCsv` ← `CORS_ORIGINS`.
 
-### 7. `Verify`
+### 6. `Verify`
 
-- `docker compose ps` para inspeção rápida.
-- Obtém **`WEB_PORT`** carregando o `.env` e chama **`http://127.0.0.1:${WEB_PORT}/api/health`**.
-  - **`401`** (não autorizado sem token) ou **`200`** contam como êxito, conforme a API atual.
-- Repetições com intervalo até a stack responder (várias tentativas; ordem grande de alguns minutos no total).
+- Health: `http://127.0.0.1:${WEB_PORT}/api/health` → **401** ou **200**.
+- [`scripts/verify-blazor-deploy.sh`](scripts/verify-blazor-deploy.sh): `/`, `_framework/*.js`.
 
-### 8. `post { always }` — cleanup
+### 7. `post { always }`
 
-- **`rm -f .env`** no workspace quando o build termina, para não reter aquele arquivo com segredos no diretório de trabalho do job.
+Remove `.env` do workspace.
 
 ---
 
-## Credenciais que devem existir no Jenkins
-
-O `Jenkinsfile` espera **`credentialsId`** iguais aos listados (altere apenas se também alterar os IDs no próprio Jenkinsfile).
-
-Tipo usual: credencial compatível com o step **`withCredentials`** + **`string(...)`**, em Jenkins clássico normalmente como **Secret text** (valor armazenado cifrado pelo Jenkins).
-
-| ID da credencial no Jenkins | Variável injetada no job | Chave gravada no `.env` | Uso |
-|-------------------------------|---------------------------|-------------------------|-----|
-| `safetyscale-mssql-sa-password` | `CRED_MSSQL_SA_PASSWORD` | `MSSQL_SA_PASSWORD` | Senha **`sa`** do SQL Server em contêiner; mesma senha interpolada na string de conexão da **`api`** no [`docker-compose.prod.yml`](docker-compose.prod.yml). |
-| `safetyscale-sqlserver-port` | `CRED_SQLSERVER_PORT` | `SQLSERVER_PORT` | Porta host mapeada para o SQL Server (**ex.: `1433`** → contêiner **`1433`**). |
-| `safetyscale-jwt-key` | `CRED_JWT_KEY` | `JWT_KEY` | Chave secreta JWT da API (**produção: longa e aleatória**). |
-| `safetyscale-jwt-issuer` | `CRED_JWT_ISSUER` | `JWT_ISSUER` | **`Jwt__Issuer`** (ambiente Compose → API). |
-| `safetyscale-jwt-audience` | `CRED_JWT_AUDIENCE` | `JWT_AUDIENCE` | **`Jwt__Audience`**. |
-| `safetyscale-db-name` | `CRED_DB_NAME` | `SAFETYSCALE_DB_NAME` | Nome do banco na connection string (`Database=`). |
-| `safetyscale-api-port` | `CRED_API_PORT` | `API_PORT` | Porta host mapeada para a API (**ex.: `8081`** → contêiner `8080`; ver [`docker-compose.prod.yml`](docker-compose.prod.yml)). |
-| `safetyscale-web-port` | `CRED_WEB_PORT` | `WEB_PORT` | Porta host do Nginx (**ex.: `80`**); usada também no verificação de saúde. |
-| `safetyscale-cors-origins` | `CRED_CORS_ORIGINS` | `CORS_ORIGINS` | Origens CORS (**CSV** que vira **`Cors__OriginsCsv`** na API); use **`-`** como valor sentinel se não puder usar credencial vazia mas quiser arquivo sem origens. |
-| `safetyscale-vite-api-base-url` | `CRED_VITE_API_BASE_URL` | `VITE_API_BASE_URL` | Base URL injetada no **build** da SPA; vazio ⇒ `/api`; use **`-`** como sentinel igual acima. |
-
-**Variáveis no `.env` sem credencial própria no Jenkins (atualmente)**
-
-- **`JWT_EXPIRY_MINUTES`** — sempre `120` no script estágio Prepare Env.
-
-**Opcional ao customizar `Jenkinsfile`**
-
-- **`MSSQL_PID`** — SKU do SQL Server dentro do Compose; padrão **Developer** se omitido (`${MSSQL_PID:-Developer}` no compose).
-
-### Como registrar as credenciais (resumo Jenkins)
-
-No Jenkins típico: **Manage Jenkins** → **Credentials** → dominio onde o pipeline roda (ex.: sistema ou pasta) → **Add Credentials**:
-
-- Escolha o tipo compatível com “Secret”.
-- Informe cada **Secret** usando exatamente o **ID** da primeira coluna da tabela (ex.: marque manualmente ou use esse ID ao criar a credencial, conforme disponível na sua instalação).
-- O job só precisa de permissão **`Credentials → Use credential`** para essas entradas (geralmente o mesmo usuário/agent que já roda SCM).
-
-### Boas práticas rápidas
-
-- **Roção de segredos:** rotacione **`safetyscale-mssql-sa-password`** apenas com planejamento — o mesmo valor está no SQL em volume persistente até recriação do volume/administração dentro do servidor.
-- **Auditoria:** restrinja jobs e agents que conseguem ver essas credenciais ao mínimo necessário.
-
----
-
-## Referências rápidas
+## Referências
 
 | Peça | Ficheiro |
 |------|-----------|
 | Pipeline | [`Jenkinsfile`](Jenkinsfile) |
-| Stack produção | [`docker-compose.prod.yml`](docker-compose.prod.yml) |
-| Exemplo de variáveis | [`.env.example`](.env.example) |
+| Compose prod | [`docker-compose.prod.yml`](docker-compose.prod.yml) |
+| Dockerfile Blazor | [`src/Web.Blazor/Dockerfile`](src/Web.Blazor/Dockerfile) |
+| Testes bUnit gate | [`scripts/test-blazor.sh`](scripts/test-blazor.sh) |
+| Exemplo variáveis | [`.env.example`](.env.example) |

@@ -1,0 +1,523 @@
+@page "/app/unavailable-days"
+@layout AppLayout
+@attribute [Authorize]
+@inject AuthSessionService AuthService
+@inject SecurityGuardsApiClient GuardsClient
+@inject UnavailableDaysApiClient UnavailableDaysClient
+@using System.Globalization
+@using SafetyScale.Web.Blazor.Components.Calendar
+@using SafetyScale.Web.Blazor.Models.Auth
+@using SafetyScale.Web.Blazor.Models.SecurityGuards
+@using SafetyScale.Web.Blazor.Models.UnavailableDays
+@using SafetyScale.Web.Blazor.Services.Calendar
+@using SafetyScale.Web.Blazor.Services.UnavailableDays
+@using PendingAction = SafetyScale.Web.Blazor.Services.UnavailableDays.UnavailableDayPendingState.PendingAction
+
+<PageTitle>SafetyScale — Indisponibilidades</PageTitle>
+
+<RoleAuthorizeView AllowedRoles="ModuleRoles">
+    <div class="page">
+        <AppHeader Title="Disponibilidade"
+                   Subtitle="Indisponibilidade e disponibilidade da equipe."
+                   Email="@_session?.Email"
+                   ShowNotifications="true"
+                   ShowLogout="false" />
+
+        <main class="main">
+            <div class="section">
+                @if (_bannerKind == BannerKind.Error && _bannerMessage is not null)
+                {
+                    <div class="banner-error" role="alert">@_bannerMessage</div>
+                }
+                @if (_bannerKind == BannerKind.Success && _bannerMessage is not null)
+                {
+                    <div class="banner-success" role="status">@_bannerMessage</div>
+                }
+
+                <div class="field">
+                    <label class="label-caps" for="personnel-select">Selecionar segurança</label>
+                    <div class="select-wrap">
+                        <span class="select-icon-left">
+                            <span class="material-symbols-outlined material-icon">search</span>
+                        </span>
+                        <select id="personnel-select"
+                                class="select"
+                                value="@_selectedGuardId"
+                                @onchange="HandleGuardChangedAsync"
+                                disabled="@(_guardsLoading || _guards.Count == 0)">
+                            @if (_guards.Count == 0)
+                            {
+                                <option value="">Nenhum segurança</option>
+                            }
+                            else
+                            {
+                                @foreach (var guard in _guards)
+                                {
+                                    <option value="@guard.Id">@GuardOptionLabel(guard)</option>
+                                }
+                            }
+                        </select>
+                        <span class="select-icon-right">
+                            <span class="material-symbols-outlined material-icon">arrow_drop_down</span>
+                        </span>
+                    </div>
+                </div>
+
+                @if (_guardsLoading)
+                {
+                    <p class="spinner-text">Carregando seguranças…</p>
+                }
+
+                @if (_guardsError is not null)
+                {
+                    <div class="empty" role="alert">
+                        @_guardsError
+                        <div>
+                            <button type="button" class="retry-btn" @onclick="RefreshGuardsAsync">Tentar novamente</button>
+                        </div>
+                    </div>
+                }
+
+                @if (!_guardsLoading && _guards.Count == 0 && _guardsError is null)
+                {
+                    <p class="empty">Nenhum segurança encontrado.</p>
+                }
+
+                @if (ShowCalendar)
+                {
+                    <MonthCalendar Cells="@_calendarCells"
+                                   Weekdays="@MonthGrid.WeekdayLabelsSmtwtfs"
+                                   CardClassName="calendar-card"
+                                   WeekdayRowClassName="weekday-row"
+                                   WeekdayCellClassName="weekday"
+                                   GridClassName="grid"
+                                   MonthNav="@_monthNav"
+                                   GridReplacement="@DaysGridReplacement">
+                        <CellTemplate Context="cell">
+                            @{
+                                var unav = UnavailableDayPendingState.EffectiveUnavailable(cell.Key, _baseline, _pending);
+                                var focused = _focusKey == cell.Key && !unav;
+                                var cellClass = BuildCellClass(cell, unav, focused);
+                            }
+                            <button type="button"
+                                    class="@cellClass"
+                                    disabled="@(!IsAdmin || _daysLoading || _daysError is not null)"
+                                    aria-pressed="@unav"
+                                    aria-label="@cell.Key"
+                                    @onclick="() => HandleDayClick(cell.Key)">
+                                <span class="day-num">@cell.Label</span>
+                                @if (unav)
+                                {
+                                    <span class="unavail-tag">INDISP.</span>
+                                }
+                                @if (focused)
+                                {
+                                    <span class="focus-dot" aria-hidden="true"></span>
+                                }
+                            </button>
+                        </CellTemplate>
+                    </MonthCalendar>
+
+                    <div class="info-box">
+                        <span class="material-symbols-outlined material-icon info-icon">info</span>
+                        <p class="info-text">
+                            Toque em uma data para alterná-la como <strong style="color: #ba1a1a">Indisponível</strong>.
+                            Essas restrições impedem automaticamente o agendamento deste segurança em quaisquer turnos nos dias selecionados.
+                        </p>
+                    </div>
+
+                    @if (IsAdmin)
+                    {
+                        <div class="field">
+                            <label class="label-caps" for="reason-optional">Motivo (opcional)</label>
+                            <textarea id="reason-optional"
+                                      class="reason-input"
+                                      maxlength="250"
+                                      placeholder="Aplicado aos novos dias indisponíveis salvos."
+                                      @bind="_reasonDraft"></textarea>
+                        </div>
+                    }
+                }
+            </div>
+        </main>
+
+        @if (IsAdmin && ShowCalendar && _daysError is null)
+        {
+            <div class="save-bar">
+                <form @onsubmit="HandleSaveAsync" @onsubmit:preventDefault="true">
+                    <button class="save-btn" type="submit" disabled="@(_saving || !HasPending)">
+                        <span class="material-symbols-outlined material-icon save-icon">save</span>
+                        SALVAR RESTRIÇÕES
+                    </button>
+                </form>
+            </div>
+        }
+    </div>
+</RoleAuthorizeView>
+
+@code {
+    private static readonly UserRole[] ModuleRoles = [UserRole.Admin, UserRole.Supervisor];
+    private static readonly CultureInfo PtBr = CultureInfo.GetCultureInfo("pt-BR");
+
+    private enum BannerKind
+    {
+        None,
+        Success,
+        Error,
+    }
+
+    private AuthSession? _session;
+    private bool IsAdmin => _session?.Roles.Contains(UserRole.Admin) == true;
+
+    private int _viewYear;
+    private int _viewMonth0;
+
+    private List<SecurityGuardDto> _guards = [];
+    private bool _guardsLoading = true;
+    private string? _guardsError;
+    private Guid _selectedGuardId;
+
+    private List<UnavailableDayDto> _serverDays = [];
+    private bool _daysLoading;
+    private string? _daysError;
+
+    private Dictionary<string, Guid> _baseline = new(StringComparer.Ordinal);
+    private Dictionary<string, PendingAction> _pending = new(StringComparer.Ordinal);
+    private string? _focusKey;
+    private string _reasonDraft = string.Empty;
+
+    private BannerKind _bannerKind = BannerKind.None;
+    private string? _bannerMessage;
+    private bool _saving;
+
+    private int _loadGuardsToken;
+    private int _loadDaysToken;
+
+    private IReadOnlyList<MonthGridCell> _calendarCells = [];
+    private MonthCalendar.MonthCalendarMonthNav? _monthNav;
+    private RenderFragment? DaysGridReplacement => _daysLoading
+        ? builder => builder.AddContent(0, LoadingCalendarMarkup())
+        : _daysError is not null
+            ? builder => builder.AddContent(0, DaysErrorMarkup())
+            : null;
+
+    private bool ShowCalendar => _selectedGuardId != Guid.Empty && _guardsError is null;
+    private bool HasPending => _pending.Count > 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var now = DateTime.Now;
+        _viewYear = now.Year;
+        _viewMonth0 = now.Month - 1;
+        RebuildCalendar();
+
+        _session = await AuthService.GetSessionAsync();
+        await RefreshGuardsAsync();
+    }
+
+    private RenderFragment LoadingCalendarMarkup() => __builder =>
+    {
+        __builder.OpenElement(0, "p");
+        __builder.AddAttribute(1, "class", "spinner-text");
+        __builder.AddAttribute(2, "style", "padding: 1rem");
+        __builder.AddContent(3, "Carregando calendário…");
+        __builder.CloseElement();
+    };
+
+    private RenderFragment DaysErrorMarkup() => __builder =>
+    {
+        __builder.OpenElement(0, "div");
+        __builder.AddAttribute(1, "class", "empty");
+        __builder.AddAttribute(2, "role", "alert");
+        __builder.AddContent(3, _daysError);
+        __builder.OpenElement(4, "div");
+        __builder.OpenElement(5, "button");
+        __builder.AddAttribute(6, "type", "button");
+        __builder.AddAttribute(7, "class", "retry-btn");
+        __builder.AddAttribute(8, "onclick", EventCallback.Factory.Create(this, RefreshDaysAsync));
+        __builder.AddContent(9, "Tentar novamente");
+        __builder.CloseElement();
+        __builder.CloseElement();
+        __builder.CloseElement();
+    };
+
+    private void RebuildCalendar()
+    {
+        _calendarCells = MonthGrid.BuildMonthGrid(_viewYear, _viewMonth0);
+        var monthTitle = new DateTime(_viewYear, _viewMonth0 + 1, 1).ToString("MMMM yyyy", PtBr);
+        _monthNav = new MonthCalendar.MonthCalendarMonthNav
+        {
+            Title = monthTitle,
+            HeadClassName = "calendar-head",
+            TitleClassName = "month-title",
+            NavButtonClassName = "cal-nav-btn",
+            NavIconClassName = "material-icon",
+            PrevAriaLabel = "Mês anterior",
+            NextAriaLabel = "Próximo mês",
+            OnPrevMonth = EventCallback.Factory.Create(this, () => ShiftMonth(-1)),
+            OnNextMonth = EventCallback.Factory.Create(this, () => ShiftMonth(1)),
+        };
+    }
+
+    private void ShiftMonth(int delta)
+    {
+        var d = new DateTime(_viewYear, _viewMonth0 + 1, 1).AddMonths(delta);
+        _viewYear = d.Year;
+        _viewMonth0 = d.Month - 1;
+        RebuildCalendar();
+    }
+
+    private async Task RefreshGuardsAsync()
+    {
+        var token = ++_loadGuardsToken;
+        _guardsLoading = true;
+        _guardsError = null;
+
+        try
+        {
+            var list = await GuardsClient.ListAsync(isActive: null);
+            if (token != _loadGuardsToken)
+            {
+                return;
+            }
+
+            _guards = list.ToList();
+            if (_selectedGuardId != Guid.Empty && _guards.Any(g => g.Id == _selectedGuardId))
+            {
+                // keep selection
+            }
+            else
+            {
+                _selectedGuardId = _guards.FirstOrDefault()?.Id ?? Guid.Empty;
+            }
+
+            await RefreshDaysAsync();
+        }
+        catch (ApiException ex)
+        {
+            if (token != _loadGuardsToken)
+            {
+                return;
+            }
+
+            _guardsError = ex.Message;
+        }
+        catch
+        {
+            if (token != _loadGuardsToken)
+            {
+                return;
+            }
+
+            _guardsError = "Não foi possível carregar os seguranças.";
+        }
+        finally
+        {
+            if (token == _loadGuardsToken)
+            {
+                _guardsLoading = false;
+            }
+        }
+    }
+
+    private async Task HandleGuardChangedAsync(ChangeEventArgs args)
+    {
+        if (Guid.TryParse(args.Value?.ToString(), out var guardId))
+        {
+            _selectedGuardId = guardId;
+        }
+        else
+        {
+            _selectedGuardId = Guid.Empty;
+        }
+
+        _pending = new Dictionary<string, PendingAction>(StringComparer.Ordinal);
+        _focusKey = null;
+        ClearBanner();
+        await RefreshDaysAsync();
+    }
+
+    private async Task RefreshDaysAsync()
+    {
+        if (_selectedGuardId == Guid.Empty)
+        {
+            _serverDays = [];
+            _baseline = new Dictionary<string, Guid>(StringComparer.Ordinal);
+            return;
+        }
+
+        var token = ++_loadDaysToken;
+        _daysLoading = true;
+        _daysError = null;
+
+        try
+        {
+            var list = await UnavailableDaysClient.ListByGuardAsync(_selectedGuardId);
+            if (token != _loadDaysToken)
+            {
+                return;
+            }
+
+            _serverDays = list.ToList();
+            _baseline = UnavailableDayPendingState.BaselineMap(_serverDays);
+        }
+        catch (ApiException ex)
+        {
+            if (token != _loadDaysToken)
+            {
+                return;
+            }
+
+            _daysError = ex.Message;
+            _serverDays = [];
+            _baseline = new Dictionary<string, Guid>(StringComparer.Ordinal);
+        }
+        catch
+        {
+            if (token != _loadDaysToken)
+            {
+                return;
+            }
+
+            _daysError = "Não foi possível carregar as restrições.";
+            _serverDays = [];
+            _baseline = new Dictionary<string, Guid>(StringComparer.Ordinal);
+        }
+        finally
+        {
+            if (token == _loadDaysToken)
+            {
+                _daysLoading = false;
+            }
+        }
+    }
+
+    private void HandleDayClick(string key)
+    {
+        if (!IsAdmin || _selectedGuardId == Guid.Empty || _daysLoading)
+        {
+            return;
+        }
+
+        _focusKey = key;
+        _pending = UnavailableDayPendingState.TogglePending(key, _baseline, _pending);
+        ClearBanner();
+    }
+
+    private async Task HandleSaveAsync()
+    {
+        if (!IsAdmin || _selectedGuardId == Guid.Empty || !HasPending)
+        {
+            return;
+        }
+
+        _saving = true;
+        ClearBanner();
+
+        var reason = string.IsNullOrWhiteSpace(_reasonDraft) ? null : _reasonDraft.Trim();
+        var removes = new List<Guid>();
+        var adds = new List<string>();
+
+        foreach (var (key, action) in _pending)
+        {
+            if (action == PendingAction.Add)
+            {
+                adds.Add(key);
+            }
+            else if (action == PendingAction.Remove && _baseline.TryGetValue(key, out var id))
+            {
+                removes.Add(id);
+            }
+        }
+
+        try
+        {
+            foreach (var id in removes)
+            {
+                await UnavailableDaysClient.DeleteAsync(id);
+            }
+
+            foreach (var dateKey in adds)
+            {
+                var date = DateOnly.ParseExact(dateKey, "yyyy-MM-dd", CultureInfo.InvariantCulture);
+                await UnavailableDaysClient.AddAsync(
+                    _selectedGuardId,
+                    new AddUnavailableDayRequestDto(date, reason));
+            }
+
+            _pending = new Dictionary<string, PendingAction>(StringComparer.Ordinal);
+            _reasonDraft = string.Empty;
+            ShowSuccessBanner("Restrições salvas.");
+            await RefreshDaysAsync();
+        }
+        catch (ApiException ex)
+        {
+            ShowErrorBanner(ex.Message);
+            await RefreshDaysAsync();
+            _pending = new Dictionary<string, PendingAction>(StringComparer.Ordinal);
+        }
+        catch
+        {
+            ShowErrorBanner("Falha ao salvar.");
+            await RefreshDaysAsync();
+            _pending = new Dictionary<string, PendingAction>(StringComparer.Ordinal);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private string BuildCellClass(MonthGridCell cell, bool unav, bool focused)
+    {
+        var classes = new List<string> { "cell" };
+        if (!cell.InMonth)
+        {
+            classes.Add("cell-muted");
+        }
+
+        if (cell.InMonth && IsAdmin && !_daysLoading && _daysError is null)
+        {
+            classes.Add("cell-clickable");
+        }
+
+        if (unav)
+        {
+            classes.Add("cell-unavailable");
+        }
+
+        if (focused)
+        {
+            classes.Add("cell-focus");
+        }
+
+        return string.Join(' ', classes);
+    }
+
+    private static string GuardOptionLabel(SecurityGuardDto guard) =>
+        $"{guard.Name} (ID: {DisplayGuardHandle(guard.Id)})";
+
+    private static string DisplayGuardHandle(Guid id)
+    {
+        var alnum = new string(id.ToString("N").Where(char.IsLetterOrDigit).ToArray()).ToUpperInvariant();
+        return (alnum + "0000")[..4];
+    }
+
+    private void ClearBanner()
+    {
+        _bannerKind = BannerKind.None;
+        _bannerMessage = null;
+    }
+
+    private void ShowSuccessBanner(string message)
+    {
+        _bannerKind = BannerKind.Success;
+        _bannerMessage = message;
+    }
+
+    private void ShowErrorBanner(string message)
+    {
+        _bannerKind = BannerKind.Error;
+        _bannerMessage = message;
+    }
+}

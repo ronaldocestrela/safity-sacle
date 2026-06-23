@@ -1,0 +1,49 @@
+﻿@page "/"
+@implements IAsyncDisposable
+@inject ApiHttpClient ApiClient
+
+<PageTitle>SafetyScale</PageTitle>
+
+<main class="main">
+    <h1 class="title">SafetyScale</h1>
+    <p class="lead">SPA Blazor — autenticação JWT e perfis.</p>
+    <p class="actions">
+        <a class="link" href="/login">Ir para login</a>
+        <span class="link-separator" aria-hidden="true">·</span>
+        <a class="link" href="/signup">Cadastrar minha empresa</a>
+    </p>
+
+    <section class="panel" aria-live="polite">
+        <h2 class="panel-title">Smoke da API</h2>
+        @if (_smoke.State == HomeSmokeState.Loading)
+        {
+            <p class="status">Verificando conexão…</p>
+        }
+        else if (_smoke.State == HomeSmokeState.Ok)
+        {
+            <p class="status ok">@_smoke.Message</p>
+        }
+        else
+        {
+            <p class="status error">@_smoke.Message</p>
+        }
+    </section>
+</main>
+
+@code {
+    private HomeSmokeResult _smoke = new(HomeSmokeState.Loading, string.Empty);
+    private CancellationTokenSource? _cts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _cts = new CancellationTokenSource();
+        _smoke = await HomeApiSmoke.RunAsync(ApiClient, _cts.Token);
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+        return ValueTask.CompletedTask;
+    }
+}

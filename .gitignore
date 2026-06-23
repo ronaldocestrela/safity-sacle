@@ -49,3 +49,5 @@ Thumbs.db
 src/Api/*.db
 src/Api/*.db-wal
 src/Api/*.db-shm
+
+.cursor/

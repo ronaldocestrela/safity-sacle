@@ -1,0 +1,437 @@
+@page "/app"
+@layout AppLayout
+@attribute [Authorize]
+@using System.Globalization
+@inject AuthSessionService AuthService
+@inject SecurityGuardsApiClient GuardsClient
+@inject SchedulesApiClient SchedulesClient
+
+<PageTitle>SafetyScale — Painel</PageTitle>
+
+<div class="page">
+    <AppHeader Title="SentryOps"
+               Subtitle="Snapshot operacional e rotação mensal."
+               Email="@_session?.Email"
+               ShowNotifications="true"
+               ShowLogout="true"
+               OnLogout="HandleLogoutAsync" />
+
+    <main class="main">
+        @if (_session is not null)
+        {
+            <section class="session-strip" aria-label="Dados da sessão">
+                <div class="session-item">
+                    <span class="session-label">E-mail</span>
+                    <span class="session-value">@(_session.Email ?? "—")</span>
+                </div>
+                <div class="session-item">
+                    <span class="session-label">Perfil</span>
+                    <span class="session-value">@FormatRoles(_session.Roles)</span>
+                </div>
+                <div class="session-item">
+                    <span class="session-label">Tenant</span>
+                    <span class="session-value session-mono">@_session.TenantId</span>
+                </div>
+            </section>
+        }
+
+        @if (!string.IsNullOrEmpty(_guardsError))
+        {
+            <div role="alert" class="banner banner-error">
+                <span>@_guardsError</span>
+                <button type="button" class="retry-btn" @onclick="RefreshAsync">Tentar novamente</button>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(_scheduleError))
+        {
+            <div role="alert" class="banner banner-error">
+                <span>@_scheduleError</span>
+                <button type="button" class="retry-btn" @onclick="RefreshAsync">Tentar novamente</button>
+            </div>
+        }
+
+        @if (_loading)
+        {
+            <div class="skeleton-stack" aria-busy="true" aria-label="Carregando painel">
+                <div class="skeleton-card"></div>
+                <div class="skeleton-grid">
+                    <div class="skeleton-kpi"></div>
+                    <div class="skeleton-kpi"></div>
+                    <div class="skeleton-kpi"></div>
+                    <div class="skeleton-kpi"></div>
+                </div>
+                <div class="skeleton-card"></div>
+            </div>
+        }
+        else
+        {
+            <p class="section-intro">
+                Snapshot operacional para <strong>@PeriodLabel</strong>. As KPIs usam dados da API em tempo real; os agendamentos podem estar ausentes
+                até serem gerados.
+            </p>
+
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <span class="kpi-label">Seguranças ativos</span>
+                    <span class="kpi-value" data-testid="kpi-active">@Kpis.Active</span>
+                </div>
+                <div class="kpi-card">
+                    <span class="kpi-label">Seguranças inativos</span>
+                    <span class="kpi-value" data-testid="kpi-inactive">@Kpis.Inactive</span>
+                </div>
+                <div class="kpi-card">
+                    <span class="kpi-label">Agendamentos</span>
+                    <span class="kpi-value" data-testid="kpi-assignments">@Kpis.Assignments</span>
+                </div>
+                <div class="kpi-card">
+                    <span class="kpi-label">Turnos de fim de semana</span>
+                    <span class="kpi-value" data-testid="kpi-weekend">@Kpis.Weekend</span>
+                </div>
+            </div>
+
+            <section class="roster-section" aria-labelledby="roster-heading">
+                <h2 id="roster-heading" class="section-title">Rotação mensal atual</h2>
+
+                @if (_schedule is null)
+                {
+                    <div class="empty-card">
+                        <span class="material-symbols-outlined empty-icon" aria-hidden="true">event_busy</span>
+                        <p class="empty-title">Não há agendamentos para @PeriodLabel</p>
+                        <p class="empty-sub">
+                            @if (IsAdmin)
+                            {
+                                <text>Gere a rotação mensal a partir de Agendamentos quando seu time estiver pronto.</text>
+                            }
+                            else
+                            {
+                                <text>Peça a um administrador para gerar a escala ou abra Escalas para revisar quando disponível.</text>
+                            }
+                        </p>
+                        <NavLink class="@(IsAdmin ? "cta-primary" : "cta-secondary")" href="/app/schedules">
+                            @(IsAdmin ? "Abrir agendamentos para gerar" : "Visualizar agendamentos")
+                        </NavLink>
+                    </div>
+                }
+                else
+                {
+                    <MonthCalendar Cells="@_calendarCells"
+                                   Weekdays="@MonthGrid.WeekdayLabelsSmtwtfs"
+                                   CardClassName="calendar-card"
+                                   WeekdayRowClassName="weekday-row"
+                                   WeekdayCellClassName="weekday-cell"
+                                   GridClassName="calendar-grid">
+                        <TopContent>
+                            <p class="calendar-hint">
+                                Toque em um dia para ver quem está agendado. Os pontos marcam dias com cobertura.
+                            </p>
+                        </TopContent>
+                        <CellTemplate Context="cell">
+                            @{
+                                var count = cell.InMonth ? AssignmentCountFor(cell.Key) : 0;
+                            }
+                            @if (!cell.InMonth)
+                            {
+                                <span class="cal-pad" aria-hidden="true">
+                                    <span class="cal-pad-num">@cell.Label</span>
+                                </span>
+                            }
+                            else
+                            {
+                                var selected = cell.Key == _selectedDateKey;
+                                var isToday = cell.Key == _todayKey;
+                                <button type="button"
+                                        class="cal-day @(selected ? "cal-day-selected" : null) @(isToday ? "cal-day-today" : null)"
+                                        aria-label="@CalendarAriaLabel(cell.Key, count)"
+                                        aria-pressed="@selected"
+                                        @onclick="() => SelectDate(cell.Key)">
+                                    <span class="cal-day-num">@cell.Label</span>
+                                    @if (count > 0)
+                                    {
+                                        <span class="cal-day-dot-wrap" aria-hidden="true">
+                                            <span class="cal-day-dot"></span>
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="cal-day-dot-spacer" aria-hidden="true"></span>
+                                    }
+                                </button>
+                            }
+                        </CellTemplate>
+                    </MonthCalendar>
+
+                    <div class="day-detail" role="region" aria-labelledby="day-detail-heading">
+                        <h3 id="day-detail-heading" class="day-detail-title">
+                            @(_selectedDateKey is not null ? DisplayAssignmentDate(_selectedDateKey) : "Selecione um dia")
+                        </h3>
+                        @if (_selectedDateKey is not null && SelectedDayItems.Any(i => i.IsWeekend))
+                        {
+                            <p class="day-detail-weekend" data-testid="weekend-day-hint">Turno de final de semana</p>
+                        }
+
+                        @if (_selectedDateKey is null)
+                        {
+                            <p class="day-detail-empty">Escolha um dia no calendário.</p>
+                        }
+                        else if (SelectedDayItems.Count == 0)
+                        {
+                            <p class="day-detail-empty">Não há agendamentos para este dia.</p>
+                        }
+                        else
+                        {
+                            <ul class="shift-list">
+                                @foreach (var item in SelectedDayItems)
+                                {
+                                    <li class="shift-card">
+                                        <span class="shift-stripe" aria-hidden="true"></span>
+                                        <div class="shift-body">
+                                            <p class="shift-name">@item.SecurityGuardName</p>
+                                            <p class="shift-sector">@item.SectorName</p>
+                                            <p class="shift-meta">
+                                                <span class="mono">ID @ShortGuardId(item.SecurityGuardId)</span>
+                                                <span class="shift-dot" aria-hidden="true">·</span>
+                                                <span>@(item.SecurityGuardIsActive ? "Rotação ativa" : "Segurança inativa")</span>
+                                            </p>
+                                        </div>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    </div>
+
+                    <p class="roster-footer">
+                        <NavLink class="roster-footer-link" href="/app/schedules">
+                            Abrir visualização completa de agendamentos
+                        </NavLink>
+                    </p>
+                }
+            </section>
+
+            <section class="shortcuts-section" aria-label="Navegação rápida">
+                <h2 class="section-title">Atalhos</h2>
+                <div class="shortcuts-grid">
+                    <NavLink class="shortcut" href="/app/sectors">
+                        <span class="material-symbols-outlined shortcut-icon">map</span>
+                        <span class="shortcut-label">Setores</span>
+                    </NavLink>
+                    <NavLink class="shortcut" href="/app/security-guards">
+                        <span class="material-symbols-outlined shortcut-icon">shield_person</span>
+                        <span class="shortcut-label">Seguranças</span>
+                    </NavLink>
+                    <NavLink class="shortcut" href="/app/unavailable-days">
+                        <span class="material-symbols-outlined shortcut-icon">event_available</span>
+                        <span class="shortcut-label">Disponibilidade</span>
+                    </NavLink>
+                    <NavLink class="shortcut" href="/app/schedules">
+                        <span class="material-symbols-outlined shortcut-icon">settings_suggest</span>
+                        <span class="shortcut-label">Agendamentos</span>
+                    </NavLink>
+                </div>
+            </section>
+        }
+    </main>
+</div>
+
+@code {
+    private static readonly string[] MonthNames =
+    [
+        "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+        "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+    ];
+
+    private static readonly CultureInfo PtBr = CultureInfo.GetCultureInfo("pt-BR");
+
+    private AuthSession? _session;
+    private int _month;
+    private int _year;
+    private IReadOnlyList<SecurityGuardDto> _guards = [];
+    private MonthlyScheduleDto? _schedule;
+    private bool _loading = true;
+    private string? _guardsError;
+    private string? _scheduleError;
+    private string? _selectedDateKey;
+    private int _loadToken;
+    private string _todayKey = MonthGrid.TodayKeyLocal();
+    private IReadOnlyList<MonthGridCell> _calendarCells = [];
+    private Dictionary<string, int> _assignmentCountByDate = new(StringComparer.Ordinal);
+
+    private bool IsAdmin => _session?.Roles.Contains(UserRole.Admin) == true;
+
+    private string PeriodLabel => FormatMonthYear(_month, _year);
+
+    private DashboardKpis Kpis
+    {
+        get
+        {
+            var active = _guards.Count(g => g.IsActive);
+            var inactive = _guards.Count(g => !g.IsActive);
+            var items = _schedule?.Items ?? [];
+            return new DashboardKpis(active, inactive, items.Count, items.Count(i => i.IsWeekend));
+        }
+    }
+
+    private IReadOnlyList<ScheduleItemDto> SelectedDayItems =>
+        AssignmentsForSelectedDate(_schedule?.Items, _selectedDateKey);
+
+    protected override async Task OnInitializedAsync()
+    {
+        var now = DateTime.Now;
+        _month = now.Month;
+        _year = now.Year;
+        _todayKey = MonthGrid.TodayKeyLocal();
+        _calendarCells = MonthGrid.BuildMonthGrid(_year, _month - 1);
+        _session = await AuthService.GetSessionAsync();
+        await RefreshAsync();
+    }
+
+    private async Task RefreshAsync()
+    {
+        var token = ++_loadToken;
+        _loading = true;
+        _guardsError = null;
+        _scheduleError = null;
+
+        var guardsTask = LoadGuardsSafeAsync();
+        var scheduleTask = LoadScheduleSafeAsync();
+        await Task.WhenAll(guardsTask, scheduleTask);
+
+        if (token != _loadToken)
+        {
+            return;
+        }
+
+        var guardsResult = await guardsTask;
+        var scheduleResult = await scheduleTask;
+
+        _guards = guardsResult.Guards ?? [];
+        _guardsError = guardsResult.Error;
+        _schedule = scheduleResult.Schedule;
+        _scheduleError = scheduleResult.Error;
+        _selectedDateKey = InitialSelectedDateKey(_schedule, _month, _year);
+        RebuildAssignmentCounts();
+        _loading = false;
+    }
+
+    private async Task<(IReadOnlyList<SecurityGuardDto>? Guards, string? Error)> LoadGuardsSafeAsync()
+    {
+        try
+        {
+            return (await GuardsClient.ListAsync(), null);
+        }
+        catch (ApiException ex)
+        {
+            return (null, ex.Message);
+        }
+        catch (HttpRequestException)
+        {
+            return (null, "Não foi possível carregar os seguranças.");
+        }
+    }
+
+    private async Task<(MonthlyScheduleDto? Schedule, string? Error)> LoadScheduleSafeAsync()
+    {
+        try
+        {
+            return (await SchedulesClient.GetByMonthYearAsync(_month, _year), null);
+        }
+        catch (ApiException ex)
+        {
+            return (null, ex.Message);
+        }
+        catch (HttpRequestException)
+        {
+            return (null, "Não foi possível carregar a rotação mensal.");
+        }
+    }
+
+    private void RebuildAssignmentCounts()
+    {
+        _assignmentCountByDate = new Dictionary<string, int>(StringComparer.Ordinal);
+        foreach (var item in _schedule?.Items ?? [])
+        {
+            var key = item.Date.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+            _assignmentCountByDate[key] = _assignmentCountByDate.GetValueOrDefault(key) + 1;
+        }
+    }
+
+    private int AssignmentCountFor(string dateKey) =>
+        _assignmentCountByDate.GetValueOrDefault(dateKey);
+
+    private void SelectDate(string dateKey) => _selectedDateKey = dateKey;
+
+    private Task HandleLogoutAsync() => AuthService.LogoutAsync(navigateToLogin: true);
+
+    private static string FormatRoles(IReadOnlyList<UserRole> roles) =>
+        roles.Count == 0 ? "—" : string.Join(", ", roles);
+
+    private static string FormatMonthYear(int month, int year) =>
+        month is >= 1 and <= 12 ? $"{MonthNames[month - 1]} {year}" : $"{year}";
+
+    private static string? InitialSelectedDateKey(MonthlyScheduleDto? schedule, int month, int year)
+    {
+        if (schedule is null)
+        {
+            return null;
+        }
+
+        var today = MonthGrid.TodayKeyLocal();
+        var first = $"{year:D4}-{month:D2}-01";
+        var lastDay = DateTime.DaysInMonth(year, month);
+        var last = $"{year:D4}-{month:D2}-{lastDay:D2}";
+
+        if (string.CompareOrdinal(today, first) >= 0 && string.CompareOrdinal(today, last) <= 0)
+        {
+            return today;
+        }
+
+        return first;
+    }
+
+    private static IReadOnlyList<ScheduleItemDto> AssignmentsForSelectedDate(
+        IReadOnlyList<ScheduleItemDto>? items,
+        string? selectedKey)
+    {
+        if (items is null || items.Count == 0 || string.IsNullOrEmpty(selectedKey))
+        {
+            return [];
+        }
+
+        return items
+            .Where(i => i.Date.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture) == selectedKey)
+            .OrderBy(i => i.SectorName, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(i => i.SecurityGuardName, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(i => i.Id)
+            .ToList();
+    }
+
+    private static string DisplayAssignmentDate(string iso)
+    {
+        if (DateOnly.TryParseExact(iso, "yyyy-MM-dd", out var date))
+        {
+            var dt = new DateTime(date.Year, date.Month, date.Day);
+            return dt.ToString("ddd, d 'de' MMM 'de' yyyy", PtBr);
+        }
+
+        return iso;
+    }
+
+    private static string CalendarAriaLabel(string dateKey, int count)
+    {
+        var label = DisplayAssignmentDate(dateKey);
+        return count switch
+        {
+            0 => $"{label}, sem agendamentos",
+            1 => $"{label}, 1 agendamento",
+            _ => $"{label}, {count} agendamentos",
+        };
+    }
+
+    private static string ShortGuardId(Guid id)
+    {
+        var alnum = new string(id.ToString("N").Where(char.IsLetterOrDigit).ToArray()).ToUpperInvariant();
+        return (alnum + "0000")[..4];
+    }
+
+    private sealed record DashboardKpis(int Active, int Inactive, int Assignments, int Weekend);
+}

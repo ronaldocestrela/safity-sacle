@@ -1,0 +1,620 @@
+@page "/app/sectors"
+@layout AppLayout
+@attribute [Authorize]
+@inject AuthSessionService AuthService
+@inject SectorsApiClient SectorsClient
+
+<PageTitle>SafetyScale — Setores</PageTitle>
+
+<RoleAuthorizeView AllowedRoles="ModuleRoles">
+    <div class="page">
+        <AppHeader Title="Gestão de setores"
+                   Subtitle="Cadastro e consulta de setores operacionais."
+                   Email="@_session?.Email"
+                   ShowNotifications="true"
+                   ShowLogout="true"
+                   OnLogout="HandleLogoutAsync" />
+
+        <div class="sticky-search">
+            <div class="search-field">
+                <span class="material-symbols-outlined search-icon">search</span>
+                <input class="search-input"
+                       type="search"
+                       placeholder="Pesquisar setores por nome ou descrição..."
+                       aria-label="Pesquisar setores por nome ou descrição"
+                       @bind="_search"
+                       @bind:event="oninput" />
+                <button type="button" class="tune-btn" aria-label="Filtro de ajuste" title="Filtros">
+                    <span class="material-symbols-outlined icon-md">tune</span>
+                </button>
+            </div>
+            <div class="chip-row">
+                @foreach (var chip in Chips)
+                {
+                    <button type="button"
+                            class="@(_chip == chip.Id ? "chip-active" : "chip")"
+                            @onclick="() => SetChipAsync(chip.Id)">
+                        @chip.Label
+                    </button>
+                }
+            </div>
+        </div>
+
+        @if (_banner is not null)
+        {
+            <div class="@($"banner-shared {(_banner.Kind == BannerKind.Success ? "banner-success" : "banner-error")}")"
+                 role="status">
+                <span class="banner-text">@_banner.Message</span>
+                <button type="button" class="banner-dismiss" aria-label="Dispensar" @onclick="DismissBanner">✕</button>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(_loadError))
+        {
+            <div class="banner-alt banner-error" role="alert">
+                <span>
+                    @_loadError
+                    <button type="button" class="link-btn" @onclick="RefreshListAsync">Tentar novamente</button>
+                </span>
+            </div>
+        }
+
+        <section class="list-section" aria-busy="@_loading" aria-label="Lista de setores">
+            @if (_loading && DisplayedRows.Count == 0)
+            {
+                <p class="muted">Carregando…</p>
+            }
+
+            @if (!_loading && DisplayedRows.Count == 0 && string.IsNullOrEmpty(_loadError))
+            {
+                <p class="muted" role="status">Não há setores encontrados para este filtro.</p>
+            }
+
+            <ul class="card-list">
+                @foreach (var row in DisplayedRows)
+                {
+                    <li class="@($"personnel-card {(row.IsActive ? "personnel-card-active" : "personnel-card-inactive")}")">
+                        <div class="@(row.IsActive ? "accent-bar-active" : "accent-bar-inactive")"></div>
+                        <div class="card-avatar" aria-hidden="true">
+                            <span class="card-avatar-text">@GetInitial(row.Name)</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="card-title-row">
+                                <h3 class="card-name">
+                                    @if (IsAdmin)
+                                    {
+                                        <button type="button" class="name-btn" title="Editar setor" @onclick="() => OpenEdit(row)">
+                                            @row.Name
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        @row.Name
+                                    }
+                                </h3>
+                                <span class="card-id" title="@row.Id.ToString()">@FormatIdSnippet(row.Id)</span>
+                            </div>
+                            <div class="card-meta-row">
+                                @if (row.IsActive)
+                                {
+                                    <span class="badge-active">Ativo</span>
+                                }
+                                else
+                                {
+                                    <span class="badge-inactive">Inativo</span>
+                                }
+                                <span class="card-location">
+                                    @FormatPositions(row.RequiredGuardsPerDay) · @FormatDescription(row.Description)
+                                </span>
+                            </div>
+                        </div>
+                        <div class="card-toggle-col">
+                            <button type="button"
+                                    role="switch"
+                                    aria-checked="@row.IsActive"
+                                    aria-label="@($"Status ativo para {row.Name}")"
+                                    disabled="@(!IsAdmin)"
+                                    class="toggle-btn"
+                                    @onclick="() => HandleToggleAsync(row)">
+                                <span class="@($"toggle-track {(row.IsActive ? "toggle-track-on" : "")}")">
+                                    <span class="@($"toggle-thumb {(row.IsActive ? "toggle-thumb-on" : "")}")"></span>
+                                </span>
+                            </button>
+                        </div>
+                    </li>
+                }
+            </ul>
+        </section>
+
+        @if (IsAdmin)
+        {
+            <button type="button" class="fab" aria-label="Adicionar setor" @onclick="OpenCreate">
+                <span class="material-symbols-outlined fab-icon">business</span>
+            </button>
+        }
+
+        @if (_formOpen is not null)
+        {
+            <div class="backdrop"
+                 role="presentation"
+                 @onclick="HandleFormBackdropClick">
+                <div class="dialog-inner" @onclick:stopPropagation="true">
+                    <h2 id="sector-form-title" class="dialog-title">
+                        @(_formOpen == FormMode.Create ? "Novo setor" : "Editar setor")
+                    </h2>
+
+                    <form aria-labelledby="sector-form-title" @onsubmit="HandleSubmit" @onsubmit:preventDefault="true">
+                        @if (!string.IsNullOrEmpty(_formError))
+                        {
+                            <p class="alert" role="alert">@_formError</p>
+                        }
+
+                        <label class="label" for="sector-name-input">
+                            Nome
+                            <input id="sector-name-input"
+                                   class="@($"input {(_nameInvalid ? "input-invalid" : "")}")"
+                                   value="@_nameDraft"
+                                   @oninput="OnNameInput"
+                                   @onblur="() => _nameTouched = true"
+                                   aria-invalid="@_nameInvalid"
+                                   disabled="@_submitting"
+                                   autofocus />
+                        </label>
+                        @if (_nameInvalid)
+                        {
+                            <span class="field-err">Informe um nome.</span>
+                        }
+
+                        <label class="label" for="sector-desc-input">
+                            Descrição
+                            <textarea id="sector-desc-input"
+                                      class="input"
+                                      rows="3"
+                                      @bind="_descriptionDraft"
+                                      disabled="@_submitting"></textarea>
+                        </label>
+
+                        <label class="label" for="sector-positions-input">
+                            Posições por dia
+                            <input id="sector-positions-input"
+                                   class="@($"input {(_positionsShowError ? "input-invalid" : "")}")"
+                                   type="number"
+                                   inputmode="numeric"
+                                   min="1"
+                                   max="500"
+                                   step="1"
+                                   value="@PositionsInputValue"
+                                   @onchange="OnPositionsChange"
+                                   @onblur="() => _positionsTouched = true"
+                                   disabled="@_submitting"
+                                   aria-invalid="@_positionsShowError" />
+                        </label>
+                        @if (_positionsShowError)
+                        {
+                            <span class="field-err">Use um número inteiro entre 1 e 500.</span>
+                        }
+
+                        <div class="dialog-footer">
+                            <button type="button" class="btn-ghost" @onclick="CloseForm" disabled="@_submitting">Cancelar</button>
+                            <button type="submit" class="btn-primary" disabled="@_submitting">
+                                @(_submitting ? "Salvando…" : _formOpen == FormMode.Create ? "Criar" : "Salvar")
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        }
+
+        @if (_inactivateTarget is not null)
+        {
+            <div class="backdrop"
+                 role="presentation"
+                 @onclick="HandleInactivateBackdropClick">
+                <div class="dialog-inner" @onclick:stopPropagation="true">
+                    <h2 class="dialog-title">Desativar setor</h2>
+                    <p class="confirm-body">
+                        Confirmar desativação de <strong>@_inactivateTarget.Name</strong>. Agendamentos ligados a este
+                        setor permanecem até serem alterados.
+                    </p>
+                    <div class="dialog-footer">
+                        <button type="button"
+                                class="btn-ghost"
+                                @onclick="() => _inactivateTarget = null"
+                                disabled="@_inactivateSubmitting">
+                            Cancelar
+                        </button>
+                        <button type="button"
+                                class="btn-danger"
+                                @onclick="ConfirmInactivateAsync"
+                                disabled="@_inactivateSubmitting">
+                            @(_inactivateSubmitting ? "Processando…" : "Confirmar")
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</RoleAuthorizeView>
+
+@code {
+    private static readonly UserRole[] ModuleRoles = [UserRole.Admin, UserRole.Supervisor];
+
+    private static readonly (ChipFilter Id, string Label)[] Chips =
+    [
+        (ChipFilter.All, "Todos os setores"),
+        (ChipFilter.ActiveOnly, "Apenas ativos"),
+    ];
+
+    private AuthSession? _session;
+    private int _loadToken;
+    private bool _loading = true;
+    private string? _loadError;
+    private ChipFilter _chip = ChipFilter.All;
+    private string _search = string.Empty;
+    private IReadOnlyList<SectorDto> _items = [];
+    private BannerState? _banner;
+
+    private FormMode? _formOpen;
+    private SectorDto? _editing;
+    private string _nameDraft = string.Empty;
+    private string _descriptionDraft = string.Empty;
+    private int _positionsDraft = 1;
+    private bool _positionsEmpty;
+    private bool _nameTouched;
+    private bool _positionsTouched;
+    private bool _submitting;
+    private string? _formError;
+
+    private SectorDto? _inactivateTarget;
+    private bool _inactivateSubmitting;
+
+    private bool IsAdmin => _session?.Roles.Contains(UserRole.Admin) == true;
+
+    private bool _nameInvalid => _nameTouched && string.IsNullOrWhiteSpace(_nameDraft);
+
+    private bool PositionsInvalid =>
+        _positionsEmpty ||
+        _positionsDraft < 1 ||
+        _positionsDraft > 500;
+
+    private bool _positionsShowError => _positionsTouched && PositionsInvalid;
+
+    private string PositionsInputValue => _positionsEmpty ? string.Empty : _positionsDraft.ToString();
+
+    private IReadOnlyList<SectorDto> DisplayedRows
+    {
+        get
+        {
+            var list = _items;
+            var q = _search.Trim();
+            if (string.IsNullOrEmpty(q))
+            {
+                return list;
+            }
+
+            var lower = q.ToLowerInvariant();
+            return list
+                .Where(s =>
+                    s.Name.ToLowerInvariant().Contains(lower) ||
+                    (s.Description?.ToLowerInvariant().Contains(lower) ?? false))
+                .ToList();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _session = await AuthService.GetSessionAsync();
+        await RefreshListAsync();
+    }
+
+    private async Task SetChipAsync(ChipFilter chip)
+    {
+        if (_chip == chip)
+        {
+            return;
+        }
+
+        _chip = chip;
+        await RefreshListAsync();
+    }
+
+    private async Task RefreshListAsync()
+    {
+        var token = ++_loadToken;
+        _loading = true;
+        _loadError = null;
+
+        try
+        {
+            var list = await SectorsClient.ListAsync(ChipToIsActive(_chip));
+            if (token != _loadToken)
+            {
+                return;
+            }
+
+            _items = list;
+        }
+        catch (ApiException ex)
+        {
+            if (token != _loadToken)
+            {
+                return;
+            }
+
+            _loadError = string.IsNullOrWhiteSpace(ex.Message)
+                ? "Não foi possível carregar setores."
+                : ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            if (token != _loadToken)
+            {
+                return;
+            }
+
+            _loadError = "Não foi possível carregar setores.";
+        }
+        finally
+        {
+            if (token == _loadToken)
+            {
+                _loading = false;
+            }
+        }
+    }
+
+    private static bool? ChipToIsActive(ChipFilter chip) =>
+        chip == ChipFilter.ActiveOnly ? true : null;
+
+    private void OpenCreate()
+    {
+        _banner = null;
+        _formOpen = FormMode.Create;
+        _editing = null;
+        _nameDraft = string.Empty;
+        _descriptionDraft = string.Empty;
+        _positionsDraft = 1;
+        _positionsEmpty = false;
+        _nameTouched = false;
+        _positionsTouched = false;
+        _formError = null;
+        _submitting = false;
+    }
+
+    private void OpenEdit(SectorDto sector)
+    {
+        if (!IsAdmin)
+        {
+            return;
+        }
+
+        _banner = null;
+        _formOpen = FormMode.Edit;
+        _editing = sector;
+        _nameDraft = sector.Name;
+        _descriptionDraft = sector.Description ?? string.Empty;
+        _positionsDraft = sector.RequiredGuardsPerDay;
+        _positionsEmpty = false;
+        _nameTouched = false;
+        _positionsTouched = false;
+        _formError = null;
+        _submitting = false;
+    }
+
+    private void CloseForm()
+    {
+        _formOpen = null;
+        _editing = null;
+        _nameDraft = string.Empty;
+        _descriptionDraft = string.Empty;
+        _positionsDraft = 1;
+        _positionsEmpty = false;
+        _nameTouched = false;
+        _positionsTouched = false;
+        _formError = null;
+        _submitting = false;
+    }
+
+    private void HandleFormBackdropClick(MouseEventArgs _)
+    {
+        if (!_submitting)
+        {
+            CloseForm();
+        }
+    }
+
+    private void HandleInactivateBackdropClick(MouseEventArgs _)
+    {
+        if (!_inactivateSubmitting)
+        {
+            _inactivateTarget = null;
+        }
+    }
+
+    private void OnNameInput(ChangeEventArgs e)
+    {
+        _nameDraft = e.Value?.ToString() ?? string.Empty;
+    }
+
+    private void OnPositionsChange(ChangeEventArgs e)
+    {
+        var raw = e.Value?.ToString() ?? string.Empty;
+        if (string.IsNullOrEmpty(raw))
+        {
+            _positionsEmpty = true;
+            return;
+        }
+
+        _positionsEmpty = false;
+        if (int.TryParse(raw, out var value))
+        {
+            _positionsDraft = value;
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        _nameTouched = true;
+        _positionsTouched = true;
+        _formError = null;
+
+        if (string.IsNullOrWhiteSpace(_nameDraft))
+        {
+            return;
+        }
+
+        if (PositionsInvalid)
+        {
+            _formError = "As posições por dia devem ser um número inteiro de 1 a 500.";
+            return;
+        }
+
+        _submitting = true;
+
+        try
+        {
+            var descTrim = _descriptionDraft.Trim();
+            var descPayload = descTrim.Length > 0 ? descTrim : null;
+            var name = _nameDraft.Trim();
+
+            if (_formOpen == FormMode.Create)
+            {
+                await SectorsClient.CreateAsync(new CreateSectorRequestDto(name, descPayload, _positionsDraft));
+                _banner = new BannerState(BannerKind.Success, "Setor criado.");
+            }
+            else if (_formOpen == FormMode.Edit && _editing is not null)
+            {
+                await SectorsClient.UpdateAsync(
+                    _editing.Id,
+                    new UpdateSectorRequestDto(name, descPayload, _positionsDraft));
+                _banner = new BannerState(BannerKind.Success, "Alterações salvas.");
+            }
+
+            CloseForm();
+            await RefreshListAsync();
+        }
+        catch (ApiException ex)
+        {
+            _formError = string.IsNullOrWhiteSpace(ex.Message) ? "Falha ao salvar." : ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            _formError = "Falha ao salvar.";
+        }
+        finally
+        {
+            _submitting = false;
+        }
+    }
+
+    private async Task HandleToggleAsync(SectorDto row)
+    {
+        if (!IsAdmin)
+        {
+            return;
+        }
+
+        if (row.IsActive)
+        {
+            _inactivateTarget = row;
+            return;
+        }
+
+        await HandleActivateAsync(row.Id);
+    }
+
+    private async Task ConfirmInactivateAsync()
+    {
+        if (_inactivateTarget is null)
+        {
+            return;
+        }
+
+        _inactivateSubmitting = true;
+        _banner = null;
+
+        try
+        {
+            await SectorsClient.InactivateAsync(_inactivateTarget.Id);
+            _banner = new BannerState(BannerKind.Success, "Setor desativado.");
+            _inactivateTarget = null;
+            await RefreshListAsync();
+        }
+        catch (ApiException ex)
+        {
+            _banner = new BannerState(
+                BannerKind.Error,
+                string.IsNullOrWhiteSpace(ex.Message) ? "Não foi possível desativar." : ex.Message);
+        }
+        catch (HttpRequestException)
+        {
+            _banner = new BannerState(BannerKind.Error, "Não foi possível desativar.");
+        }
+        finally
+        {
+            _inactivateSubmitting = false;
+        }
+    }
+
+    private async Task HandleActivateAsync(Guid sectorId)
+    {
+        _banner = null;
+
+        try
+        {
+            await SectorsClient.ActivateAsync(sectorId);
+            _banner = new BannerState(BannerKind.Success, "Setor ativado.");
+            await RefreshListAsync();
+        }
+        catch (ApiException ex)
+        {
+            _banner = new BannerState(
+                BannerKind.Error,
+                string.IsNullOrWhiteSpace(ex.Message) ? "Não foi possível ativar." : ex.Message);
+        }
+        catch (HttpRequestException)
+        {
+            _banner = new BannerState(BannerKind.Error, "Não foi possível ativar.");
+        }
+    }
+
+    private void DismissBanner() => _banner = null;
+
+    private Task HandleLogoutAsync() =>
+        AuthService.LogoutAsync(navigateToLogin: true);
+
+    private static string GetInitial(string name) =>
+        string.IsNullOrWhiteSpace(name) ? "?" : char.ToUpperInvariant(name[0]).ToString();
+
+    private static string FormatIdSnippet(Guid id)
+    {
+        var s = id.ToString();
+        return s.Length >= 8 ? $"{s[..8]}…" : s;
+    }
+
+    private static string FormatPositions(int count) =>
+        count == 1 ? "1 position/day" : $"{count} positions/day";
+
+    private static string FormatDescription(string? description) =>
+        string.IsNullOrWhiteSpace(description) ? "Sem descrição" : description.Trim();
+
+    private enum ChipFilter
+    {
+        All,
+        ActiveOnly,
+    }
+
+    private enum FormMode
+    {
+        Create,
+        Edit,
+    }
+
+    private enum BannerKind
+    {
+        Success,
+        Error,
+    }
+
+    private sealed record BannerState(BannerKind Kind, string Message);
+}

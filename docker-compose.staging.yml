@@ -1,0 +1,63 @@
+# Staging — mesma stack que prod, rede e portas isoláveis (B10.4).
+# Uso: docker compose -f docker-compose.staging.yml --env-file .env.staging up -d --build
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?define MSSQL_SA_PASSWORD in .env.staging}
+      MSSQL_PID: ${MSSQL_PID:-Developer}
+    volumes:
+      - sqlserver-staging-data:/var/opt/mssql
+    ports:
+      - "${SQLSERVER_PORT:-1434}:1433"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q \"SELECT 1\" || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 45s
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ForwardedHeaders__Enabled: "true"
+      ConnectionStrings__DefaultConnection: |-
+        Server=sqlserver,1433;Database=${SAFETYSCALE_DB_NAME:-SafetyScaleStaging};User Id=sa;Password=${MSSQL_SA_PASSWORD:?};Encrypt=True;TrustServerCertificate=True;
+      Jwt__Key: ${JWT_KEY:?define JWT_KEY in .env.staging}
+      Jwt__Issuer: ${JWT_ISSUER:?define JWT_ISSUER in .env.staging}
+      Jwt__Audience: ${JWT_AUDIENCE:?define JWT_AUDIENCE in .env.staging}
+      Jwt__ExpiryMinutes: ${JWT_EXPIRY_MINUTES:-120}
+      Cors__OriginsCsv: ${CORS_ORIGINS:-}
+    ports:
+      - "${API_PORT:-8082}:8080"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: src/Web.Blazor/Dockerfile
+      args:
+        API_BASE_URL: ${API_BASE_URL:-}
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    depends_on:
+      - api
+
+volumes:
+  sqlserver-staging-data:
+
+networks:
+  default:
+    name: safetyscale-staging-net

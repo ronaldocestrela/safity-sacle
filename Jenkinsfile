@@ -1,21 +1,20 @@
 /*
  * SafetyScale — deploy local com Docker Compose (servidor onde o Jenkins roda).
  *
- * Crie estas credenciais no Jenkins (tipo "Secret text" ou equivalente) com estes IDs:
+ * Credenciais Jenkins (tipo "Secret text"):
  *
  *   safetyscale-mssql-sa-password  → senha forte do SQL Server (usuário sa)
- *   safetyscale-sqlserver-port     → porta TCP do SQL Server exposta no host (ex.: 1433 → 1433 no contêiner)
+ *   safetyscale-sqlserver-port     → porta TCP do SQL Server exposta no host
  *   safetyscale-jwt-key            → chave JWT (≥ 32 caracteres recomendado)
  *   safetyscale-jwt-issuer         → Jwt:Issuer (ex.: SafetyScale)
  *   safetyscale-jwt-audience       → Jwt:Audience (ex.: SafetyScale.Api)
  *   safetyscale-db-name            → nome lógico do banco (ex.: SafetyScale)
- *   safetyscale-api-port           → porta da API exposta no host (ex.: 8081 → 8080 no contêiner)
- *   safetyscale-web-port           → porta HTTP publicada pelo Nginx do front (ex.: 80)
- *   safetyscale-cors-origins       → origens CORS da API separadas por vírgula (pode ser vazio = não usa CORS)
- *   safetyscale-vite-api-base-url → URL absoluta da API na build da SPA Vite (vazio = /api pelo Nginx)
+ *   safetyscale-api-port           → porta da API exposta no host
+ *   safetyscale-web-port           → porta HTTP publicada pelo Nginx do front
+ *   safetyscale-cors-origins       → origens CORS da API (CSV; vazio = same-origin)
+ *   safetyscale-api-base-url       → URL absoluta da API no build Blazor (vazio = /api via Nginx)
  *
- * Opcionalmente ajuste JWT_EXPIRY_MINUTES e MSSQL_PID no estágio Prepare Env se precisar
- * diferente dos padrões (120 e Developer).
+ * Opcional: JWT_EXPIRY_MINUTES e MSSQL_PID no estágio Prepare Env.
  */
 
 pipeline {
@@ -23,7 +22,6 @@ pipeline {
 
   options {
     timestamps()
-    // Evita dois deploys concorrentes no mesmo workspace/servidor
     disableConcurrentBuilds(abortPrevious: false)
   }
 
@@ -49,6 +47,18 @@ pipeline {
       }
     }
 
+    stage('Backend Tests') {
+      steps {
+        sh '''
+          set -eu
+          dotnet --version
+          dotnet restore SafetyScale.sln
+          dotnet build SafetyScale.sln --configuration Release --no-restore
+          dotnet test src/Tests/SafetyScale.Tests.csproj --configuration Release --no-build
+        '''
+      }
+    }
+
     stage('Prepare Env') {
       steps {
         withCredentials([
@@ -61,10 +71,8 @@ pipeline {
           string(credentialsId: 'safetyscale-api-port', variable: 'CRED_API_PORT'),
           string(credentialsId: 'safetyscale-web-port', variable: 'CRED_WEB_PORT'),
           string(credentialsId: 'safetyscale-cors-origins', variable: 'CRED_CORS_ORIGINS'),
-          string(credentialsId: 'safetyscale-vite-api-base-url', variable: 'CRED_VITE_API_BASE_URL'),
+          string(credentialsId: 'safetyscale-api-base-url', variable: 'CRED_API_BASE_URL'),
         ]) {
-          // writeFile via Groovy evita erro de shell "Unterminated quoted string" quando
-          // algum secret contém aspas, `$`, etc. (`printf "...${CRED}..."` no sh quebrava.)
           script {
             def normalizeOptionalCred = { raw ->
               if (raw == null) return ''
@@ -73,7 +81,7 @@ pipeline {
               return s
             }
             def cors = normalizeOptionalCred(env.CRED_CORS_ORIGINS)
-            def vite = normalizeOptionalCred(env.CRED_VITE_API_BASE_URL)
+            def apiBase = normalizeOptionalCred(env.CRED_API_BASE_URL)
             def content =
               ('MSSQL_SA_PASSWORD=' + (env.CRED_MSSQL_SA_PASSWORD ?: '') + '\n'
                 + 'SQLSERVER_PORT=' + (env.CRED_SQLSERVER_PORT ?: '') + '\n'
@@ -85,7 +93,7 @@ pipeline {
                 + 'API_PORT=' + (env.CRED_API_PORT ?: '') + '\n'
                 + 'WEB_PORT=' + (env.CRED_WEB_PORT ?: '') + '\n'
                 + 'CORS_ORIGINS=' + cors + '\n'
-                + 'VITE_API_BASE_URL=' + vite + '\n')
+                + 'API_BASE_URL=' + apiBase + '\n')
             writeFile file: '.env', text: content, encoding: 'UTF-8'
             sh 'chmod 600 .env'
           }
@@ -125,9 +133,11 @@ pipeline {
             i=$((i + 1))
           done
           if [ "$ok" -ne 1 ]; then
-            echo "ERROR: Health check falhou após tentativas."
+            echo "ERROR: Health check falhou apos tentativas."
             exit 1
           fi
+          chmod +x scripts/verify-blazor-deploy.sh
+          BLAZOR_VERIFY_BASE_URL="http://127.0.0.1:${WEB_PORT}" ./scripts/verify-blazor-deploy.sh
         '''
       }
     }

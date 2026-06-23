@@ -1,13 +1,11 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="bunit" Version="1.40.0" />
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
     <PackageReference Include="FluentAssertions" Version="8.9.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.7" />
@@ -26,6 +24,7 @@
     <ProjectReference Include="..\Domain\SafetyScale.Domain.csproj" />
     <ProjectReference Include="..\Infrastructure\SafetyScale.Infrastructure.csproj" />
     <ProjectReference Include="..\Api\SafetyScale.Api.csproj" />
+    <ProjectReference Include="..\Web.Blazor\SafetyScale.Web.Blazor.csproj" />
   </ItemGroup>
 
 </Project>

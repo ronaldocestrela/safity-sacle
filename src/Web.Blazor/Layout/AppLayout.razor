@@ -1,0 +1,106 @@
+@inherits LayoutComponentBase
+@implements IDisposable
+@inject NavigationManager Navigation
+@inject AuthSessionService AuthService
+
+<div class="shell">
+    <div class="main-column">
+        @if (!HideShellHeader)
+        {
+            <header class="header">
+                <div class="header-spacer"></div>
+                <div class="header-right">
+                    <span class="email" title="@(_session?.Email)">@(_session?.Email ?? "—")</span>
+                    <span class="badge">@PrimaryRole</span>
+                    <button type="button" class="logout" @onclick="LogoutAsync">Sair</button>
+                </div>
+            </header>
+        }
+        <main class="@MainClass">
+            @Body
+        </main>
+    </div>
+
+    <nav class="bottom-nav" aria-label="Navegação principal">
+        <NavLink href="/app" Match="NavLinkMatch.All" class="bottom-link" ActiveClass="bottom-link-active">
+            <span class="material-icon material-symbols-outlined" aria-hidden="true">calendar_month</span>
+            <span class="bottom-label">Painel</span>
+        </NavLink>
+        <NavLink href="/app/sectors" class="bottom-link" ActiveClass="bottom-link-active">
+            <span class="material-icon material-symbols-outlined" aria-hidden="true">map</span>
+            <span class="bottom-label">Setores</span>
+        </NavLink>
+        <NavLink href="/app/security-guards" class="bottom-link" ActiveClass="bottom-link-active">
+            <span class="material-icon material-symbols-outlined" aria-hidden="true">shield_person</span>
+            <span class="bottom-label">Seguranças</span>
+        </NavLink>
+        <NavLink href="/app/unavailable-days" class="bottom-link" ActiveClass="bottom-link-active">
+            <span class="material-icon material-symbols-outlined" aria-hidden="true">event_available</span>
+            <span class="bottom-label">Disponibilidade</span>
+        </NavLink>
+        <NavLink href="/app/schedules" class="bottom-link" ActiveClass="bottom-link-active">
+            <span class="material-icon material-symbols-outlined" aria-hidden="true">settings_suggest</span>
+            <span class="bottom-label">Escalas</span>
+        </NavLink>
+    </nav>
+</div>
+
+@code {
+    private AuthSession? _session;
+
+    private bool HideShellHeader
+    {
+        get
+        {
+            var path = GetCurrentPath();
+            return path is "/app"
+                or "/app/sectors"
+                or "/app/security-guards"
+                or "/app/unavailable-days"
+                or "/app/schedules";
+        }
+    }
+
+    private string MainClass => HideShellHeader ? "main main-flush" : "main";
+
+    private string PrimaryRole =>
+        _session?.Roles.Contains(UserRole.Admin) == true ? "Admin" : "Supervisor";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshSessionAsync();
+        Navigation.LocationChanged += OnLocationChanged;
+    }
+
+    private async void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        await RefreshSessionAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task RefreshSessionAsync()
+    {
+        _session = await AuthService.GetSessionAsync();
+    }
+
+    private async Task LogoutAsync()
+    {
+        await AuthService.LogoutAsync(navigateToLogin: true);
+    }
+
+    private string GetCurrentPath()
+    {
+        var path = Navigation.ToBaseRelativePath(Navigation.Uri);
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return "/";
+        }
+
+        return path.StartsWith('/') ? path : $"/{path}";
+    }
+
+    public void Dispose()
+    {
+        Navigation.LocationChanged -= OnLocationChanged;
+    }
+}

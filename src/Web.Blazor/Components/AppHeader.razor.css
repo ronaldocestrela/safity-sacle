@@ -1,0 +1,126 @@
+.top-app-bar {
+    background: #f7fafc;
+    border-bottom: 1px solid #c4c6cd;
+    position: sticky;
+    top: 0;
+    z-index: 40;
+}
+
+.top-app-bar-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.5rem 1.5rem;
+    max-width: 100%;
+}
+
+.top-app-bar-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+.avatar-ring {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 999px;
+    background: #1a2b3c;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.avatar-ring-image {
+    padding: 0;
+    border: 1px solid #c4c6cd;
+    background: #d2e4fb;
+}
+
+.avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.avatar-initials {
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #ff8c00;
+    letter-spacing: 0.02em;
+}
+
+.top-app-bar-title {
+    margin: 0;
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+    line-height: 2rem;
+    letter-spacing: -0.01em;
+    color: #041627;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.top-app-bar-heading {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+}
+
+.top-app-bar-subtitle {
+    margin: 0;
+    font-size: 0.8125rem;
+    line-height: 1.3;
+    color: #44474c;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.top-app-bar-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.icon-ghost {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: #041627;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.icon-ghost:hover {
+    background: #ebeef0;
+}
+
+.icon-md {
+    font-size: 1.25rem;
+}
+
+@media (max-width: 767px) {
+    .top-app-bar-title {
+        font-size: 1.25rem;
+        line-height: 1.75rem;
+        max-width: 50vw;
+    }
+
+    .top-app-bar-subtitle {
+        max-width: 50vw;
+    }
+}

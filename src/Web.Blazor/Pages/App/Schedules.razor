@@ -1,0 +1,445 @@
+@page "/app/schedules"
+@layout AppLayout
+@attribute [Authorize]
+@inject AuthSessionService AuthService
+@inject SchedulesApiClient SchedulesClient
+@inject IJSRuntime Js
+@using System.Globalization
+@using SafetyScale.Web.Blazor.Models.Auth
+@using SafetyScale.Web.Blazor.Models.Schedules
+
+<PageTitle>SafetyScale — Escalas</PageTitle>
+
+<RoleAuthorizeView AllowedRoles="ModuleRoles">
+    <div class="page">
+        <AppHeader Title="SentryOps Management"
+                   Subtitle="Regras de agendamento e distribuição de pessoal."
+                   Email="@_session?.Email"
+                   AvatarSrc="@StitchSupervisorAvatar"
+                   ShowNotifications="true"
+                   ShowLogout="true"
+                   OnLogout="HandleLogoutAsync" />
+
+        <main class="main">
+            <section class="section-intro" aria-labelledby="sched-rules-heading">
+                <h2 id="sched-rules-heading" class="display-title">Regras de Agendamento</h2>
+                <p class="subtitle">
+                    Configure os parâmetros algorítmicos para a distribuição automática de pessoal em postos do Sector 7.
+                </p>
+            </section>
+
+            @if (_banner is not null)
+            {
+                <div role="alert"
+                     class="@($"alert {(_banner.Kind == BannerKind.Error ? "alert-error" : "alert-success")}")">
+                    @_banner.Message
+                </div>
+            }
+
+            <div class="grid">
+                <div class="card">
+                    <div class="card-row">
+                        <div class="engine-status">
+                            <div class="engine-accent"></div>
+                            <div>
+                                <span class="label-caps">Status do Motor</span>
+                                <p class="headline-sm engine-headline">
+                                    @(_loading ? "Sincronizando…" : "Otimização ativa")
+                                </p>
+                            </div>
+                        </div>
+                        <div class="pill-dark">SYSTEM V2.4.0</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header-row">
+                        <span class="material-symbols-outlined material-icon">calendar_month</span>
+                        <h3 class="headline-sm">Período alvo &amp; rotação</h3>
+                    </div>
+                    <form @onsubmit="HandleSubmitPeriodAsync" @onsubmit:preventDefault="true">
+                        <div class="field-grid">
+                            <div class="field">
+                                <label class="label-caps label-caps-muted" for="schedule-month">Mês</label>
+                                <select id="schedule-month"
+                                        class="select"
+                                        @bind="_month">
+                                    @foreach (var option in MonthOptions)
+                                    {
+                                        <option value="@option.Value">@option.Label</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label class="label-caps label-caps-muted" for="schedule-year">Ano</label>
+                                <input id="schedule-year"
+                                       class="input"
+                                       type="number"
+                                       min="2000"
+                                       max="2100"
+                                       @bind="_year" />
+                            </div>
+                        </div>
+                        @if (_periodError is not null)
+                        {
+                            <p class="field-error" role="status">@_periodError</p>
+                        }
+                        <div class="btn-row">
+                            <button type="submit" class="btn-secondary" disabled="@_loading">
+                                @(_loading ? "Carregando…" : "Carregar rotação")
+                            </button>
+                            @if (IsAdmin)
+                            {
+                                <button type="button"
+                                        class="btn-primary"
+                                        disabled="@(_generating || _loading)"
+                                        @onclick="HandleGenerateAsync">
+                                    @(_generating ? "Gerando…" : "Gerar agendamento")
+                                </button>
+                            }
+                        </div>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <div>
+                        <div class="card-header-row card-header-row-tight">
+                            <span class="material-symbols-outlined material-icon">balance</span>
+                            <h3 class="headline-sm">Balanceamento de final de semana</h3>
+                        </div>
+                        <p class="body-text">
+                            Distribui uniformemente as rotações de sábado e domingo em todos os pessoais ativos.
+                        </p>
+                    </div>
+                    <div class="toggle-shell">
+                        <span class="body-text toggle-label">
+                            @(_weekendBalancing ? "Habilitado" : "Desabilitado")
+                        </span>
+                        <label class="switch">
+                            <input type="checkbox" @bind="_weekendBalancing" />
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="card" id="assignments-section">
+                    <div class="assignments-head">
+                        <span class="material-symbols-outlined material-icon">bedtime</span>
+                        <h3 class="headline-sm">Agendamentos mensais</h3>
+                    </div>
+                    <p class="hint">
+                        Padrões regulatórios recomendam validar a cobertura da rotação antes de publicar para operações do Sector 7.
+                    </p>
+                    <div class="info-box">
+                        <span class="material-symbols-outlined material-icon info-icon">info</span>
+                        <p>
+                            Dados em tempo real da API SafetyScale. Os itens preservam os nomes históricos dos seguranças mesmo se eles estiverem inativos.
+                        </p>
+                    </div>
+                    <div class="list-scroll" aria-busy="@_loading" aria-label="Lista de agendamentos">
+                        @if (_loading)
+                        {
+                            <div class="empty-list">Carregando agendamentos…</div>
+                        }
+                        else if (_schedule?.Items.Count > 0)
+                        {
+                            @foreach (var item in _schedule.Items)
+                            {
+                                <div class="list-row">
+                                    <div class="@($"list-stripe {(item.IsWeekend ? "list-stripe-weekend" : "")}")"
+                                         aria-hidden="true"></div>
+                                    <div class="row-main">
+                                        <span class="row-meta">AGENDAMENTO</span>
+                                        <p class="row-name">@(string.IsNullOrWhiteSpace(item.SecurityGuardName) ? "—" : item.SecurityGuardName)</p>
+                                        <p class="row-sector">@(string.IsNullOrWhiteSpace(item.SectorName) ? "—" : item.SectorName)</p>
+                                    </div>
+                                    <div class="row-date">@DisplayDateLabel(item.Date)</div>
+                                    <div class="badges">
+                                        @if (item.IsWeekend)
+                                        {
+                                            <span class="badge badge-weekend">Final de semana</span>
+                                        }
+                                        @if (!item.SecurityGuardIsActive)
+                                        {
+                                            <span class="badge badge-inactive">Inativo</span>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="empty-list">
+                                @if (_schedule?.Items.Count == 0)
+                                {
+                                    @:Não há agendamentos para este agendamento.
+                                }
+                                else
+                                {
+                                    @:Carregue um mês gerado para ver os agendamentos.
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="split-bottom">
+                    <div class="card pref-col">
+                        <span class="label-caps label-caps-muted pref-heading">PREFERÊNCIAS</span>
+                        <button type="button" class="pref-row" @onclick="() => _prefStrictOvertime = !_prefStrictOvertime">
+                            <span>Limite de Horas Extras Estrito</span>
+                            <span class="material-symbols-outlined material-icon-fill pref-toggle"
+                                  style="color: @(_prefStrictOvertime ? "#fd8b00" : "#74777d")">
+                                @(_prefStrictOvertime ? "toggle_on" : "toggle_off")
+                            </span>
+                        </button>
+                        <button type="button" class="pref-row" @onclick="() => _prefSeniority = !_prefSeniority">
+                            <span>Prioridade de Senioridade</span>
+                            <span class="material-symbols-outlined material-icon-fill pref-toggle"
+                                  style="color: @(_prefSeniority ? "#fd8b00" : "#74777d")">
+                                @(_prefSeniority ? "toggle_on" : "toggle_off")
+                            </span>
+                        </button>
+                        <button type="button" class="pref-row" @onclick="() => _prefManualOverride = !_prefManualOverride">
+                            <span>Sobrescrever Manual</span>
+                            <span class="material-symbols-outlined material-icon-fill pref-toggle"
+                                  style="color: @(_prefManualOverride ? "#fd8b00" : "#74777d")">
+                                @(_prefManualOverride ? "toggle_on" : "toggle_off")
+                            </span>
+                        </button>
+                    </div>
+
+                    <div class="audit-card audit-col">
+                        <div class="audit-label">ÚLTIMA ATUALIZAÇÃO</div>
+                        <div class="audit-row">
+                            <span class="mono-headline">
+                                @(_schedule is not null ? FormatGeneratedAt(_schedule.GeneratedAt) : "2023.10.24 14:32")
+                            </span>
+                            <div class="audit-divider"></div>
+                            <span class="audit-meta">
+                                @if (_schedule is not null)
+                                {
+                                    @($"ID da escala · {_schedule.Id.ToString()[..8]}…")
+                                }
+                                else
+                                {
+                                    @:Admin: K. Jansson
+                                }
+                            </span>
+                        </div>
+                        <button type="button" class="audit-link" @onclick="ScrollToAssignmentsAsync">
+                            VER LISTA COMPLETA DE AGENDAMENTOS
+                            <span class="material-symbols-outlined audit-link-icon">arrow_forward</span>
+                        </button>
+                        <div class="audit-watermark" aria-hidden="true">
+                            <span class="material-symbols-outlined">settings_suggest</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</RoleAuthorizeView>
+
+@code {
+    private const string StitchSupervisorAvatar =
+        "https://lh3.googleusercontent.com/aida-public/AB6AXuB3nCVQo7BaVjs8Plm0dqDT-E72JA3LPXwRXpOy29LCTHdvE1U5-EfUrZ-8tZimS_qhsHFF3tbZ6vUGALNuRIHq8a5badgeFrh0VuT0tqtWlBDhJf5B5Sz-BuS67N70iHrMJCJ41gO9PFGy0Ga9TSdJapjQQgFQDMHxQkrg7PRBL7RegsZqWDyLHaWh-oG6vUTddUnGkCKhX-8Evg0_qkcqk07E1eOADjs_HqJVISLP6Auwqyg11YgZnaa2ozlYUht-0ThG-nIE8lY9UU";
+
+    private static readonly UserRole[] ModuleRoles = [UserRole.Admin, UserRole.Supervisor];
+    private static readonly CultureInfo PtBr = CultureInfo.GetCultureInfo("pt-BR");
+
+    private static readonly (int Value, string Label)[] MonthOptions =
+    [
+        (1, "Janeiro"),
+        (2, "Fevereiro"),
+        (3, "Março"),
+        (4, "Abril"),
+        (5, "Maio"),
+        (6, "Junho"),
+        (7, "Julho"),
+        (8, "Agosto"),
+        (9, "Setembro"),
+        (10, "Outubro"),
+        (11, "Novembro"),
+        (12, "Dezembro"),
+    ];
+
+    private enum BannerKind
+    {
+        Success,
+        Error,
+    }
+
+    private sealed record BannerState(BannerKind Kind, string Message);
+
+    private AuthSession? _session;
+    private bool IsAdmin => _session?.Roles.Contains(UserRole.Admin) == true;
+
+    private int _month;
+    private int _year;
+    private bool _periodTouched;
+
+    private MonthlyScheduleDto? _schedule;
+    private bool _loading;
+    private bool _generating;
+    private BannerState? _banner;
+
+    private bool _weekendBalancing = true;
+    private bool _prefStrictOvertime = true;
+    private bool _prefSeniority;
+    private bool _prefManualOverride = true;
+
+    private int _loadToken;
+    private string? _periodError => _periodTouched ? ValidatePeriod(_month, _year) : null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var now = DateTime.Now;
+        _month = now.Month;
+        _year = now.Year;
+        _session = await AuthService.GetSessionAsync();
+        await LoadScheduleAsync(_month, _year);
+    }
+
+    private async Task HandleSubmitPeriodAsync()
+    {
+        _periodTouched = true;
+        var err = ValidatePeriod(_month, _year);
+        if (err is not null)
+        {
+            ShowErrorBanner(err);
+            return;
+        }
+
+        await LoadScheduleAsync(_month, _year);
+    }
+
+    private async Task HandleGenerateAsync()
+    {
+        _periodTouched = true;
+        var err = ValidatePeriod(_month, _year);
+        if (err is not null)
+        {
+            ShowErrorBanner(err);
+            return;
+        }
+
+        _generating = true;
+        ClearBanner();
+
+        try
+        {
+            await SchedulesClient.GenerateAsync(_month, _year);
+            ShowSuccessBanner("Escala mensal gerada com sucesso.");
+            await LoadScheduleAsync(_month, _year);
+        }
+        catch (ApiException ex)
+        {
+            ShowErrorBanner(ex.Message);
+        }
+        catch
+        {
+            ShowErrorBanner("Não foi possível gerar a escala.");
+        }
+        finally
+        {
+            _generating = false;
+        }
+    }
+
+    private async Task LoadScheduleAsync(int month, int year)
+    {
+        var err = ValidatePeriod(month, year);
+        if (err is not null)
+        {
+            ShowErrorBanner(err);
+            _schedule = null;
+            return;
+        }
+
+        var token = ++_loadToken;
+        _loading = true;
+        ClearBanner();
+
+        try
+        {
+            var data = await SchedulesClient.GetByMonthYearAsync(month, year);
+            if (token != _loadToken)
+            {
+                return;
+            }
+
+            _schedule = data;
+            if (data is null)
+            {
+                ShowErrorBanner($"Nenhuma escala encontrada para {month:D2}/{year}.");
+            }
+        }
+        catch (ApiException ex)
+        {
+            if (token != _loadToken)
+            {
+                return;
+            }
+
+            _schedule = null;
+            ShowErrorBanner(ex.Message);
+        }
+        catch
+        {
+            if (token != _loadToken)
+            {
+                return;
+            }
+
+            _schedule = null;
+            ShowErrorBanner("Não foi possível carregar a rotação.");
+        }
+        finally
+        {
+            if (token == _loadToken)
+            {
+                _loading = false;
+            }
+        }
+    }
+
+    private async Task ScrollToAssignmentsAsync()
+    {
+        await Js.InvokeVoidAsync(
+            "eval",
+            "document.getElementById('assignments-section')?.scrollIntoView({behavior:'smooth',block:'start'})");
+    }
+
+    private static string? ValidatePeriod(int month, int year)
+    {
+        if (month is < 1 or > 12)
+        {
+            return "O mês deve estar entre 1 e 12.";
+        }
+
+        if (year is < 2000 or > 2100)
+        {
+            return "O ano deve estar entre 2000 e 2100.";
+        }
+
+        return null;
+    }
+
+    private static string FormatGeneratedAt(DateTime iso) =>
+        $"{iso.Year:D4}.{iso.Month:D2}.{iso.Day:D2} {iso.Hour:D2}:{iso.Minute:D2}";
+
+    private static string DisplayDateLabel(DateOnly date) =>
+        date.ToDateTime(TimeOnly.MinValue).ToString("ddd, d 'de' MMM 'de' yyyy", PtBr);
+
+    private void ClearBanner() => _banner = null;
+
+    private void ShowSuccessBanner(string message) =>
+        _banner = new BannerState(BannerKind.Success, message);
+
+    private void ShowErrorBanner(string message) =>
+        _banner = new BannerState(BannerKind.Error, message);
+
+    private Task HandleLogoutAsync() =>
+        AuthService.LogoutAsync(navigateToLogin: true);
+}
