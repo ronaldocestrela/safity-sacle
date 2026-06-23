@@ -24,6 +24,7 @@ builder.Services.AddScoped<TenantsRegistrationClient>();
 builder.Services.AddScoped<SecurityGuardsApiClient>();
 builder.Services.AddScoped<SchedulesApiClient>();
 builder.Services.AddScoped<SectorsApiClient>();
+builder.Services.AddScoped<UnavailableDaysApiClient>();
 
 builder.Services.AddScoped<ApiHttpClient>(sp =>
 {

@@ -2,7 +2,7 @@
 
 Frontend **Blazor WebAssembly** do SafetyScale (migração React → Blazor). Parte da solution [`SafetyScale.sln`](../../SafetyScale.sln) na raiz.
 
-Spike técnica B0.2 validada; bootstrap B1.1 integrado à solution; **estrutura de pastas B1.2** formalizada; **estilos globais B1.3** consolidados; **dev experience B1.4** com script raiz; **configuração B2.1** (`ApiBaseUrl`) formalizada; **cliente HTTP B2.2** com handlers centralizados; **JWT e sessão B2.3** com `AuthenticationStateProvider`; **DTOs e tipos B2.4** com `JsonSerializerOptions` global; **testes unitários B2.5** da infra auth/HTTP; **roteamento B3.1** com paridade `routes.tsx`; **autorização de rotas B3.2** com `AuthorizeRouteView` e `RoleAuthorizeView`; **AppLayout shell B3.3** com bottom nav, header condicional e logout; **testes bUnit B3.4** de guards e nav ativa; **Home pública B4.1** com smoke de API e links login/signup; **Login B4.2** com formulário, erros e redirect; **Signup B4.3** com cadastro de empresa e redirect pós-cadastro; **testes bUnit B4.4** de fluxos públicos login/signup; **Dashboard B5.1** com sessão multitenant, KPIs, calendário e detalhe do dia; **AccessDenied B5.2** com mensagem de permissão e link de retorno ao dashboard; **AppHeader B5.3** compartilhado nas telas administrativas com título, subtítulo e logout; **testes bUnit B5.4** de Welcome e AccessDenied; **cliente API setores B6.1** com `SectorsApiClient` (list/create/update/active/inactive) e DTOs de request/response; **UI setores B6.2** com listagem, filtros, CRUD Admin, leitura Supervisor e paridade visual React; **testes bUnit B6.3** de setores (Supervisor read-only, Admin create, empty state); **módulo seguranças B7** com API CRUD+setores, UI completa (filtros, modais, permissões) e 6 testes bUnit.
+Spike técnica B0.2 validada; bootstrap B1.1 integrado à solution; **estrutura de pastas B1.2** formalizada; **estilos globais B1.3** consolidados; **dev experience B1.4** com script raiz; **configuração B2.1** (`ApiBaseUrl`) formalizada; **cliente HTTP B2.2** com handlers centralizados; **JWT e sessão B2.3** com `AuthenticationStateProvider`; **DTOs e tipos B2.4** com `JsonSerializerOptions` global; **testes unitários B2.5** da infra auth/HTTP; **roteamento B3.1** com paridade `routes.tsx`; **autorização de rotas B3.2** com `AuthorizeRouteView` e `RoleAuthorizeView`; **AppLayout shell B3.3** com bottom nav, header condicional e logout; **testes bUnit B3.4** de guards e nav ativa; **Home pública B4.1** com smoke de API e links login/signup; **Login B4.2** com formulário, erros e redirect; **Signup B4.3** com cadastro de empresa e redirect pós-cadastro; **testes bUnit B4.4** de fluxos públicos login/signup; **Dashboard B5.1** com sessão multitenant, KPIs, calendário e detalhe do dia; **AccessDenied B5.2** com mensagem de permissão e link de retorno ao dashboard; **AppHeader B5.3** compartilhado nas telas administrativas com título, subtítulo e logout; **testes bUnit B5.4** de Welcome e AccessDenied; **cliente API setores B6.1** com `SectorsApiClient` (list/create/update/active/inactive) e DTOs de request/response; **UI setores B6.2** com listagem, filtros, CRUD Admin, leitura Supervisor e paridade visual React; **testes bUnit B6.3** de setores (Supervisor read-only, Admin create, empty state); **módulo seguranças B7** com API CRUD+setores, UI completa (filtros, modais, permissões) e 6 testes bUnit; **módulo indisponibilidades B8** com calendário mensal navegável, draft local → **SAVE RESTRICTIONS**, API e 10 testes bUnit/unit.
 
 Decisões de arquitetura: [ADR 001](../../docs/adr/001-blazor-wasm-frontend.md).  
 Convenções: [docs/frontend-blazor-conventions.md](../../docs/frontend-blazor-conventions.md).
@@ -16,7 +16,7 @@ src/Web.Blazor/
  ├── Layout/              # MainLayout (público), AppLayout (shell autenticado B3.3)
  ├── Pages/
  │   ├── Home.razor       # Home pública (B4.1)
- │   ├── App/             # área autenticada (Welcome B5.1, Sectors B6, SecurityGuards B7, placeholders B8+)
+ │   ├── App/             # área autenticada (Welcome B5.1, Sectors B6, SecurityGuards B7, UnavailableDays B8, placeholders B9+)
  │   └── Auth/            # login, signup (B4.2/B4.3)
  ├── Services/
  │   ├── Api/             # AppConfiguration, ApiUrlBuilder
@@ -307,6 +307,51 @@ Suíte bUnit em [`src/Tests/Web.Blazor/Pages/SecurityGuardsPageTests.cs`](../Tes
 
 Helper: `TestHelpers/SecurityGuardsPageTestHelper.cs`.
 
+## Cliente API indisponibilidades (B8.2)
+
+Paridade com [`src/Web/src/features/unavailable-days/unavailableDaysApi.ts`](../Web/src/features/unavailable-days/unavailableDaysApi.ts):
+
+| Método | HTTP | Endpoint |
+|---|---|---|
+| `ListByGuardAsync` | GET | `/api/security-guards/{guardId}/unavailable-days` |
+| `AddAsync` | POST | `/api/security-guards/{guardId}/unavailable-days` → `{ id }` |
+| `DeleteAsync` | DELETE | `/api/unavailable-days/{id}` |
+
+- DTOs: `AddUnavailableDayRequestDto`, `CreateUnavailableDayResponseDto`, `UnavailableDayDto`.
+- Estado draft: `Services/UnavailableDays/UnavailableDayPendingState.cs` (baseline, toggle, effective).
+
+Arquivos: `Services/Api/UnavailableDaysApiClient.cs`, `Models/UnavailableDays/*.cs`.
+
+## UI indisponibilidades (B8.3)
+
+Paridade com [`src/Web/src/features/unavailable-days/UnavailableDaysPage.tsx`](../Web/src/features/unavailable-days/UnavailableDaysPage.tsx):
+
+- Seletor de segurança (lista completa via `SecurityGuardsApiClient.ListAsync()`).
+- Calendário mensal com nav anterior/próximo (`MonthCalendar` + `MonthGrid`).
+- Estados: loading/error/retry, dia **UNAVAIL**, foco, pending add/remove.
+- **Admin:** toggle de dias, reason opcional, barra fixa **SAVE RESTRICTIONS** (DELETE removes → POST adds).
+- **Supervisor:** calendário somente leitura (sem save, reason ou toggle).
+
+Arquivos: `Pages/App/UnavailableDays.razor`, `Pages/App/UnavailableDays.razor.css`.
+
+## Testes do módulo indisponibilidades (B8.4)
+
+Suíte bUnit em [`src/Tests/Web.Blazor/Pages/UnavailableDaysPageTests.cs`](../Tests/Web.Blazor/Pages/UnavailableDaysPageTests.cs):
+
+| Teste | Cobertura |
+|---|---|
+| `Supervisor_WithLoadedCalendar_HidesAdminControlsAndDisablesDayButtons` | Sem save/reason; dias `disabled` |
+| `Admin_WithForbiddenGuardsList_ShowsAlertMessage` | Erro de carga de seguranças |
+| `Admin_WithExistingUnavailableDay_ShowsUnavailTag` | Tag **UNAVAIL** da API |
+| `Admin_WithPendingAdd_SubmitsSaveAndRefreshesList` | POST add + refresh |
+| `Admin_WithPendingRemove_SubmitsDeleteOnly` | DELETE remove |
+| `Admin_WithDuplicateDateError_ShowsAlertMessage` | Erro 409 |
+| `Admin_WithDaysLoadError_ShowsAlertMessage` | Erro de carga de dias |
+
+Unitários: [`src/Tests/Web.Blazor/Calendar/MonthGridTests.cs`](../Tests/Web.Blazor/Calendar/MonthGridTests.cs) (grade, keys, padding).
+
+Helper: `TestHelpers/UnavailableDaysPageTestHelper.cs`.
+
 ## Configuração (B2.1)
 
 | Arquivo | Propósito |
@@ -395,11 +440,14 @@ Suíte em [`src/Tests/Web.Blazor/`](../Tests/Web.Blazor/) (xUnit + FluentAsserti
 | `Pages/AccessDeniedPageTests.cs` | AccessDenied link para `/app` (B5.4) |
 | `Pages/SectorsPageTests.cs` | Setores: Supervisor read-only, Admin create, empty state (B6.3) |
 | `Pages/SecurityGuardsPageTests.cs` | Seguranças: read-only, create+sectors, empty/error (B7.5) |
+| `Pages/UnavailableDaysPageTests.cs` | Indisponibilidades: read-only, save add/remove, erros (B8.4) |
+| `Calendar/MonthGridTests.cs` | Grade mensal, keys de data, padding (B8.4) |
 | `TestHelpers/BlazorComponentTestBase.cs` | Base bUnit (auth, config, navegação) |
 | `TestHelpers/PublicAuthTestHelper.cs` | Stubs HTTP para páginas públicas de auth (B4.4) |
 | `TestHelpers/AppDashboardTestHelper.cs` | Stubs HTTP para dashboard Welcome (B5.4) |
 | `TestHelpers/SectorsPageTestHelper.cs` | Stubs HTTP para página de setores (B6.3) |
 | `TestHelpers/SecurityGuardsPageTestHelper.cs` | Stubs HTTP para página de seguranças (B7.5) |
+| `TestHelpers/UnavailableDaysPageTestHelper.cs` | Stubs HTTP para página de indisponibilidades (B8.4) |
 | `TestHelpers/JwtTestUtils.cs` | Geração de JWT unsigned para testes |
 | `TestHelpers/FakeJsRuntime.cs` | Mock in-memory de `sessionStorageInterop` |
 
@@ -477,4 +525,4 @@ A API em Development aceita origens `http://localhost:4863` (React) e `http://lo
 
 ## Próximas fases
 
-- **B8** — Módulo indisponibilidades (`/app/unavailable-days`)
+- **B9** — Módulo escalas (`/app/schedules`)

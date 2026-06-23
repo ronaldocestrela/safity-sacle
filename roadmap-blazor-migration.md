@@ -85,7 +85,7 @@ A migração é **incremental e calma**: o React permanece em produção até a 
 - [x] **B5** — Área autenticada base (dashboard, access denied)
 - [x] **B6** — Módulo setores
 - [x] **B7** — Módulo seguranças
-- [ ] **B8** — Módulo indisponibilidades
+- [x] **B8** — Módulo indisponibilidades
 - [ ] **B9** — Módulo escalas
 - [ ] **B10** — Testes finais, deploy e cutover
 - [ ] **B11** — Descomissionamento do React
@@ -457,35 +457,37 @@ src/Web.Blazor/
 
 **Duração sugerida:** 5–7 dias
 
+> **Entregue:** B8.1–B8.4 (calendário com nav, cliente API, UI draft→save, permissões, testes bUnit + `MonthGrid`).
+
 ### B8.1 — Componente calendário
 
-- [ ] Portar `monthGrid.ts` → serviço/helper C#.
-- [ ] Portar `MonthCalendar.tsx` + CSS.
-- [ ] Seleção de dias, estado indisponível, navegação mês anterior/próximo.
+- [x] Portar `monthGrid.ts` → serviço/helper C#.
+- [x] Portar `MonthCalendar.tsx` + CSS (nav de mês via `MonthNav`; estados UNAVAIL/focus/pending na página).
+- [x] Seleção de dias, estado indisponível, navegação mês anterior/próximo.
 
-> **Parcial (B5.1):** `Services/Calendar/MonthGrid.cs` e `Components/Calendar/MonthCalendar.razor` (uso no Welcome; sem nav de mês nem estados de indisponibilidade).
+> **Parcial (B5.1):** `Services/Calendar/MonthGrid.cs` e `Components/Calendar/MonthCalendar.razor` (uso no Welcome; nav e indisponibilidade concluídos em B8).
 
 ### B8.2 — Cliente API
 
-- [ ] `UnavailableDaysApiClient`: list by guard, add, delete.
-- [ ] Carregar lista de seguranças para seletor.
+- [x] `UnavailableDaysApiClient`: list by guard, add, delete.
+- [x] Carregar lista de seguranças para seletor.
 
 ### B8.3 — UI da página
 
-- [ ] Portar `UnavailableDaysPage.tsx` + CSS (referência Stitch Cadastro de Indisponibilidade).
-- [ ] Admin: alterações locais + **SAVE RESTRICTIONS** (batch).
-- [ ] Supervisor: calendário somente leitura.
+- [x] Portar `UnavailableDaysPage.tsx` + CSS (referência Stitch Cadastro de Indisponibilidade).
+- [x] Admin: alterações locais + **SAVE RESTRICTIONS** (batch).
+- [x] Supervisor: calendário somente leitura.
 
 ### B8.4 — Testes
 
-- [ ] Unit: `monthGrid` equivalente.
-- [ ] bUnit: Supervisor sem botão save.
-- [ ] bUnit: Admin marca dias e dispara saves (mock).
+- [x] Unit: `monthGrid` equivalente (`MonthGridTests`).
+- [x] bUnit: Supervisor sem botão save.
+- [x] bUnit: Admin marca dias e dispara saves (mock).
 
 ### Critério de pronto (B8)
 
-- Paridade com fluxo “draft local → save” do React.
-- Calendário responsivo igual ao mock mobile/desktop.
+- [x] Paridade com fluxo “draft local → save” do React.
+- [x] Calendário responsivo igual ao mock mobile/desktop.
 
 ---
 
@@ -542,7 +544,7 @@ src/Web.Blazor/
 
 ### B10.3 — CI
 
-- [ ] Pipeline: `dotnet test` inclui **todos** os testes bUnit do Web.Blazor (parcial: **40** testes em `src/Tests/Web.Blazor/` — infra B2.5, guards B3.4, públicas B4.4, dashboard B5.4, setores B6.3, seguranças B7.5).
+- [ ] Pipeline: `dotnet test` inclui **todos** os testes bUnit do Web.Blazor (parcial: **50** testes em `src/Tests/Web.Blazor/` — infra B2.5, guards B3.4, públicas B4.4, dashboard B5.4, setores B6.3, seguranças B7.5, indisponibilidades B8.4).
 - [ ] Remover ou marcar `allow-failure` temporário nos testes npm do React até B11.
 
 ### B10.4 — Cutover (janela controlada)
@@ -700,3 +702,4 @@ A migração só é considerada **concluída** quando:
 | 2026-06-23 | 2.7 | B6.2 concluída — UI setores em `Sectors.razor` com paridade React (CRUD, filtros, roles) |
 | 2026-06-23 | 2.8 | B6.3 concluída — `SectorsPageTests` (Supervisor read-only, Admin create, empty state); B6 fechada |
 | 2026-06-23 | 2.9 | B7 concluída — módulo seguranças (API CRUD+setores, UI, permissões, 6 testes bUnit) |
+| 2026-06-23 | 3.0 | B8 concluída — módulo indisponibilidades (calendário nav, draft→save, API, 10 testes bUnit/unit) |
