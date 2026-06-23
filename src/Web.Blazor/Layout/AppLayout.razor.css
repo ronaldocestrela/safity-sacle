@@ -100,20 +100,19 @@
     display: flex;
     justify-content: space-around;
     align-items: center;
-    padding: 0.5rem 1.5rem;
+    padding: 0.75rem 1rem;
     background: #f7fafc;
     border-top: 1px solid #c4c6cd;
     box-sizing: border-box;
 }
 
-.bottom-link {
+::deep .bottom-link {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.125rem;
     padding: 0.25rem 1rem;
-    min-width: 3.75rem;
+    min-width: 4rem;
     min-height: 48px;
     text-decoration: none;
     color: #44474c;
@@ -122,29 +121,27 @@
     line-height: 1rem;
     letter-spacing: 0.05em;
     text-transform: uppercase;
-    border-radius: 0.75rem;
+    border-radius: 0.5rem;
     transition:
         color 0.15s ease,
-        background 0.15s ease,
-        transform 0.1s ease;
-    transform: scale(0.95);
+        background 0.15s ease;
 }
 
-.bottom-link:hover {
+::deep .bottom-link:hover {
     color: #041627;
 }
 
-.bottom-link:active {
-    transform: scale(0.9);
-}
-
-.bottom-link-active {
+::deep .bottom-link-active {
     background: #1a2b3c;
     color: #8192a7;
 }
 
-.bottom-link-active:hover {
+::deep .bottom-link-active:hover {
     color: #8192a7;
+}
+
+::deep .bottom-link .material-icon {
+    margin-bottom: 0.25rem;
 }
 
 .material-icon {
@@ -157,7 +154,7 @@
         'opsz' 24;
 }
 
-.bottom-link-active .material-icon {
+::deep .bottom-link-active .material-icon {
     font-variation-settings:
         'FILL' 1,
         'wght' 400,
