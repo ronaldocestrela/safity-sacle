@@ -86,7 +86,7 @@ A migração é **incremental e calma**: o React permanece em produção até a 
 - [x] **B6** — Módulo setores
 - [x] **B7** — Módulo seguranças
 - [x] **B8** — Módulo indisponibilidades
-- [ ] **B9** — Módulo escalas
+- [x] **B9** — Módulo escalas
 - [ ] **B10** — Testes finais, deploy e cutover
 - [ ] **B11** — Descomissionamento do React
 
@@ -497,29 +497,31 @@ src/Web.Blazor/
 
 **Duração sugerida:** 4–6 dias
 
+> **Entregue:** B9.1–B9.3 (cliente API generate + coverage, UI completa, permissões, testes bUnit).
+
 ### B9.1 — Cliente API
 
-- [ ] `SchedulesApiClient`: get by month/year, generate.
-- [ ] Parse de erro `ScheduleCoverageFailureResponse`.
+- [x] `SchedulesApiClient`: get by month/year, generate.
+- [x] Parse de erro `ScheduleCoverageFailureResponse`.
 
-> **Parcial (B5.1):** `SchedulesApiClient.GetByMonthYearAsync` (read-only) já existe para o Welcome.
+> **Parcial (B5.1):** `GetByMonthYearAsync` (read-only) já existia para o Welcome; `GenerateAsync` concluído em B9.
 
 ### B9.2 — UI
 
-- [ ] Portar `SchedulesPage.tsx` + CSS (referência Stitch Regras de Escala).
-- [ ] Seletores mês/ano; lista com setor por item.
-- [ ] Admin: botão gerar escala; Supervisor: oculto.
-- [ ] Mensagem amigável quando API retorna `ScheduleCoverageFailed` (usar `message`).
+- [x] Portar `SchedulesPage.tsx` + CSS (referência Stitch Regras de Escala).
+- [x] Seletores mês/ano; lista com setor por item.
+- [x] Admin: botão gerar escala; Supervisor: oculto.
+- [x] Mensagem amigável quando API retorna `ScheduleCoverageFailed` (usar `message`).
 
 ### B9.3 — Testes
 
-- [ ] Portar cenários de `SchedulesPage.test.tsx`.
-- [ ] bUnit: erro 400 coverage → exibe mensagem da API.
+- [x] Portar cenários de `SchedulesPage.test.tsx`.
+- [x] bUnit: erro 400 coverage → exibe mensagem da API.
 
 ### Critério de pronto (B9)
 
-- Geração e consulta funcionam contra API de dev.
-- Erro de cobertura exibido igual ao React.
+- [x] Geração e consulta funcionam contra API de dev.
+- [x] Erro de cobertura exibido igual ao React.
 
 ---
 
@@ -544,7 +546,7 @@ src/Web.Blazor/
 
 ### B10.3 — CI
 
-- [ ] Pipeline: `dotnet test` inclui **todos** os testes bUnit do Web.Blazor (parcial: **50** testes em `src/Tests/Web.Blazor/` — infra B2.5, guards B3.4, públicas B4.4, dashboard B5.4, setores B6.3, seguranças B7.5, indisponibilidades B8.4).
+- [ ] Pipeline: `dotnet test` inclui **todos** os testes bUnit do Web.Blazor (parcial: **58** testes em `src/Tests/Web.Blazor/` — infra B2.5, guards B3.4, públicas B4.4, dashboard B5.4, setores B6.3, seguranças B7.5, indisponibilidades B8.4, escalas B9.3).
 - [ ] Remover ou marcar `allow-failure` temporário nos testes npm do React até B11.
 
 ### B10.4 — Cutover (janela controlada)
@@ -703,3 +705,4 @@ A migração só é considerada **concluída** quando:
 | 2026-06-23 | 2.8 | B6.3 concluída — `SectorsPageTests` (Supervisor read-only, Admin create, empty state); B6 fechada |
 | 2026-06-23 | 2.9 | B7 concluída — módulo seguranças (API CRUD+setores, UI, permissões, 6 testes bUnit) |
 | 2026-06-23 | 3.0 | B8 concluída — módulo indisponibilidades (calendário nav, draft→save, API, 10 testes bUnit/unit) |
+| 2026-06-23 | 3.1 | B9 concluída — módulo escalas (generate, coverage error, UI Stitch, 8 testes bUnit) |
