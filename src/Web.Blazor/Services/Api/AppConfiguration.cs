@@ -1,4 +1,4 @@
-namespace SafetyScale.Web.Blazor.Services;
+namespace SafetyScale.Web.Blazor.Services.Api;
 
 public sealed class AppConfiguration
 {

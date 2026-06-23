@@ -3,6 +3,7 @@ set -Eeuo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WEB_DIR="$ROOT_DIR/src/Web"
+SOLUTION="$ROOT_DIR/SafetyScale.sln"
 BACKEND_TEST_PROJECT="$ROOT_DIR/src/Tests/SafetyScale.Tests.csproj"
 
 log() {
@@ -19,8 +20,8 @@ require_command() {
 require_command dotnet
 require_command npm
 
-log "Restaurando dependencias do backend"
-dotnet restore "$BACKEND_TEST_PROJECT"
+log "Restaurando dependencias do backend (.NET solution)"
+dotnet restore "$SOLUTION"
 
 log "Executando testes do backend"
 dotnet test "$BACKEND_TEST_PROJECT" --configuration Release --no-restore

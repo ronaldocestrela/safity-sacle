@@ -31,7 +31,7 @@ A migração é **incremental e calma**: o React permanece em produção até a 
 |---|---|---|
 | Modelo Blazor | **WebAssembly Standalone** (.NET 10) | Não Hosted; não Blazor Server — ver ADR 001 |
 | Projeto | `SafetyScale.Web.Blazor` em `src/Web.Blazor/` | React legado em `src/Web/` até B11 |
-| Solution | `SafetyScale.sln` na raiz | Criar na fase B1.1 (hoje só `.csproj` isolados) |
+| Solution | `SafetyScale.sln` na raiz | Criada na B1.1 (6 projetos .NET) |
 | Hospedagem | Build estático WASM + Nginx | Substituir pipeline Node/Vite na B10 |
 | Auth | JWT em `sessionStorage` via **JS interop** mínimo | Paridade com React; claim `tenant_id` |
 | Estilo | Scoped CSS (`.razor.css`) + `wwwroot/css/app.css` | 1:1 com React; sem lib de UI nesta migração |
@@ -146,10 +146,10 @@ A migração é **incremental e calma**: o React permanece em produção até a 
 
 ### B1.1 — Projeto e solution
 
-- [ ] `dotnet new blazorwasm -o src/Web.Blazor`.
-- [ ] Adicionar projeto à solution (`SafetyScale.sln` ou equivalente).
-- [ ] Configurar `Directory.Build.props` / analyzers se o repo já usar.
-- [ ] Referência opcional a projeto de contratos compartilhados (somente se já existir; **não** mover DTOs da API para o Domain).
+- [x] Projeto Blazor validado em `src/Web.Blazor` (criado na B0.2; **não** recriar com `dotnet new`).
+- [x] [`SafetyScale.sln`](SafetyScale.sln) na raiz com 6 projetos (Domain, Application, Infrastructure, Api, Tests, Web.Blazor).
+- [x] [`Directory.Build.props`](Directory.Build.props) mínimo na raiz (`net10.0`, `Nullable`, `ImplicitUsings`, `LangVersion`).
+- [x] **Sem** projeto Contracts compartilhado — DTOs espelhados em `Models/`; WASM **sem** `ProjectReference` ao backend.
 
 ### B1.2 — Estrutura de pastas
 
@@ -170,19 +170,23 @@ src/Web.Blazor/
  └── Program.cs
 ```
 
-- [ ] Criar pastas vazias e `README.md` mínimo do projeto Blazor.
+- [x] Criar pastas-alvo (`Components/`, `Pages/App/`, `Pages/Auth/`, `Services/Api/`, `Services/Auth/`, `Models/`).
+- [x] Mover serviços para `Services/Api/` e `Services/Auth/` com namespaces atualizados.
+- [x] Preservar POC B0.2 em `Pages/Home.razor`; placeholders em Auth/App; remover `NavMenu` do template.
+- [x] Copiar `icons.svg` para `wwwroot/`; atualizar `_Imports.razor`, `Program.cs` e README.
 
 ### B1.3 — Estilos globais
 
-- [ ] Portar `src/Web/src/index.css` → `wwwroot/css/app.css`.
-- [ ] Incluir link Material Symbols e Inter no `wwwroot/index.html`.
-- [ ] Copiar `public/icons.svg` do React.
+- [x] Portar `src/Web/src/index.css` → `wwwroot/css/app.css` (base global SafetyScale).
+- [x] Confirmar links Material Symbols e Inter no `wwwroot/index.html`.
+- [x] Confirmar `wwwroot/icons.svg` (copiado na B1.2).
+- [x] Remover sobras do template (Bootstrap/validação); manter `.spike-*` temporário e shell Blazor (loading/error).
 
 ### B1.4 — Dev experience
 
-- [ ] Configurar `launchSettings.json` (porta 4864).
-- [ ] Configurar proxy `/api` no dev server WASM ou documentar uso de CORS + URL absoluta.
-- [ ] Script na raiz ou README: como subir API + Blazor juntos.
+- [x] Confirmar `launchSettings.json` (porta 4864, `Development`).
+- [x] Documentar estratégia **CORS + ApiBaseUrl absoluto** (sem proxy WASM; ver ADR 001).
+- [x] Script raiz [`scripts/dev-blazor.sh`](scripts/dev-blazor.sh) + seção no README raiz para subir API + Blazor.
 
 ### Critério de pronto (B1)
 
@@ -647,6 +651,7 @@ A migração só é considerada **concluída** quando:
 
 - **ADR 001:** [docs/adr/001-blazor-wasm-frontend.md](docs/adr/001-blazor-wasm-frontend.md)
 - **Convenções Blazor (B0.3):** [docs/frontend-blazor-conventions.md](docs/frontend-blazor-conventions.md)
+- **Solution .NET:** [SafetyScale.sln](SafetyScale.sln)
 - Frontend atual (React): `src/Web`
 - **Spike Blazor (B0.2):** `src/Web.Blazor`
 - Rotas: `src/Web/src/app/routes.tsx`
@@ -665,3 +670,7 @@ A migração só é considerada **concluída** quando:
 | 2026-06-22 | 1.1 | B0.1 concluída — ADR 001; Premissas expandidas; matriz `ApiBaseUrl`; CORS dual dev |
 | 2026-06-22 | 1.2 | B0.2 concluída — POC `src/Web.Blazor` (spike, sessionStorage, CORS 4864, fonts) |
 | 2026-06-22 | 1.3 | B0.3 concluída — guia de convenções; freeze React; fase B0 fechada |
+| 2026-06-22 | 1.4 | B1.1 concluída — `SafetyScale.sln`, `Directory.Build.props`, WASM standalone |
+| 2026-06-22 | 1.5 | B1.2 concluída — estrutura de pastas formalizada em `src/Web.Blazor` |
+| 2026-06-22 | 1.6 | B1.3 concluída — estilos globais consolidados (`app.css`, fonts, icons.svg) |
+| 2026-06-22 | 1.7 | B1.4 concluída — dev experience (`scripts/dev-blazor.sh`, docs raiz, CORS + ApiBaseUrl) |

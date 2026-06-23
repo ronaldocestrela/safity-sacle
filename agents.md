@@ -119,6 +119,8 @@ src/
  └── Web.Blazor       # SPA Blazor WASM (destino)
 ```
 
+Solution .NET na raiz: **`SafetyScale.sln`** (Api, Application, Domain, Infrastructure, Tests, Web.Blazor).
+
 > **`Web`:** aplicação React (SPA) em `src/Web`; estrutura base (`app/`, `features/`, `shared/`, `assets/`) alinhada ao layout sugerido abaixo.
 
 > **`Web.Blazor`:** aplicação Blazor WASM em `src/Web.Blazor`; estrutura-alvo em [`docs/frontend-blazor-conventions.md`](docs/frontend-blazor-conventions.md).

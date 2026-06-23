@@ -97,7 +97,7 @@ src/
 - serialização JSON da API em **camelCase** e leitura com **nome de propriedade case-insensitive** (`AddJsonOptions`), alinhando contratos ao SPA e a clientes JSON;
 - integracao: `TestWebApplicationFactory` sobe **SQL Server** via **Testcontainers** (container compartilhado) e usa **nome de database unico por instancia** (isolamento paralelo + limpeza `DROP DATABASE` ao descartar a factory);
 - tratamento de `ValidationException` com retorno HTTP `400`;
-- **CORS** configuravel (`Cors:Origins`); em Development inclui `http://localhost:4863` para o dev server do `Web`;
+- **CORS** configuravel (`Cors:Origins`); em Development inclui `http://localhost:4863` (React/Vite) e `http://localhost:4864` (Blazor WASM);
 - SPA em **`src/Web`** (React + Vite): `/login` e **`/signup`** (cadastro de empresa), JWT em `sessionStorage` com **`tenantId`** derivado do token, área `/app` com shell e rotas por perfil; **`/app/sectors`** (gestão de setores e vagas diárias), **`/app/security-guards`** (inclui setores por segurança), **`/app/unavailable-days`** e **`/app/schedules`** (lista mostra **setor** por atribuição; falha na geração exibe **`message`** retornada pela API); **`/app`** dashboard com detalhe do dia mostrando setor; proxy `/api` ou `VITE_API_BASE_URL`, home com smoke de `/api/health`, porta dev **4863**;
 - testes unitarios e de integracao do backend (**incl.** registro de tenant e isolamento multitenant onde aplicável) passando.
 
@@ -219,6 +219,34 @@ Copie `src/Web/.env.example` para `src/Web/.env` e ajuste:
 
 3. Abra `http://localhost:4863` (porta fixa do Vite neste repositório). A página inicial executa o smoke da API (health e, se configurado, login). Use **Ir para login** ou acesse `/login` para autenticar (Fase F1).
 
+### Rodar o Blazor contra a API local
+
+O frontend Blazor (`src/Web.Blazor`) roda na porta **4864** e chama a API diretamente via `ApiBaseUrl` (`http://localhost:5003` em Development), com **CORS** habilitado na API — **sem proxy** `/api` no dev server WASM (decisão [ADR 001](docs/adr/001-blazor-wasm-frontend.md)).
+
+**Opção recomendada — um comando (API + Blazor):**
+
+```bash
+./scripts/dev-blazor.sh
+```
+
+O script sobe a API em background, aguarda `http://localhost:5003` e inicia o Blazor em foreground. `Ctrl+C` encerra ambos.
+
+**Opção manual — dois terminais:**
+
+1. Suba a API:
+
+   ```bash
+   dotnet run --project src/Api/SafetyScale.Api.csproj
+   ```
+
+2. Em outro terminal:
+
+   ```bash
+   dotnet run --project src/Web.Blazor/SafetyScale.Web.Blazor.csproj
+   ```
+
+3. Abra `http://localhost:4864`. Detalhes em [`src/Web.Blazor/README.md`](src/Web.Blazor/README.md).
+
 ### Scripts úteis (`src/Web`)
 
 | Comando              | Descrição        |
@@ -229,7 +257,14 @@ Copie `src/Web/.env.example` para `src/Web/.env` e ajuste:
 | `npm run lint`       | ESLint           |
 | `npm run format`     | Prettier write   |
 
-> **Produção:** defina `VITE_API_BASE_URL` com a URL pública da API e preencha `Cors:Origins` na API com a origem exata do frontend (esquema + host + porta). Em dev o proxy do Vite ainda pode ser usado sem CORS.
+### Scripts úteis (raiz)
+
+| Script | Descrição |
+|--------|-----------|
+| [`scripts/dev-blazor.sh`](scripts/dev-blazor.sh) | Sobe API + Blazor WASM (4864) para desenvolvimento |
+| [`scripts/test-local.sh`](scripts/test-local.sh) | Testes backend + frontend React |
+
+> **Produção:** defina `VITE_API_BASE_URL` com a URL pública da API e preencha `Cors:Origins` na API com a origem exata do frontend (esquema + host + porta). Em dev o proxy do Vite ainda pode ser usado sem CORS; o Blazor em dev usa CORS + URL absoluta da API.
 
 ## Configuracao
 
@@ -240,13 +275,22 @@ As principais configuracoes estao em `src/Api/appsettings.json` e `src/Api/appse
 - `Jwt:Audience`
 - `Jwt:Key`
 - `Jwt:ExpiryMinutes`
-- `Cors:Origins` — lista de origens do browser autorizadas (ex.: `http://localhost:4863` em Development). Vazio desativa o middleware CORS.
+- `Cors:Origins` — lista de origens do browser autorizadas (ex.: `http://localhost:4863` e `http://localhost:4864` em Development). Vazio desativa o middleware CORS.
 
 > Importante: a chave JWT atual e somente para desenvolvimento. Troque em ambiente real.
 
 ## Como executar
 
 ### 1) Restaurar e compilar
+
+Solução completa (recomendado — inclui API, testes e Blazor WASM):
+
+```bash
+dotnet restore SafetyScale.sln
+dotnet build SafetyScale.sln
+```
+
+Somente a API:
 
 ```bash
 dotnet restore src/Api/SafetyScale.Api.csproj

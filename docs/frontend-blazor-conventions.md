@@ -130,7 +130,8 @@ Exemplo de nomes alinhados aos módulos React:
 
 - Propriedades em **PascalCase** no C#; serialização **camelCase** (`JsonSerializerOptions` global na B2).
 - Nomes alinhados ao JSON da API (ex.: `requiredGuardsPerDay`, `sectorName`, `tenantId`).
-- Manter DTOs no projeto Blazor — **não** referenciar `Application`/`Domain` do backend no WASM.
+- Manter DTOs no projeto Blazor — **não** referenciar `Application`/`Domain`/`Api` do backend no WASM.
+- **B1.1:** não criar projeto `SafetyScale.Contracts` compartilhado; espelhar [`src/Api/Contracts/`](../src/Api/Contracts/) em `Models/` conforme cada módulo for portado (B2+).
 
 ---
 

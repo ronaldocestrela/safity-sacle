@@ -30,7 +30,7 @@ Adotar **Blazor WebAssembly Standalone** (.NET 10) como substituto do frontend R
 | Root namespace | `SafetyScale.Web.Blazor` |
 | React legado | `src/Web/` permanece até fase **B11** |
 
-**Solution file:** criar `SafetyScale.sln` na raiz na fase **B1.1**, incluindo Api, Application, Domain, Infrastructure, Tests e Web.Blazor. Hoje os projetos são referenciados apenas via `.csproj`.
+**Solution file:** `SafetyScale.sln` na raiz (fase **B1.1**, concluída) — Api, Application, Domain, Infrastructure, Tests e Web.Blazor. `Directory.Build.props` na raiz centraliza `net10.0`, `Nullable` e `ImplicitUsings`.
 
 ### 2. Portas e coexistência em dev
 

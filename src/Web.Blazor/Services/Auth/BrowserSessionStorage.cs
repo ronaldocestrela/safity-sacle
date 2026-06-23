@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Microsoft.JSInterop;
 
-namespace SafetyScale.Web.Blazor.Services;
+namespace SafetyScale.Web.Blazor.Services.Auth;
 
 public sealed class BrowserSessionStorage(IJSRuntime jsRuntime)
 {
