@@ -20,6 +20,7 @@ builder.Services.AddScoped<JwtSessionStorage>();
 builder.Services.AddScoped<CustomAuthStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<CustomAuthStateProvider>());
 builder.Services.AddScoped<AuthSessionService>();
+builder.Services.AddScoped<TenantsRegistrationClient>();
 
 builder.Services.AddScoped<ApiHttpClient>(sp =>
 {

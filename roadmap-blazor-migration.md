@@ -303,31 +303,31 @@ src/Web.Blazor/
 
 ### B4.1 — Home (`/`)
 
-- [ ] Portar `HomePage.tsx` + CSS.
-- [ ] Smoke opcional da API (`/api/health`) — paridade com `apiSmoke.ts`.
-- [ ] Links para login e signup.
+- [x] Portar `HomePage.tsx` + CSS.
+- [x] Smoke opcional da API (`/api/health`) — paridade com `apiSmoke.ts`.
+- [x] Links para login e signup.
 
 ### B4.2 — Login (`/login`)
 
-- [ ] Portar `LoginPage.tsx` + CSS (referência Stitch Login de Acesso).
-- [ ] Formulário e-mail/senha → `POST /api/auth/login`.
-- [ ] Erros: credenciais inválidas, rede, token inválido.
-- [ ] Redirect para `/app` após sucesso.
-- [ ] Query/state: mensagem pós-signup e sessão expirada (`reason=session-expired`).
-- [ ] Link “Cadastrar minha empresa” → `/signup`.
+- [x] Portar `LoginPage.tsx` + CSS (referência Stitch Login de Acesso).
+- [x] Formulário e-mail/senha → `POST /api/auth/login`.
+- [x] Erros: credenciais inválidas, rede, token inválido.
+- [x] Redirect para `/app` após sucesso.
+- [x] Query/state: mensagem pós-signup e sessão expirada (`reason=session-expired`).
+- [x] Link “Cadastrar minha empresa” → `/signup`.
 
 ### B4.3 — Signup (`/signup`)
 
-- [ ] Portar `RegisterTenantPage.tsx` + CSS.
-- [ ] Formulário → `POST /api/tenants/register`.
-- [ ] Tratar 400 validação, 409 e-mail/slug.
-- [ ] Redirect para `/login` com e-mail pré-preenchido.
+- [x] Portar `RegisterTenantPage.tsx` + CSS.
+- [x] Formulário → `POST /api/tenants/register`.
+- [x] Tratar 400 validação, 409 e-mail/slug.
+- [x] Redirect para `/login` com e-mail pré-preenchido.
 
 ### B4.4 — Testes
 
-- [ ] bUnit Login: submit com mock HTTP 200 → navega para `/app`.
-- [ ] bUnit Login: 401 → mensagem de erro.
-- [ ] bUnit Signup: 409 → mensagem amigável.
+- [x] bUnit Login: submit com mock HTTP 200 → navega para `/app`.
+- [x] bUnit Login: 401 → mensagem de erro.
+- [x] bUnit Signup: 409 → mensagem amigável.
 
 ### Critério de pronto (B4)
 

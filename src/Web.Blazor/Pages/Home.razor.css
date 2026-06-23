@@ -1,0 +1,65 @@
+/* Paridade src/Web/src/features/home/HomePage.module.css */
+
+.main {
+    max-width: 42rem;
+    margin: 0 auto;
+    padding: 2rem 1.25rem;
+    font-family: system-ui, sans-serif;
+    color: #1a192b;
+}
+
+.title {
+    font-size: 1.75rem;
+    margin: 0 0 0.5rem;
+}
+
+.lead {
+    margin: 0 0 0.75rem;
+    color: #444;
+    line-height: 1.5;
+}
+
+.actions {
+    margin: 0 0 1.5rem;
+}
+
+.link {
+    font-weight: 600;
+    color: #904d00;
+    text-decoration: none;
+}
+
+.link:hover {
+    text-decoration: underline;
+}
+
+.link-separator {
+    margin: 0 0.5rem;
+    color: #888;
+}
+
+.panel {
+    border: 1px solid #d8d8e0;
+    border-radius: 0.5rem;
+    padding: 1rem 1.25rem;
+    background: #f9f9fc;
+}
+
+.panel-title {
+    font-size: 1rem;
+    margin: 0 0 0.75rem;
+}
+
+.status {
+    margin: 0;
+    line-height: 1.5;
+    font-size: 0.95rem;
+}
+
+.ok {
+    color: #0d5c2b;
+}
+
+.error {
+    color: #9c1421;
+}

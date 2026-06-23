@@ -1,11 +1,238 @@
 @page "/signup"
+@inject NavigationManager Navigation
+@inject AuthSessionService AuthService
+@inject TenantsRegistrationClient RegistrationClient
 
 <PageTitle>SafetyScale — Cadastro</PageTitle>
 
-<div class="spike">
-    <section class="spike-panel">
-        <h1>Cadastrar empresa</h1>
-        <p class="spike-subtitle">Placeholder B1.2 — implementação na fase B4.</p>
-        <p><a href="/login">Ir para login</a></p>
-    </section>
-</div>
+@if (!_checkingSession)
+{
+    <div class="page">
+        <div class="card card-wide">
+            <div class="card-header">
+                <span class="logo">SafetyScale</span>
+                <h1 class="title">Cadastro da empresa</h1>
+                <p class="lead">Cria uma nova empresa e conta de administrador.</p>
+            </div>
+
+            <EditForm Model="_form" FormName="signup" OnValidSubmit="HandleSubmitAsync">
+                <div class="form">
+                    @if (!string.IsNullOrEmpty(_errorMessage))
+                    {
+                        <p class="error" role="alert">@_errorMessage</p>
+                    }
+
+                    <label class="label">
+                        Nome da empresa
+                        <input @bind="_form.TenantName"
+                               @bind:event="oninput"
+                               type="text"
+                               name="tenantName"
+                               autocomplete="organization"
+                               class="@InputClass(TenantInvalid)"
+                               disabled="@_submitting"
+                               aria-invalid="@TenantInvalid"
+                               @onblur="MarkTouched" />
+                        @if (TenantInvalid)
+                        {
+                            <span class="field-error">Informe o nome da empresa.</span>
+                        }
+                    </label>
+
+                    <label class="label">
+                        Nome do administrador
+                        <input @bind="_form.AdminName"
+                               @bind:event="oninput"
+                               type="text"
+                               name="adminName"
+                               autocomplete="name"
+                               class="@InputClass(AdminInvalid)"
+                               disabled="@_submitting"
+                               aria-invalid="@AdminInvalid"
+                               @onblur="MarkTouched" />
+                        @if (AdminInvalid)
+                        {
+                            <span class="field-error">Informe o nome do administrador.</span>
+                        }
+                    </label>
+
+                    <label class="label">
+                        E-mail do administrador
+                        <input @bind="_form.AdminEmail"
+                               @bind:event="oninput"
+                               type="email"
+                               name="adminEmail"
+                               autocomplete="email"
+                               class="@InputClass(EmailInvalid)"
+                               disabled="@_submitting"
+                               aria-invalid="@EmailInvalid"
+                               @onblur="MarkTouched" />
+                        @if (EmailInvalid)
+                        {
+                            <span class="field-error">Informe o e-mail.</span>
+                        }
+                    </label>
+
+                    <label class="label">
+                        Senha
+                        <input @bind="_form.AdminPassword"
+                               @bind:event="oninput"
+                               type="password"
+                               name="adminPassword"
+                               autocomplete="new-password"
+                               class="@InputClass(PasswordInvalid)"
+                               disabled="@_submitting"
+                               aria-invalid="@PasswordInvalid"
+                               @onblur="MarkTouched" />
+                        @if (PasswordInvalid)
+                        {
+                            <span class="field-error">Informe a senha.</span>
+                        }
+                    </label>
+
+                    <label class="label">
+                        Confirmar senha
+                        <input @bind="_form.ConfirmPassword"
+                               @bind:event="oninput"
+                               type="password"
+                               name="confirmPassword"
+                               autocomplete="new-password"
+                               class="@InputClass(ConfirmInvalid)"
+                               disabled="@_submitting"
+                               aria-invalid="@ConfirmInvalid"
+                               @onblur="MarkTouched" />
+                        @if (ConfirmInvalid)
+                        {
+                            <span class="field-error">Confirme a senha.</span>
+                        }
+                    </label>
+
+                    <button type="submit" class="submit" disabled="@_submitting">
+                        @(_submitting ? "Cadastrando…" : "Cadastrar empresa")
+                    </button>
+                </div>
+            </EditForm>
+
+            <p class="footer">
+                <a class="link" href="/login">Já tenho conta</a>
+                <span class="footer-separator" aria-hidden="true">·</span>
+                <a class="link" href="/">Página inicial</a>
+            </p>
+        </div>
+    </div>
+}
+
+@code {
+    private readonly SignupFormModel _form = new();
+    private bool _checkingSession = true;
+    private bool _touched;
+    private bool _submitting;
+    private string? _errorMessage;
+
+    private bool TenantInvalid => _touched && string.IsNullOrWhiteSpace(_form.TenantName);
+
+    private bool AdminInvalid => _touched && string.IsNullOrWhiteSpace(_form.AdminName);
+
+    private bool EmailInvalid => _touched && string.IsNullOrWhiteSpace(_form.AdminEmail);
+
+    private bool PasswordInvalid => _touched && string.IsNullOrEmpty(_form.AdminPassword);
+
+    private bool ConfirmInvalid => _touched && string.IsNullOrEmpty(_form.ConfirmPassword);
+
+    protected override async Task OnInitializedAsync()
+    {
+        var session = await AuthService.GetSessionAsync();
+        if (session is not null)
+        {
+            Navigation.NavigateTo("/app", replace: true);
+            return;
+        }
+
+        _checkingSession = false;
+    }
+
+    private void MarkTouched() => _touched = true;
+
+    private async Task HandleSubmitAsync()
+    {
+        _touched = true;
+        _errorMessage = null;
+
+        if (TenantInvalid || AdminInvalid || EmailInvalid || PasswordInvalid || ConfirmInvalid)
+        {
+            return;
+        }
+
+        if (_form.AdminPassword != _form.ConfirmPassword)
+        {
+            _errorMessage = "A senha e a confirmação não conferem.";
+            return;
+        }
+
+        _submitting = true;
+        try
+        {
+            var request = new RegisterTenantRequestDto(
+                _form.TenantName.Trim(),
+                _form.AdminName.Trim(),
+                _form.AdminEmail.Trim(),
+                _form.AdminPassword,
+                _form.ConfirmPassword);
+
+            var result = await RegistrationClient.RegisterAsync(request);
+            if (result.Ok)
+            {
+                var encodedEmail = Uri.EscapeDataString(_form.AdminEmail.Trim());
+                Navigation.NavigateTo(
+                    $"/login?registrationSuccess=true&email={encodedEmail}",
+                    replace: true);
+                return;
+            }
+
+            _errorMessage = ResolveErrorMessage(result);
+        }
+        finally
+        {
+            _submitting = false;
+        }
+    }
+
+    private static string ResolveErrorMessage(RegisterTenantOutcome result)
+    {
+        if (!string.IsNullOrWhiteSpace(result.Message))
+        {
+            return result.Message;
+        }
+
+        if (result.Messages is { Count: > 0 })
+        {
+            return string.Join(' ', result.Messages);
+        }
+
+        return result.Reason switch
+        {
+            RegisterTenantFailureReason.TenantExists =>
+                "Não foi possível concluir o cadastro. Tente alterar o nome da empresa.",
+            RegisterTenantFailureReason.EmailExists => "Este e-mail já está cadastrado.",
+            RegisterTenantFailureReason.InvalidPassword =>
+                "A senha deve ter pelo menos 8 caracteres, incluindo maiúsculas, minúsculas, números e um carácter especial.",
+            _ => "Não foi possível conectar à API. Verifique se o servidor está no ar.",
+        };
+    }
+
+    private static string InputClass(bool invalid) =>
+        invalid ? "input input-invalid" : "input";
+
+    private sealed class SignupFormModel
+    {
+        public string TenantName { get; set; } = string.Empty;
+
+        public string AdminName { get; set; } = string.Empty;
+
+        public string AdminEmail { get; set; } = string.Empty;
+
+        public string AdminPassword { get; set; } = string.Empty;
+
+        public string ConfirmPassword { get; set; } = string.Empty;
+    }
+}

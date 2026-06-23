@@ -2,7 +2,7 @@
 
 Frontend **Blazor WebAssembly** do SafetyScale (migração React → Blazor). Parte da solution [`SafetyScale.sln`](../../SafetyScale.sln) na raiz.
 
-Spike técnica B0.2 validada; bootstrap B1.1 integrado à solution; **estrutura de pastas B1.2** formalizada; **estilos globais B1.3** consolidados; **dev experience B1.4** com script raiz; **configuração B2.1** (`ApiBaseUrl`) formalizada; **cliente HTTP B2.2** com handlers centralizados; **JWT e sessão B2.3** com `AuthenticationStateProvider`; **DTOs e tipos B2.4** com `JsonSerializerOptions` global; **testes unitários B2.5** da infra auth/HTTP; **roteamento B3.1** com paridade `routes.tsx`; **autorização de rotas B3.2** com `AuthorizeRouteView` e `RoleAuthorizeView`; **AppLayout shell B3.3** com bottom nav, header condicional e logout; **testes bUnit B3.4** de guards e nav ativa.
+Spike técnica B0.2 validada; bootstrap B1.1 integrado à solution; **estrutura de pastas B1.2** formalizada; **estilos globais B1.3** consolidados; **dev experience B1.4** com script raiz; **configuração B2.1** (`ApiBaseUrl`) formalizada; **cliente HTTP B2.2** com handlers centralizados; **JWT e sessão B2.3** com `AuthenticationStateProvider`; **DTOs e tipos B2.4** com `JsonSerializerOptions` global; **testes unitários B2.5** da infra auth/HTTP; **roteamento B3.1** com paridade `routes.tsx`; **autorização de rotas B3.2** com `AuthorizeRouteView` e `RoleAuthorizeView`; **AppLayout shell B3.3** com bottom nav, header condicional e logout; **testes bUnit B3.4** de guards e nav ativa; **Home pública B4.1** com smoke de API e links login/signup; **Login B4.2** com formulário, erros e redirect; **Signup B4.3** com cadastro de empresa e redirect pós-cadastro; **testes bUnit B4.4** de fluxos públicos login/signup.
 
 Decisões de arquitetura: [ADR 001](../../docs/adr/001-blazor-wasm-frontend.md).  
 Convenções: [docs/frontend-blazor-conventions.md](../../docs/frontend-blazor-conventions.md).
@@ -15,7 +15,7 @@ src/Web.Blazor/
  │   └── Calendar/
  ├── Layout/              # MainLayout (público), AppLayout (shell autenticado B3.3)
  ├── Pages/
- │   ├── Home.razor       # POC B0.2 temporária em /
+ │   ├── Home.razor       # Home pública (B4.1)
  │   ├── App/             # área autenticada (placeholder B1.2)
  │   └── Auth/            # login, signup (placeholder B1.2)
  ├── Services/
@@ -34,8 +34,8 @@ src/Web.Blazor/
 
 **Notas:**
 
-- A POC da B0.2 foi preservada em `Pages/Home.razor` (rota `/`) até a fase B2.
-- `Pages/Auth/Login.razor`, `Pages/Auth/RegisterTenant.razor` e `Pages/App/Welcome.razor` são **placeholders** preparatórios para B4/B5 — sem lógica de negócio ainda.
+- A POC da B0.2 foi substituída pela Home pública em `Pages/Home.razor` (B4.1).
+- `Pages/Auth/Login.razor` e `Pages/Auth/RegisterTenant.razor` implementados em B4.2/B4.3; `Pages/App/Welcome.razor` permanece **placeholder** até B5.
 - `NavMenu` do template Blazor foi removido; layout neutro em `Layout/MainLayout.razor`.
 
 ## Estilos globais (B1.3)
@@ -44,7 +44,7 @@ src/Web.Blazor/
 - `wwwroot/index.html` — links Google Fonts (Inter + Material Symbols Outlined), `css/app.css`, `SafetyScale.Web.Blazor.styles.css`.
 - `wwwroot/icons.svg` — copiado de `src/Web/public/icons.svg` (B1.2).
 - **Telas reais (B4+):** estilos por componente/página via `.razor.css` (scoped CSS), copiando `*.module.css` do React.
-- **Exceção temporária:** classes `.spike-*` em `app.css` para POC B0.2 e placeholders — remover após B2/B4.
+- **Exceção temporária:** classes `.spike-*` em `app.css` para placeholders — remover após B4/B5.
 - Removidas sobras do template Blazor/Bootstrap (`.btn`, `.content`, validação, `.form-floating`).
 
 ## Solution e dependências
@@ -95,24 +95,57 @@ Abra `http://localhost:4864`.
 
 | Rota | Página | Estado |
 |---|---|---|
-| `/` | `Pages/Home.razor` | POC B0.2 completa |
-| `/login` | `Pages/Auth/Login.razor` | Placeholder |
-| `/signup` | `Pages/Auth/RegisterTenant.razor` | Placeholder |
+| `/` | `Pages/Home.razor` | Home pública B4.1 |
+| `/login` | `Pages/Auth/Login.razor` | Login B4.2 |
+| `/signup` | `Pages/Auth/RegisterTenant.razor` | Signup B4.3 |
 | `/app` | `Pages/App/Welcome.razor` | Placeholder |
 
-## O que a spike valida
+## Home pública (B4.1)
 
-| Item | Como testar na UI |
+Paridade com [`src/Web/src/features/home/HomePage.tsx`](../Web/src/features/home/HomePage.tsx):
+
+- Título, lead e painel de smoke da API.
+- Links para `/login` e `/signup`.
+- Smoke em `Services/Api/HomeApiSmoke.cs`: `GET /api/health` sem token; estados `loading` / `ok` / `error` com `aria-live`.
+- `401/403` tratados como resposta válida da API (mensagem informativa, não erro).
+
+Arquivos: `Pages/Home.razor`, `Pages/Home.razor.css`.
+
+## Login (B4.2)
+
+Paridade com [`src/Web/src/features/auth/LoginPage.tsx`](../Web/src/features/auth/LoginPage.tsx):
+
+- Card Stitch (header escuro, campos e-mail/senha, botão **Entrar**).
+- Submit via `AuthSessionService.LoginAsync` → `POST /api/auth/login`.
+- Erros: credenciais inválidas (`401`) e rede/token inválido.
+- Redirect pós-sucesso para `returnUrl` seguro ou `/app`; se já autenticado, redirect imediato.
+- Query params: `reason=session-expired`, `registrationSuccess=true`, `email=` (pré-preenchimento pós-signup B4.3).
+- Links para `/signup` e `/`.
+
+Arquivos: `Pages/Auth/Login.razor`, `Pages/Auth/Login.razor.css`.
+
+## Signup (B4.3)
+
+Paridade com [`src/Web/src/features/tenant-registration/RegisterTenantPage.tsx`](../Web/src/features/tenant-registration/RegisterTenantPage.tsx):
+
+- Card wide com 5 campos: empresa, administrador, e-mail, senha, confirmação.
+- Validação local (obrigatoriedade + senhas iguais).
+- Submit via `TenantsRegistrationClient` → `POST /api/tenants/register`.
+- Erros: `400` validação/senha, `409` e-mail ou slug, rede.
+- Sucesso → `/login?registrationSuccess=true&email=...` (banner e pré-preenchimento na Login B4.2).
+- Redirect para `/app` se já autenticado.
+
+Arquivos: `Pages/Auth/RegisterTenant.razor`, `Pages/Auth/RegisterTenant.razor.css`, `Services/Api/TenantsRegistrationClient.cs`.
+
+## Testes de fluxos públicos (B4.4)
+
+Suíte bUnit para login e signup com HTTP stubado (sem chamadas reais à API):
+
+| Arquivo | Cobertura |
 |---|---|
-| Inter + Material Symbols | Ícone `shield_person` no header |
-| `ApiBaseUrl` dev | Painel Configuração → `http://localhost:5003` |
-| Health sem token | Botão → HTTP **401** (sucesso esperado) |
-| Token inválido | Botão → HTTP **401** |
-| Interop sessionStorage | Salvar token fake → ler de volta; limpar sessão |
-| Login dev | E-mail/senha padrão → token salvo → health **200** |
-| Persistência | Após login, recarregar página → token ainda visível |
-
-Credenciais padrão no form (seed Development): `admin@local.com` / `Mudar@13`.
+| `Pages/LoginPageTests.cs` | Submit com HTTP 200 → navega para `/app`; 401 → mensagem de credenciais inválidas |
+| `Pages/RegisterTenantPageTests.cs` | Submit com HTTP 409 → mensagem amigável de e-mail duplicado |
+| `TestHelpers/PublicAuthTestHelper.cs` | Factory de `AuthSessionService`, `TenantsRegistrationClient` e `TestNavigationManager` com `FuncHttpMessageHandler` |
 
 ## Configuração (B2.1)
 
@@ -153,8 +186,6 @@ Camada compartilhada em `Services/Api/` — paridade com React `shared/api/http.
 | `ApiRequestOptions` | `SkipAuthRedirect` (login público), `SkipBearerInjection` (POC sem Bearer) |
 
 Registro em `Program.cs`: pipeline manual `UnauthorizedRedirectHandler` → `BearerTokenHandler` → `HttpClientHandler`.
-
-A POC em `Pages/Home.razor` usa `AuthSessionService.LoginAsync` para login dev e `ApiHttpClient` para health.
 
 ## JWT e sessão (B2.3)
 
@@ -198,7 +229,10 @@ Suíte em [`src/Tests/Web.Blazor/`](../Tests/Web.Blazor/) (xUnit + FluentAsserti
 | `Routing/RouteAuthorizationTests.cs` | Não autenticado em `/app` → `/login?returnUrl=...` |
 | `Components/RoleAuthorizeViewTests.cs` | Supervisor bloqueado em gate Admin-only; Admin renderiza conteúdo |
 | `Layout/AppLayoutNavTests.cs` | Bottom nav marca item ativo por rota (`/app`, `/app/sectors`) |
+| `Pages/LoginPageTests.cs` | Login submit sucesso e 401 (B4.4) |
+| `Pages/RegisterTenantPageTests.cs` | Signup conflito 409 (B4.4) |
 | `TestHelpers/BlazorComponentTestBase.cs` | Base bUnit (auth, config, navegação) |
+| `TestHelpers/PublicAuthTestHelper.cs` | Stubs HTTP para páginas públicas de auth (B4.4) |
 | `TestHelpers/JwtTestUtils.cs` | Geração de JWT unsigned para testes |
 | `TestHelpers/FakeJsRuntime.cs` | Mock in-memory de `sessionStorageInterop` |
 
@@ -276,4 +310,4 @@ A API em Development aceita origens `http://localhost:4863` (React) e `http://lo
 
 ## Próximas fases
 
-- **B4** — telas públicas (home, login, signup) + testes bUnit de fluxo
+- **B5** — Welcome/Dashboard, AccessDenied, AppHeader
