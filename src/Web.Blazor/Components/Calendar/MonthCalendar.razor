@@ -1,0 +1,102 @@
+<div class="@CardClassName">
+    @if (TopContent is not null)
+    {
+        @TopContent
+    }
+
+    @if (MonthNav is not null)
+    {
+        <div class="@MonthNav.HeadClassName">
+            <button type="button"
+                    class="@MonthNav.NavButtonClassName"
+                    aria-label="@(MonthNav.PrevAriaLabel ?? "Previous month")"
+                    @onclick="MonthNav.OnPrevMonth">
+                <span class="material-symbols-outlined @(MonthNav.NavIconClassName ?? "nav-icon")">chevron_left</span>
+            </button>
+            <h2 class="@MonthNav.TitleClassName">@MonthNav.Title</h2>
+            <button type="button"
+                    class="@MonthNav.NavButtonClassName"
+                    aria-label="@(MonthNav.NextAriaLabel ?? "Next month")"
+                    @onclick="MonthNav.OnNextMonth">
+                <span class="material-symbols-outlined @(MonthNav.NavIconClassName ?? "nav-icon")">chevron_right</span>
+            </button>
+        </div>
+    }
+
+    <div class="@WeekdayRowClassName">
+        @foreach (var weekday in Weekdays)
+        {
+            <span class="@WeekdayCellClassName">@weekday</span>
+        }
+    </div>
+
+    @if (GridReplacement is not null)
+    {
+        @GridReplacement
+    }
+    else
+    {
+        <div class="@GridClassName">
+            @foreach (var cell in Cells)
+            {
+                @if (CellTemplate is not null)
+                {
+                    @CellTemplate(cell)
+                }
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public IReadOnlyList<MonthGridCell> Cells { get; set; } = [];
+
+    [Parameter, EditorRequired]
+    public IReadOnlyList<string> Weekdays { get; set; } = [];
+
+    [Parameter, EditorRequired]
+    public string CardClassName { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public string WeekdayRowClassName { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public string WeekdayCellClassName { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public string GridClassName { get; set; } = string.Empty;
+
+    [Parameter]
+    public RenderFragment? TopContent { get; set; }
+
+    [Parameter]
+    public RenderFragment? GridReplacement { get; set; }
+
+    [Parameter]
+    public RenderFragment<MonthGridCell>? CellTemplate { get; set; }
+
+    [Parameter]
+    public MonthCalendarMonthNav? MonthNav { get; set; }
+
+    public sealed class MonthCalendarMonthNav
+    {
+        public required string Title { get; init; }
+
+        public required string HeadClassName { get; init; }
+
+        public required string TitleClassName { get; init; }
+
+        public required string NavButtonClassName { get; init; }
+
+        public string? NavIconClassName { get; init; }
+
+        public string? PrevAriaLabel { get; init; }
+
+        public string? NextAriaLabel { get; init; }
+
+        public required EventCallback OnPrevMonth { get; init; }
+
+        public required EventCallback OnNextMonth { get; init; }
+    }
+}

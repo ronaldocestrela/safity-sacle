@@ -54,7 +54,7 @@ public abstract class BlazorComponentTestBase : TestContext
         Services.AddSingleton<AuthenticationStateProvider>(new FixedAuthStateProvider(state));
     }
 
-    protected void RegisterAuthSessionServices(string initialUri, params UserRole[] roles)
+    protected TestNavigationManager RegisterAuthSessionServices(string initialUri, params UserRole[] roles)
     {
         var js = new FakeJsRuntime();
         var browserStorage = new BrowserSessionStorage(js, AppJsonSerializerOptions.Create());
@@ -96,6 +96,8 @@ public abstract class BlazorComponentTestBase : TestContext
                 sp.GetRequiredService<CustomAuthStateProvider>(),
                 nav);
         });
+
+        return nav;
     }
 
     protected static bool HasActiveClass(IElement link) =>

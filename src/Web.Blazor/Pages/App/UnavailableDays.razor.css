@@ -1,0 +1,26 @@
+.page {
+    min-height: 100%;
+    background: #f7fafc;
+    color: #181c1e;
+}
+
+.main {
+    padding: 1rem;
+    padding-bottom: 2rem;
+    max-width: 720px;
+    margin: 0 auto;
+}
+
+.placeholder-panel {
+    background: #ffffff;
+    border: 1px solid #c4c6cd;
+    border-radius: 0.25rem;
+    padding: 1.25rem 1rem;
+}
+
+.placeholder-lead {
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.45;
+    color: #44474c;
+}

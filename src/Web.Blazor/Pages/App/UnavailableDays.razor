@@ -1,18 +1,31 @@
 @page "/app/unavailable-days"
 @layout AppLayout
 @attribute [Authorize]
+@inject AuthSessionService AuthService
 
 <PageTitle>SafetyScale — Indisponibilidades</PageTitle>
 
 <RoleAuthorizeView AllowedRoles="ModuleRoles">
-    <div class="spike">
-        <section class="spike-panel">
-            <h1>Indisponibilidades</h1>
-            <p class="spike-subtitle">Placeholder B3.1 — implementação na fase B8.</p>
-        </section>
+    <div class="page">
+        <AppHeader Title="Availability"
+                   Subtitle="Indisponibilidade e disponibilidade da equipe."
+                   Email="@_session?.Email"
+                   ShowNotifications="true"
+                   ShowLogout="false" />
+
+        <main class="main">
+            <section class="placeholder-panel">
+                <p class="placeholder-lead">Placeholder B3.1 — implementação na fase B8.</p>
+            </section>
+        </main>
     </div>
 </RoleAuthorizeView>
 
 @code {
     private static readonly UserRole[] ModuleRoles = [UserRole.Admin, UserRole.Supervisor];
+
+    private AuthSession? _session;
+
+    protected override async Task OnInitializedAsync() =>
+        _session = await AuthService.GetSessionAsync();
 }

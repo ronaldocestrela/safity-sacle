@@ -21,6 +21,8 @@ builder.Services.AddScoped<CustomAuthStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<CustomAuthStateProvider>());
 builder.Services.AddScoped<AuthSessionService>();
 builder.Services.AddScoped<TenantsRegistrationClient>();
+builder.Services.AddScoped<SecurityGuardsApiClient>();
+builder.Services.AddScoped<SchedulesApiClient>();
 
 builder.Services.AddScoped<ApiHttpClient>(sp =>
 {

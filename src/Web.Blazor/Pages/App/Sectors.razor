@@ -1,18 +1,35 @@
 @page "/app/sectors"
 @layout AppLayout
 @attribute [Authorize]
+@inject AuthSessionService AuthService
 
 <PageTitle>SafetyScale — Setores</PageTitle>
 
 <RoleAuthorizeView AllowedRoles="ModuleRoles">
-    <div class="spike">
-        <section class="spike-panel">
-            <h1>Setores</h1>
-            <p class="spike-subtitle">Placeholder B3.1 — implementação na fase B6.</p>
-        </section>
+    <div class="page">
+        <AppHeader Title="Gestão de setores"
+                   Subtitle="Cadastro e consulta de setores operacionais."
+                   Email="@_session?.Email"
+                   ShowNotifications="true"
+                   ShowLogout="true"
+                   OnLogout="HandleLogoutAsync" />
+
+        <main class="main">
+            <section class="placeholder-panel">
+                <p class="placeholder-lead">Placeholder B3.1 — implementação na fase B6.</p>
+            </section>
+        </main>
     </div>
 </RoleAuthorizeView>
 
 @code {
     private static readonly UserRole[] ModuleRoles = [UserRole.Admin, UserRole.Supervisor];
+
+    private AuthSession? _session;
+
+    protected override async Task OnInitializedAsync() =>
+        _session = await AuthService.GetSessionAsync();
+
+    private Task HandleLogoutAsync() =>
+        AuthService.LogoutAsync(navigateToLogin: true);
 }

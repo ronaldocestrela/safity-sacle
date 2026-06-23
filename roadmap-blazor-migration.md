@@ -81,8 +81,8 @@ A migração é **incremental e calma**: o React permanece em produção até a 
 - [x] **B1** — Bootstrap do projeto Blazor
 - [x] **B2** — Infra compartilhada (HTTP, auth, erros, config)
 - [x] **B3** — Layout, roteamento e navegação
-- [ ] **B4** — Telas públicas (home, login, signup)
-- [ ] **B5** — Área autenticada base (dashboard, access denied)
+- [x] **B4** — Telas públicas (home, login, signup)
+- [x] **B5** — Área autenticada base (dashboard, access denied)
 - [ ] **B6** — Módulo setores
 - [ ] **B7** — Módulo seguranças
 - [ ] **B8** — Módulo indisponibilidades
@@ -331,7 +331,7 @@ src/Web.Blazor/
 
 ### Critério de pronto (B4)
 
-- Fluxo completo signup → login → `/app` (mesmo com dashboard placeholder).
+- Fluxo completo signup → login → `/app` (dashboard operacional B5.1).
 - Paridade visual com React/Stitch aceita pelo time.
 - **Freeze** de novas features no React a partir daqui.
 
@@ -345,29 +345,29 @@ src/Web.Blazor/
 
 ### B5.1 — Welcome / Dashboard (`/app`)
 
-- [ ] Portar `WelcomePage.tsx` + CSS.
-- [ ] Exibir dados da sessão (e-mail, perfil, tenant).
-- [ ] Detalhe do dia / resumo se existir no React (consultar API de escala do mês corrente).
+- [x] Portar `WelcomePage.tsx` + CSS.
+- [x] Exibir dados da sessão (e-mail, perfil, tenant).
+- [x] Detalhe do dia / resumo se existir no React (consultar API de escala do mês corrente).
 
 ### B5.2 — Access denied (`/app/access-denied`)
 
-- [ ] Portar `AccessDeniedPage.tsx` + CSS.
-- [ ] Link de volta ao dashboard.
+- [x] Portar `AccessDeniedPage.tsx` + CSS.
+- [x] Link de volta ao dashboard.
 
 ### B5.3 — AppHeader compartilhado
 
-- [ ] Portar `AppHeader.tsx` + CSS para uso nas telas administrativas.
-- [ ] Props: título, subtítulo, ações (logout).
+- [x] Portar `AppHeader.tsx` + CSS para uso nas telas administrativas.
+- [x] Props: título, subtítulo, ações (logout).
 
 ### B5.4 — Testes
 
-- [ ] bUnit Welcome: renderiza e-mail do usuário autenticado mock.
-- [ ] bUnit AccessDenied: link para `/app`.
+- [x] bUnit Welcome: renderiza e-mail do usuário autenticado mock.
+- [x] bUnit AccessDenied: link para `/app`.
 
 ### Critério de pronto (B5)
 
-- Dashboard útil para validar sessão multitenant (`tenantId` visível ou inferido).
-- Rotas protegidas integradas ao layout shell.
+- [x] Dashboard útil para validar sessão multitenant (`tenantId` visível ou inferido).
+- [x] Rotas protegidas integradas ao layout shell.
 
 ---
 
@@ -388,6 +388,8 @@ src/Web.Blazor/
 - [ ] Lista com filtros; formulário create/edit.
 - [ ] Admin: todas ações; Supervisor: somente leitura.
 - [ ] Validação UX (nome, vagas ≥ 1); exibir erros 400 da API.
+
+> **Parcial (B5.3):** `AppHeader` compartilhado com título/subtítulo na rota; corpo da página ainda placeholder.
 
 ### B6.3 — Testes
 
@@ -412,6 +414,8 @@ src/Web.Blazor/
 
 - [ ] `SecurityGuardsApiClient`: list, create, update, inactive, active, set sectors.
 - [ ] Integração com catálogo de setores (`SectorsApiClient`).
+
+> **Parcial (B5.1):** `SecurityGuardsApiClient.ListAsync` (read-only) já existe para o Welcome.
 
 ### B7.2 — UI — listagem e filtros
 
@@ -455,6 +459,8 @@ src/Web.Blazor/
 - [ ] Portar `MonthCalendar.tsx` + CSS.
 - [ ] Seleção de dias, estado indisponível, navegação mês anterior/próximo.
 
+> **Parcial (B5.1):** `Services/Calendar/MonthGrid.cs` e `Components/Calendar/MonthCalendar.razor` (uso no Welcome; sem nav de mês nem estados de indisponibilidade).
+
 ### B8.2 — Cliente API
 
 - [ ] `UnavailableDaysApiClient`: list by guard, add, delete.
@@ -489,6 +495,8 @@ src/Web.Blazor/
 
 - [ ] `SchedulesApiClient`: get by month/year, generate.
 - [ ] Parse de erro `ScheduleCoverageFailureResponse`.
+
+> **Parcial (B5.1):** `SchedulesApiClient.GetByMonthYearAsync` (read-only) já existe para o Welcome.
 
 ### B9.2 — UI
 

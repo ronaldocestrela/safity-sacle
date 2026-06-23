@@ -1,0 +1,67 @@
+<header class="top-app-bar">
+    <div class="top-app-bar-inner">
+        <div class="top-app-bar-left">
+            @if (!string.IsNullOrWhiteSpace(AvatarSrc))
+            {
+                <div class="avatar-ring avatar-ring-image" aria-hidden="true">
+                    <img class="avatar-img" src="@AvatarSrc" alt="@AvatarAlt" />
+                </div>
+            }
+            else
+            {
+                <div class="avatar-ring" aria-hidden="true">
+                    <span class="avatar-initials">@UserDisplay.UserInitials(Email)</span>
+                </div>
+            }
+            <div class="top-app-bar-heading">
+                <h1 class="top-app-bar-title">@Title</h1>
+                @if (!string.IsNullOrWhiteSpace(Subtitle))
+                {
+                    <p class="top-app-bar-subtitle">@Subtitle</p>
+                }
+            </div>
+        </div>
+        <div class="top-app-bar-actions">
+            @if (ShowNotifications)
+            {
+                <button type="button" class="icon-ghost" aria-label="Notifications">
+                    <span class="material-symbols-outlined icon-md">notifications</span>
+                </button>
+            }
+            @if (ShowLogout && OnLogout.HasDelegate)
+            {
+                <button type="button" class="icon-ghost" aria-label="Log out" @onclick="HandleLogout">
+                    <span class="material-symbols-outlined icon-md">logout</span>
+                </button>
+            }
+        </div>
+    </div>
+</header>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter]
+    public string? Subtitle { get; set; }
+
+    [Parameter]
+    public string? Email { get; set; }
+
+    [Parameter]
+    public string? AvatarSrc { get; set; }
+
+    [Parameter]
+    public string AvatarAlt { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool ShowNotifications { get; set; } = true;
+
+    [Parameter]
+    public bool ShowLogout { get; set; }
+
+    [Parameter]
+    public EventCallback OnLogout { get; set; }
+
+    private Task HandleLogout() => OnLogout.InvokeAsync();
+}

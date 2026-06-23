@@ -2,7 +2,7 @@
 
 Frontend **Blazor WebAssembly** do SafetyScale (migração React → Blazor). Parte da solution [`SafetyScale.sln`](../../SafetyScale.sln) na raiz.
 
-Spike técnica B0.2 validada; bootstrap B1.1 integrado à solution; **estrutura de pastas B1.2** formalizada; **estilos globais B1.3** consolidados; **dev experience B1.4** com script raiz; **configuração B2.1** (`ApiBaseUrl`) formalizada; **cliente HTTP B2.2** com handlers centralizados; **JWT e sessão B2.3** com `AuthenticationStateProvider`; **DTOs e tipos B2.4** com `JsonSerializerOptions` global; **testes unitários B2.5** da infra auth/HTTP; **roteamento B3.1** com paridade `routes.tsx`; **autorização de rotas B3.2** com `AuthorizeRouteView` e `RoleAuthorizeView`; **AppLayout shell B3.3** com bottom nav, header condicional e logout; **testes bUnit B3.4** de guards e nav ativa; **Home pública B4.1** com smoke de API e links login/signup; **Login B4.2** com formulário, erros e redirect; **Signup B4.3** com cadastro de empresa e redirect pós-cadastro; **testes bUnit B4.4** de fluxos públicos login/signup.
+Spike técnica B0.2 validada; bootstrap B1.1 integrado à solution; **estrutura de pastas B1.2** formalizada; **estilos globais B1.3** consolidados; **dev experience B1.4** com script raiz; **configuração B2.1** (`ApiBaseUrl`) formalizada; **cliente HTTP B2.2** com handlers centralizados; **JWT e sessão B2.3** com `AuthenticationStateProvider`; **DTOs e tipos B2.4** com `JsonSerializerOptions` global; **testes unitários B2.5** da infra auth/HTTP; **roteamento B3.1** com paridade `routes.tsx`; **autorização de rotas B3.2** com `AuthorizeRouteView` e `RoleAuthorizeView`; **AppLayout shell B3.3** com bottom nav, header condicional e logout; **testes bUnit B3.4** de guards e nav ativa; **Home pública B4.1** com smoke de API e links login/signup; **Login B4.2** com formulário, erros e redirect; **Signup B4.3** com cadastro de empresa e redirect pós-cadastro; **testes bUnit B4.4** de fluxos públicos login/signup; **Dashboard B5.1** com sessão multitenant, KPIs, calendário e detalhe do dia; **AccessDenied B5.2** com mensagem de permissão e link de retorno ao dashboard; **AppHeader B5.3** compartilhado nas telas administrativas com título, subtítulo e logout; **testes bUnit B5.4** de Welcome e AccessDenied.
 
 Decisões de arquitetura: [ADR 001](../../docs/adr/001-blazor-wasm-frontend.md).  
 Convenções: [docs/frontend-blazor-conventions.md](../../docs/frontend-blazor-conventions.md).
@@ -16,8 +16,8 @@ src/Web.Blazor/
  ├── Layout/              # MainLayout (público), AppLayout (shell autenticado B3.3)
  ├── Pages/
  │   ├── Home.razor       # Home pública (B4.1)
- │   ├── App/             # área autenticada (placeholder B1.2)
- │   └── Auth/            # login, signup (placeholder B1.2)
+ │   ├── App/             # área autenticada (Welcome B5.1, placeholders B6+)
+ │   └── Auth/            # login, signup (B4.2/B4.3)
  ├── Services/
  │   ├── Api/             # AppConfiguration, ApiUrlBuilder
  │   └── Auth/            # BrowserSessionStorage
@@ -35,7 +35,7 @@ src/Web.Blazor/
 **Notas:**
 
 - A POC da B0.2 foi substituída pela Home pública em `Pages/Home.razor` (B4.1).
-- `Pages/Auth/Login.razor` e `Pages/Auth/RegisterTenant.razor` implementados em B4.2/B4.3; `Pages/App/Welcome.razor` permanece **placeholder** até B5.
+- `Pages/Auth/Login.razor` e `Pages/Auth/RegisterTenant.razor` implementados em B4.2/B4.3; `Pages/App/Welcome.razor` implementado em B5.1.
 - `NavMenu` do template Blazor foi removido; layout neutro em `Layout/MainLayout.razor`.
 
 ## Estilos globais (B1.3)
@@ -98,7 +98,7 @@ Abra `http://localhost:4864`.
 | `/` | `Pages/Home.razor` | Home pública B4.1 |
 | `/login` | `Pages/Auth/Login.razor` | Login B4.2 |
 | `/signup` | `Pages/Auth/RegisterTenant.razor` | Signup B4.3 |
-| `/app` | `Pages/App/Welcome.razor` | Placeholder |
+| `/app` | `Pages/App/Welcome.razor` | Dashboard B5.1 |
 
 ## Home pública (B4.1)
 
@@ -146,6 +146,77 @@ Suíte bUnit para login e signup com HTTP stubado (sem chamadas reais à API):
 | `Pages/LoginPageTests.cs` | Submit com HTTP 200 → navega para `/app`; 401 → mensagem de credenciais inválidas |
 | `Pages/RegisterTenantPageTests.cs` | Submit com HTTP 409 → mensagem amigável de e-mail duplicado |
 | `TestHelpers/PublicAuthTestHelper.cs` | Factory de `AuthSessionService`, `TenantsRegistrationClient` e `TestNavigationManager` com `FuncHttpMessageHandler` |
+
+## Dashboard (B5.1)
+
+Paridade com [`src/Web/src/features/app/WelcomePage.tsx`](../Web/src/features/app/WelcomePage.tsx):
+
+- `AppHeader` com título, avatar/iniciais, notificações e logout.
+- Faixa de sessão: e-mail, perfil (roles) e tenant.
+- KPIs: guards ativos/inativos, assignments e weekend shifts.
+- Calendário mensal (`MonthCalendar` + `MonthGrid`) com seleção de dia e lista de turnos.
+- Empty state quando não há escala do mês; CTA Admin vs Supervisor → `/app/schedules`.
+- Atalhos para setores, seguranças, disponibilidade e agendamentos.
+- Loading skeleton e banners de erro com retry.
+
+Clients read-only antecipados (mínimo para dashboard):
+
+| Cliente | Endpoint |
+|---|---|
+| `SecurityGuardsApiClient.ListAsync` | `GET /api/security-guards` |
+| `SchedulesApiClient.GetByMonthYearAsync` | `GET /api/schedules/month/{m}/year/{y}` (404 → null) |
+
+Arquivos: `Pages/App/Welcome.razor`, `Pages/App/Welcome.razor.css`, `Components/AppHeader.razor`, `Components/Calendar/MonthCalendar.razor`, `Services/Calendar/MonthGrid.cs`, `Services/Api/SecurityGuardsApiClient.cs`, `Services/Api/SchedulesApiClient.cs`.
+
+## Access denied (B5.2)
+
+Paridade com [`src/Web/src/app/routes/AccessDeniedPage.tsx`](../Web/src/app/routes/AccessDeniedPage.tsx):
+
+- Mensagem de permissão negada com contexto de perfil Supervisor/Admin.
+- Link **Voltar ao início** → `/app` via `NavLink`.
+- CSS scoped em `Pages/App/AccessDenied.razor.css`.
+- Integrada ao pipeline existente: `RoleAuthorizeView` / `RedirectToAccessDenied` → `/app/access-denied`; layout `AppLayout` com header visível.
+
+Arquivos: `Pages/App/AccessDenied.razor`, `Pages/App/AccessDenied.razor.css`.
+
+## AppHeader compartilhado (B5.3)
+
+Componente reutilizável em `Components/AppHeader.razor` para as cinco rotas Stitch administrativas (`/app`, `/app/sectors`, `/app/security-guards`, `/app/unavailable-days`, `/app/schedules`).
+
+Props suportadas:
+
+| Prop | Uso |
+|---|---|
+| `Title` | Título principal da tela |
+| `Subtitle` | Subtítulo contextual abaixo do título |
+| `Email` | Iniciais do avatar |
+| `AvatarSrc` / `AvatarAlt` | Avatar com imagem (ex.: Schedules) |
+| `ShowNotifications` | Botão de notificações |
+| `ShowLogout` + `OnLogout` | Logout via `AuthSessionService` |
+
+Paridade por rota:
+
+| Rota | Título | Logout |
+|---|---|---|
+| `/app` | SentryOps | sim |
+| `/app/sectors` | Gestão de setores | sim |
+| `/app/security-guards` | Gestão de seguranças | sim |
+| `/app/unavailable-days` | Availability | não (paridade React) |
+| `/app/schedules` | SentryOps Management | sim (+ avatar Stitch) |
+
+`/app/access-denied` continua usando apenas o header do `AppLayout` shell (sem `AppHeader` de página).
+
+Arquivos: `Components/AppHeader.razor`, `Components/AppHeader.razor.css`, páginas em `Pages/App/*.razor`.
+
+## Testes da área autenticada base (B5.4)
+
+Suíte bUnit para Welcome e AccessDenied:
+
+| Arquivo | Cobertura |
+|---|---|
+| `Pages/WelcomePageTests.cs` | Sessão mock exibe `user@example.com` na faixa de sessão |
+| `Pages/AccessDeniedPageTests.cs` | Link **Voltar ao início** aponta para `/app` |
+| `TestHelpers/AppDashboardTestHelper.cs` | Sessão autenticada + stubs de guards/schedules para Welcome |
 
 ## Configuração (B2.1)
 
@@ -231,8 +302,11 @@ Suíte em [`src/Tests/Web.Blazor/`](../Tests/Web.Blazor/) (xUnit + FluentAsserti
 | `Layout/AppLayoutNavTests.cs` | Bottom nav marca item ativo por rota (`/app`, `/app/sectors`) |
 | `Pages/LoginPageTests.cs` | Login submit sucesso e 401 (B4.4) |
 | `Pages/RegisterTenantPageTests.cs` | Signup conflito 409 (B4.4) |
+| `Pages/WelcomePageTests.cs` | Welcome renderiza e-mail autenticado mock (B5.4) |
+| `Pages/AccessDeniedPageTests.cs` | AccessDenied link para `/app` (B5.4) |
 | `TestHelpers/BlazorComponentTestBase.cs` | Base bUnit (auth, config, navegação) |
 | `TestHelpers/PublicAuthTestHelper.cs` | Stubs HTTP para páginas públicas de auth (B4.4) |
+| `TestHelpers/AppDashboardTestHelper.cs` | Stubs HTTP para dashboard Welcome (B5.4) |
 | `TestHelpers/JwtTestUtils.cs` | Geração de JWT unsigned para testes |
 | `TestHelpers/FakeJsRuntime.cs` | Mock in-memory de `sessionStorageInterop` |
 
@@ -310,4 +384,4 @@ A API em Development aceita origens `http://localhost:4863` (React) e `http://lo
 
 ## Próximas fases
 
-- **B5** — Welcome/Dashboard, AccessDenied, AppHeader
+- **B6** — Módulo setores (`/app/sectors`)
