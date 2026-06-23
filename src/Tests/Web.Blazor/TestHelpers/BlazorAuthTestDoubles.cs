@@ -3,11 +3,25 @@ using SafetyScale.Web.Blazor.Services.Auth;
 
 namespace SafetyScale.Tests.Web.Blazor.TestHelpers;
 
-internal sealed class TestNavigationManager : NavigationManager
+public sealed class TestNavigationManager : NavigationManager
 {
-    public TestNavigationManager()
+    public TestNavigationManager(string? initialUri = null)
     {
-        Initialize("http://localhost/", "http://localhost/");
+        var uri = string.IsNullOrWhiteSpace(initialUri) ? "http://localhost/" : ToInitialAbsoluteUri(initialUri);
+        Initialize(uri, uri);
+    }
+
+    private static string ToInitialAbsoluteUri(string pathOrUri)
+    {
+        if (pathOrUri.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+            pathOrUri.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            return pathOrUri;
+        }
+
+        return pathOrUri.StartsWith('/')
+            ? $"http://localhost{pathOrUri}"
+            : $"http://localhost/{pathOrUri}";
     }
 
     public string? LastUri { get; private set; }

@@ -1,0 +1,39 @@
+@inject NavigationManager Navigation
+
+@code {
+    protected override void OnInitialized()
+    {
+        var returnPath = BuildReturnPath();
+        if (returnPath is null)
+        {
+            Navigation.NavigateTo("/login", replace: true);
+            return;
+        }
+
+        var encoded = Uri.EscapeDataString(returnPath);
+        Navigation.NavigateTo($"/login?returnUrl={encoded}", replace: true);
+    }
+
+    private string? BuildReturnPath()
+    {
+        var relative = Navigation.ToBaseRelativePath(Navigation.Uri);
+        if (string.IsNullOrWhiteSpace(relative))
+        {
+            return null;
+        }
+
+        var path = relative.StartsWith('/') ? relative : $"/{relative}";
+        var queryIndex = path.IndexOf('?', StringComparison.Ordinal);
+        if (queryIndex >= 0)
+        {
+            path = path[..queryIndex];
+        }
+
+        if (path.Equals("/login", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        return path;
+    }
+}

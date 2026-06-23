@@ -1,0 +1,18 @@
+@page "/app/schedules"
+@layout AppLayout
+@attribute [Authorize]
+
+<PageTitle>SafetyScale — Escalas</PageTitle>
+
+<RoleAuthorizeView AllowedRoles="ModuleRoles">
+    <div class="spike">
+        <section class="spike-panel">
+            <h1>Escalas</h1>
+            <p class="spike-subtitle">Placeholder B3.1 — implementação na fase B9.</p>
+        </section>
+    </div>
+</RoleAuthorizeView>
+
+@code {
+    private static readonly UserRole[] ModuleRoles = [UserRole.Admin, UserRole.Supervisor];
+}

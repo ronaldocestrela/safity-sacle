@@ -2,7 +2,7 @@
 
 Frontend **Blazor WebAssembly** do SafetyScale (migração React → Blazor). Parte da solution [`SafetyScale.sln`](../../SafetyScale.sln) na raiz.
 
-Spike técnica B0.2 validada; bootstrap B1.1 integrado à solution; **estrutura de pastas B1.2** formalizada; **estilos globais B1.3** consolidados; **dev experience B1.4** com script raiz; **configuração B2.1** (`ApiBaseUrl`) formalizada; **cliente HTTP B2.2** com handlers centralizados; **JWT e sessão B2.3** com `AuthenticationStateProvider`; **DTOs e tipos B2.4** com `JsonSerializerOptions` global; **testes unitários B2.5** da infra auth/HTTP.
+Spike técnica B0.2 validada; bootstrap B1.1 integrado à solution; **estrutura de pastas B1.2** formalizada; **estilos globais B1.3** consolidados; **dev experience B1.4** com script raiz; **configuração B2.1** (`ApiBaseUrl`) formalizada; **cliente HTTP B2.2** com handlers centralizados; **JWT e sessão B2.3** com `AuthenticationStateProvider`; **DTOs e tipos B2.4** com `JsonSerializerOptions` global; **testes unitários B2.5** da infra auth/HTTP; **roteamento B3.1** com paridade `routes.tsx`; **autorização de rotas B3.2** com `AuthorizeRouteView` e `RoleAuthorizeView`; **AppLayout shell B3.3** com bottom nav, header condicional e logout; **testes bUnit B3.4** de guards e nav ativa.
 
 Decisões de arquitetura: [ADR 001](../../docs/adr/001-blazor-wasm-frontend.md).  
 Convenções: [docs/frontend-blazor-conventions.md](../../docs/frontend-blazor-conventions.md).
@@ -13,7 +13,7 @@ Convenções: [docs/frontend-blazor-conventions.md](../../docs/frontend-blazor-c
 src/Web.Blazor/
  ├── Components/          # AppHeader, MonthCalendar, … (B4+)
  │   └── Calendar/
- ├── Layout/              # MainLayout (shell neutro até B3)
+ ├── Layout/              # MainLayout (público), AppLayout (shell autenticado B3.3)
  ├── Pages/
  │   ├── Home.razor       # POC B0.2 temporária em /
  │   ├── App/             # área autenticada (placeholder B1.2)
@@ -188,13 +188,17 @@ A POC em `Pages/Home.razor` usa `AuthSessionService.LoginAsync` para login dev e
 
 ## Testes unitários de infra (B2.5)
 
-Suíte em [`src/Tests/Web.Blazor/`](../Tests/Web.Blazor/) (xUnit + FluentAssertions):
+Suíte em [`src/Tests/Web.Blazor/`](../Tests/Web.Blazor/) (xUnit + FluentAssertions + bUnit):
 
 | Arquivo | Cobertura |
 |---|---|
 | `Auth/JwtParserTests.cs` | Parse claims, roles, expiração, tenant — paridade `jwt.test.ts` |
 | `Auth/SessionStorageTests.cs` | `BrowserSessionStorage` + `JwtSessionStorage` — paridade `session.test.ts` |
 | `Api/UnauthorizedRedirectHandlerTests.cs` | 401 com/sem token, `SkipAuthRedirect`, pass-through |
+| `Routing/RouteAuthorizationTests.cs` | Não autenticado em `/app` → `/login?returnUrl=...` |
+| `Components/RoleAuthorizeViewTests.cs` | Supervisor bloqueado em gate Admin-only; Admin renderiza conteúdo |
+| `Layout/AppLayoutNavTests.cs` | Bottom nav marca item ativo por rota (`/app`, `/app/sectors`) |
+| `TestHelpers/BlazorComponentTestBase.cs` | Base bUnit (auth, config, navegação) |
 | `TestHelpers/JwtTestUtils.cs` | Geração de JWT unsigned para testes |
 | `TestHelpers/FakeJsRuntime.cs` | Mock in-memory de `sessionStorageInterop` |
 
@@ -203,6 +207,54 @@ Executar:
 ```bash
 dotnet test src/Tests/SafetyScale.Tests.csproj --filter "FullyQualifiedName~SafetyScale.Tests.Web.Blazor"
 ```
+
+## Roteamento (B3.1)
+
+Paridade estrutural com [`src/Web/src/app/routes.tsx`](../Web/src/app/routes.tsx):
+
+| Rota | Página | Layout |
+|---|---|---|
+| `/` | `Pages/Home.razor` | `MainLayout` (público) |
+| `/login` | `Pages/Auth/Login.razor` | `MainLayout` |
+| `/signup` | `Pages/Auth/RegisterTenant.razor` | `MainLayout` |
+| `/app` | `Pages/App/Welcome.razor` | `AppLayout` |
+| `/app/access-denied` | `Pages/App/AccessDenied.razor` | `AppLayout` |
+| `/app/sectors` | `Pages/App/Sectors.razor` | `AppLayout` |
+| `/app/security-guards` | `Pages/App/SecurityGuards.razor` | `AppLayout` |
+| `/app/unavailable-days` | `Pages/App/UnavailableDays.razor` | `AppLayout` |
+| `/app/schedules` | `Pages/App/Schedules.razor` | `AppLayout` |
+| `*` (desconhecida) | redirect → `/` | `Components/RedirectToHome.razor` |
+
+## AppLayout shell (B3.3)
+
+Paridade com [`src/Web/src/app/AppLayout.tsx`](../Web/src/app/AppLayout.tsx):
+
+- **Bottom nav fixa** — 5 itens: Dashboard (`/app`, match exato), Sectors, Guards, Availability, Schedules.
+- **Estado ativo** — `NavLink` + `ActiveClass`; ícones Material Symbols com `FILL 1` no item ativo.
+- **Header condicional** — oculto nas 5 rotas principais (telas Stitch); visível em `/app/access-denied` com e-mail, badge Admin/Supervisor e botão **Sair**.
+- **Logout** — `AuthSessionService.LogoutAsync(navigateToLogin: true)` → `/login` (replace).
+
+Arquivos: `Layout/AppLayout.razor`, `Layout/AppLayout.razor.css`.
+
+## Autorização de rotas (B3.2)
+
+| Componente | Função |
+|---|---|
+| `AuthorizeRouteView` (`App.razor`) | Exige autenticação em páginas com `[Authorize]` |
+| `RedirectToLogin` | Não autenticado → `/login?returnUrl=<path>` |
+| `RedirectToAccessDenied` | Autenticado sem permissão de rota → `/app/access-denied` |
+| `RoleAuthorizeView` | Rotas de módulo exigem `Admin` ou `Supervisor` |
+
+**Matriz (paridade React):**
+
+| Rota | Auth | Role guard |
+|---|---|---|
+| `/app`, `/app/access-denied` | sim | não |
+| `/app/sectors`, `/app/security-guards`, `/app/unavailable-days`, `/app/schedules` | sim | `Admin` ou `Supervisor` |
+
+- `Login.razor` lê `returnUrl` e `reason=session-expired` (consumo completo na B4.2).
+- `UnauthorizedRedirectHandler` redireciona 401 com token para `/login?reason=session-expired`.
+- Escrita CRUD (Admin only) permanece em UI/API (B6–B9), não no guard de rota.
 
 ## SessionStorage (paridade React)
 
@@ -224,4 +276,4 @@ A API em Development aceita origens `http://localhost:4863` (React) e `http://lo
 
 ## Próximas fases
 
-- **B3** — layout, roteamento e guards de rota
+- **B4** — telas públicas (home, login, signup) + testes bUnit de fluxo

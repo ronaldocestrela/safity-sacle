@@ -30,7 +30,7 @@ public sealed class UnauthorizedRedirectHandler(
         {
             await sessionStorage.ClearAsync(cancellationToken);
             authStateProvider.NotifyAuthenticationStateChanged();
-            navigationManager.NavigateTo("/login", replace: true);
+            navigationManager.NavigateTo("/login?reason=session-expired", replace: true);
         }
 
         return response;

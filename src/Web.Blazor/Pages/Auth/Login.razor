@@ -1,4 +1,6 @@
 @page "/login"
+@inject NavigationManager Navigation
+@inject AuthSessionService AuthService
 
 <PageTitle>SafetyScale — Login</PageTitle>
 
@@ -6,6 +8,51 @@
     <section class="spike-panel">
         <h1>Login</h1>
         <p class="spike-subtitle">Placeholder B1.2 — implementação na fase B4.</p>
+
+        @if (_sessionExpired)
+        {
+            <p class="spike-result spike-result-error">Sua sessão expirou. Faça login novamente.</p>
+        }
+
+        @if (!string.IsNullOrEmpty(ReturnUrl) && ReturnUrl != "/login")
+        {
+            <p>Após login, retornar para: <code>@ReturnUrl</code></p>
+        }
+
         <p><a href="/">Voltar à home (POC)</a></p>
     </section>
 </div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "returnUrl")]
+    public string? ReturnUrl { get; set; }
+
+    [SupplyParameterFromQuery(Name = "reason")]
+    public string? Reason { get; set; }
+
+    private bool _sessionExpired;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _sessionExpired = string.Equals(Reason, "session-expired", StringComparison.OrdinalIgnoreCase);
+
+        var session = await AuthService.GetSessionAsync();
+        if (session is not null)
+        {
+            Navigation.NavigateTo(ResolveReturnUrl(), replace: true);
+        }
+    }
+
+    internal string ResolveReturnUrl()
+    {
+        if (!string.IsNullOrWhiteSpace(ReturnUrl) &&
+            ReturnUrl.StartsWith('/') &&
+            !ReturnUrl.StartsWith("//", StringComparison.Ordinal) &&
+            !ReturnUrl.Equals("/login", StringComparison.OrdinalIgnoreCase))
+        {
+            return ReturnUrl;
+        }
+
+        return "/app";
+    }
+}

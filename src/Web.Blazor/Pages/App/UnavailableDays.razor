@@ -1,0 +1,18 @@
+@page "/app/unavailable-days"
+@layout AppLayout
+@attribute [Authorize]
+
+<PageTitle>SafetyScale — Indisponibilidades</PageTitle>
+
+<RoleAuthorizeView AllowedRoles="ModuleRoles">
+    <div class="spike">
+        <section class="spike-panel">
+            <h1>Indisponibilidades</h1>
+            <p class="spike-subtitle">Placeholder B3.1 — implementação na fase B8.</p>
+        </section>
+    </div>
+</RoleAuthorizeView>
+
+@code {
+    private static readonly UserRole[] ModuleRoles = [UserRole.Admin, UserRole.Supervisor];
+}

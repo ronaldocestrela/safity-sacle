@@ -31,7 +31,7 @@ public sealed class UnauthorizedRedirectHandlerTests
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         notificationCount().Should().Be(1);
-        navigation.LastUri.Should().Be("/login");
+        navigation.LastUri.Should().Be("/login?reason=session-expired");
         navigation.LastReplace.Should().BeTrue();
         js.Store.Should().NotContainKey(BrowserSessionStorage.AuthSessionStorageKey);
     }

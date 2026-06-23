@@ -80,7 +80,7 @@ A migração é **incremental e calma**: o React permanece em produção até a 
 - [x] **B0** — Decisão, spike e alinhamento
 - [x] **B1** — Bootstrap do projeto Blazor
 - [x] **B2** — Infra compartilhada (HTTP, auth, erros, config)
-- [ ] **B3** — Layout, roteamento e navegação
+- [x] **B3** — Layout, roteamento e navegação
 - [ ] **B4** — Telas públicas (home, login, signup)
 - [ ] **B5** — Área autenticada base (dashboard, access denied)
 - [ ] **B6** — Módulo setores
@@ -254,15 +254,15 @@ src/Web.Blazor/
 
 ### B3.1 — Roteamento
 
-- [ ] Configurar rotas no `Router` espelhando `src/Web/src/app/routes.tsx`.
-- [ ] Fallback `*` → `/`.
-- [ ] Layout diferenciado: público vs `/app`.
+- [x] Configurar rotas no `Router` espelhando `src/Web/src/app/routes.tsx`.
+- [x] Fallback `*` → `/`.
+- [x] Layout diferenciado: público vs `/app`.
 
 ### B3.2 — Autorização de rotas
 
-- [ ] Página `/app/*` exige autenticação (`AuthorizeRouteView` ou wrapper).
-- [ ] Componente `RoleAuthorizeView` (roles `Admin`, `Supervisor`) → redireciona para `/app/access-denied`.
-- [ ] Portar matriz de permissões:
+- [x] Página `/app/*` exige autenticação (`AuthorizeRouteView` ou wrapper).
+- [x] Componente `RoleAuthorizeView` (roles `Admin`, `Supervisor`) → redireciona para `/app/access-denied`.
+- [x] Portar matriz de permissões:
 
 | Rota | Admin | Supervisor |
 |---|---|---|
@@ -275,17 +275,17 @@ src/Web.Blazor/
 
 ### B3.3 — AppLayout (shell)
 
-- [ ] Portar `AppLayout.tsx` + `AppLayout.module.css` → `Layout/AppLayout.razor`.
-- [ ] Bottom navigation com 5 itens (Dashboard, Sectors, Guards, Availability, Schedules).
-- [ ] Estados ativo/inativo dos ícones Material (FILL 1 quando ativo).
-- [ ] Header condicional (oculto nas telas Stitch, igual ao React).
-- [ ] Botão Sair → `LogoutAsync`.
+- [x] Portar `AppLayout.tsx` + `AppLayout.module.css` → `Layout/AppLayout.razor`.
+- [x] Bottom navigation com 5 itens (Dashboard, Sectors, Guards, Availability, Schedules).
+- [x] Estados ativo/inativo dos ícones Material (FILL 1 quando ativo).
+- [x] Header condicional (oculto nas telas Stitch, igual ao React).
+- [x] Botão Sair → `LogoutAsync`.
 
 ### B3.4 — Testes
 
-- [ ] bUnit: usuário não autenticado em `/app` → redirect login.
-- [ ] bUnit: Supervisor em rota Admin-only de escrita (preparar para B7 — UI desabilitada, API continua mandando).
-- [ ] bUnit: bottom nav marca item ativo.
+- [x] bUnit: usuário não autenticado em `/app` → redirect login.
+- [x] bUnit: Supervisor em rota Admin-only de escrita (preparar para B7 — UI desabilitada, API continua mandando).
+- [x] bUnit: bottom nav marca item ativo.
 
 ### Critério de pronto (B3)
 
@@ -682,3 +682,5 @@ A migração só é considerada **concluída** quando:
 | 2026-06-22 | 2.1 | B2.4 concluída — DTOs de API + `AppJsonSerializerOptions` global |
 | 2026-06-22 | 2.2 | B2.5 concluída — testes unitários infra Blazor (JWT, sessão, handler 401) |
 | 2026-06-22 | 2.3 | Status geral: B1 e B2 marcadas concluídas; critérios B2 fechados; refs testes |
+| 2026-06-22 | 2.4 | B3.1 concluída — rotas espelhando React, fallback `*` → `/`, `AppLayout` esqueleto |
+| 2026-06-22 | 2.5 | B3.2 concluída — `AuthorizeRouteView`, `RoleAuthorizeView`, `returnUrl`, handler 401 alinhado |

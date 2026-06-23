@@ -1,0 +1,40 @@
+@using System.Security.Claims
+@inject NavigationManager Navigation
+
+@if (_checked && _authorized)
+{
+    @ChildContent
+}
+
+@code {
+    [Parameter] public required IReadOnlyList<UserRole> AllowedRoles { get; set; }
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    [CascadingParameter] private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
+
+    private bool _checked;
+    private bool _authorized;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _checked = false;
+
+        var authState = AuthenticationStateTask is not null
+            ? await AuthenticationStateTask
+            : new AuthenticationState(new ClaimsPrincipal());
+
+        var roleClaims = authState.User.FindAll(ClaimTypes.Role)
+            .Select(c => c.Value)
+            .ToHashSet(StringComparer.Ordinal);
+
+        _authorized = AllowedRoles.Any(role => roleClaims.Contains(role.ToString()));
+
+        if (!_authorized)
+        {
+            Navigation.NavigateTo("/app/access-denied", replace: true);
+        }
+
+        _checked = true;
+    }
+}
