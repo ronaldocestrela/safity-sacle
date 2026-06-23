@@ -78,8 +78,8 @@ A migração é **incremental e calma**: o React permanece em produção até a 
 ## Status geral
 
 - [x] **B0** — Decisão, spike e alinhamento
-- [ ] **B1** — Bootstrap do projeto Blazor
-- [ ] **B2** — Infra compartilhada (HTTP, auth, erros, config)
+- [x] **B1** — Bootstrap do projeto Blazor
+- [x] **B2** — Infra compartilhada (HTTP, auth, erros, config)
 - [ ] **B3** — Layout, roteamento e navegação
 - [ ] **B4** — Telas públicas (home, login, signup)
 - [ ] **B5** — Área autenticada base (dashboard, access denied)
@@ -204,44 +204,45 @@ src/Web.Blazor/
 
 ### B2.1 — Configuração
 
-- [ ] `AppConfiguration` lendo `ApiBaseUrl` (vazio = URLs relativas `/api/...`).
-- [ ] Documentar paridade com `VITE_API_BASE_URL` no `.env.example`.
+- [x] `AppConfiguration` lendo `ApiBaseUrl` (vazio = URLs relativas `/api/...`).
+- [x] Documentar paridade com `VITE_API_BASE_URL` no `.env.example` e README do Blazor.
 
 ### B2.2 — Cliente HTTP
 
-- [ ] Registrar `HttpClient` com base address correta.
-- [ ] Implementar `BearerTokenHandler` (injeta `Authorization` quando há sessão).
-- [ ] Implementar tratamento de **401** → limpar sessão + navegar para `/login` (equivalente a `setOnUnauthorized`).
-- [ ] Implementar `ReadApiError` para corpo JSON de validação (`errors` FluentValidation).
+- [x] `ApiHttpClient` registrado com pipeline de handlers (`BearerTokenHandler`, `UnauthorizedRedirectHandler`).
+- [x] Bearer automático via sessionStorage; opções `SkipAuthRedirect` e `SkipBearerInjection`.
+- [x] 401 com token pré-existente limpa sessão e navega para `/login`.
+- [x] `ApiErrorReader` para payloads JSON/texto; POC `Home.razor` migrada.
 
 ### B2.3 — JWT e sessão
 
-- [ ] Portar lógica de `shared/auth/jwt.ts` → serviço C# (parse claims: roles, `tenant_id`, exp).
-- [ ] `JwtSessionStorage` com JS interop (`sessionStorage`).
-- [ ] Modelo `AuthSession` (email, roles, tenantId, token).
-- [ ] `CustomAuthStateProvider` implementando `AuthenticationStateProvider`.
-- [ ] Métodos `LoginAsync`, `LogoutAsync`, `GetSession()`.
+- [x] `JwtParser` — parse claims (`role`, `tenant_id`, `exp`, email) paridade React.
+- [x] `JwtSessionStorage` + `AuthSession` (`Models/Auth/`).
+- [x] `CustomAuthStateProvider` + `AddAuthorizationCore` + `CascadingAuthenticationState`.
+- [x] `AuthSessionService`: `LoginAsync`, `LogoutAsync`, `GetSessionAsync`; 401 notifica auth state.
 
 ### B2.4 — DTOs e tipos
 
-- [ ] Criar DTOs espelhando:
+- [x] Criar DTOs espelhando:
   - auth login request/response;
   - tenant register;
   - sectors, security guards, unavailable days, schedules;
   - `ScheduleCoverageFailureResponse`.
-- [ ] Garantir `JsonSerializerOptions` com **camelCase** e case-insensitive.
+- [x] Garantir `JsonSerializerOptions` com **camelCase** e case-insensitive.
 
 ### B2.5 — Testes (bUnit + unit)
 
-- [ ] Testes unitários do parser JWT (portar casos de `jwt.test.ts`).
-- [ ] Testes unitários de persistência de sessão (mock interop).
-- [ ] Teste do handler 401 (HttpMessageHandler mock).
+- [x] Testes unitários do parser JWT (portar casos de `jwt.test.ts`).
+- [x] Testes unitários de persistência de sessão (mock interop).
+- [x] Teste do handler 401 (HttpMessageHandler mock).
+
+> **Escopo entregue:** 21 testes xUnit em `src/Tests/Web.Blazor/` (infra auth/HTTP). Testes **bUnit** de componentes e rotas ficam para **B3.4+** e **B4+**.
 
 ### Critério de pronto (B2)
 
-- Login manual via serviço (sem UI final) persiste token e preenche `AuthenticationState`.
-- Request autenticado chega na API com header Bearer.
-- Testes B2 passando no CI .NET.
+- [x] Login manual via serviço (sem UI final) persiste token e preenche `AuthenticationState`.
+- [x] Request autenticado chega na API com header Bearer.
+- [x] Testes B2 passando no CI .NET (`dotnet test` — filtro `SafetyScale.Tests.Web.Blazor`).
 
 ---
 
@@ -379,7 +380,7 @@ src/Web.Blazor/
 ### B6.1 — Cliente API
 
 - [ ] `SectorsApiClient`: list, create, update, inactive, active.
-- [ ] DTOs e filtros (`isActive`).
+- [ ] Filtros de listagem (`isActive`); DTOs base já em `Models/Sectors/` (B2.4).
 
 ### B6.2 — UI
 
@@ -529,7 +530,7 @@ src/Web.Blazor/
 
 ### B10.3 — CI
 
-- [ ] Pipeline: `dotnet test` inclui testes bUnit do Web.Blazor.
+- [ ] Pipeline: `dotnet test` inclui **todos** os testes bUnit do Web.Blazor (parcial: 21 testes unitários de infra já em `src/Tests/Web.Blazor/` desde B2.5).
 - [ ] Remover ou marcar `allow-failure` temporário nos testes npm do React até B11.
 
 ### B10.4 — Cutover (janela controlada)
@@ -654,6 +655,7 @@ A migração só é considerada **concluída** quando:
 - **Solution .NET:** [SafetyScale.sln](SafetyScale.sln)
 - Frontend atual (React): `src/Web`
 - **Spike Blazor (B0.2):** `src/Web.Blazor`
+- **Testes Blazor (B2.5+):** `src/Tests/Web.Blazor/`
 - Rotas: `src/Web/src/app/routes.tsx`
 - Auth: `src/Web/src/shared/auth/`
 - API (inalterada nesta trilha): `src/Api`
@@ -674,3 +676,9 @@ A migração só é considerada **concluída** quando:
 | 2026-06-22 | 1.5 | B1.2 concluída — estrutura de pastas formalizada em `src/Web.Blazor` |
 | 2026-06-22 | 1.6 | B1.3 concluída — estilos globais consolidados (`app.css`, fonts, icons.svg) |
 | 2026-06-22 | 1.7 | B1.4 concluída — dev experience (`scripts/dev-blazor.sh`, docs raiz, CORS + ApiBaseUrl) |
+| 2026-06-22 | 1.8 | B2.1 concluída — configuração `ApiBaseUrl` formalizada (paridade `VITE_API_BASE_URL`) |
+| 2026-06-22 | 1.9 | B2.2 concluída — cliente HTTP (`ApiHttpClient`, handlers, `ApiErrorReader`) |
+| 2026-06-22 | 2.0 | B2.3 concluída — JWT/sessão (`JwtParser`, `AuthSessionService`, `CustomAuthStateProvider`) |
+| 2026-06-22 | 2.1 | B2.4 concluída — DTOs de API + `AppJsonSerializerOptions` global |
+| 2026-06-22 | 2.2 | B2.5 concluída — testes unitários infra Blazor (JWT, sessão, handler 401) |
+| 2026-06-22 | 2.3 | Status geral: B1 e B2 marcadas concluídas; critérios B2 fechados; refs testes |

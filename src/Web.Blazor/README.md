@@ -2,7 +2,7 @@
 
 Frontend **Blazor WebAssembly** do SafetyScale (migração React → Blazor). Parte da solution [`SafetyScale.sln`](../../SafetyScale.sln) na raiz.
 
-Spike técnica B0.2 validada; bootstrap B1.1 integrado à solution; **estrutura de pastas B1.2** formalizada; **estilos globais B1.3** consolidados; **dev experience B1.4** com script raiz.
+Spike técnica B0.2 validada; bootstrap B1.1 integrado à solution; **estrutura de pastas B1.2** formalizada; **estilos globais B1.3** consolidados; **dev experience B1.4** com script raiz; **configuração B2.1** (`ApiBaseUrl`) formalizada; **cliente HTTP B2.2** com handlers centralizados; **JWT e sessão B2.3** com `AuthenticationStateProvider`; **DTOs e tipos B2.4** com `JsonSerializerOptions` global; **testes unitários B2.5** da infra auth/HTTP.
 
 Decisões de arquitetura: [ADR 001](../../docs/adr/001-blazor-wasm-frontend.md).  
 Convenções: [docs/frontend-blazor-conventions.md](../../docs/frontend-blazor-conventions.md).
@@ -114,21 +114,102 @@ Abra `http://localhost:4864`.
 
 Credenciais padrão no form (seed Development): `admin@local.com` / `Mudar@13`.
 
-## Configuração
+## Configuração (B2.1)
 
 | Arquivo | Propósito |
 |---|---|
-| `wwwroot/appsettings.json` | `ApiBaseUrl` vazio (produção / same-origin) |
-| `wwwroot/appsettings.Development.json` | `ApiBaseUrl`: `http://localhost:5003` |
+| `wwwroot/appsettings.json` | `ApiBaseUrl` vazio — produção / same-origin (`/api/...` relativo) |
+| `wwwroot/appsettings.Development.json` | `ApiBaseUrl`: `http://localhost:5003` — dev com CORS |
 
 Carregamento: `WebAssemblyHostBuilder.CreateDefault` + `ASPNETCORE_ENVIRONMENT=Development` em `launchSettings.json`.
+
+Serviços: `Services/Api/AppConfiguration.cs` (lê e normaliza `ApiBaseUrl`) e `Services/Api/ApiUrlBuilder.cs` (monta URLs).
+
+### Paridade com React
+
+| React | Blazor |
+|---|---|
+| `VITE_API_BASE_URL` em `.env` | `ApiBaseUrl` em `wwwroot/appsettings*.json` |
+| `normalizeApiBase()` em `shared/config/env.ts` | `AppConfiguration.NormalizeApiBase()` |
+| `buildApiUrl()` / `apiUrl()` | `ApiUrlBuilder.Build(path)` |
+| Dev vazio + proxy Vite `/api` | Dev `http://localhost:5003` + CORS (sem proxy WASM) |
+| Prod vazio → `/api` relativo (Nginx) | Prod vazio → `/api` relativo |
+
+Exemplos de `ApiUrlBuilder.Build`:
+
+- Base vazia + `"api/health"` → `/api/health`
+- Base `http://localhost:5003` + `"/api/health"` → `http://localhost:5003/api/health`
+
+## Cliente HTTP (B2.2)
+
+Camada compartilhada em `Services/Api/` — paridade com React `shared/api/http.ts` e `readApiError.ts`:
+
+| Componente | Função |
+|---|---|
+| `ApiHttpClient` | Monta URLs via `ApiUrlBuilder`; `Accept: application/json` |
+| `BearerTokenHandler` | Injeta `Authorization: Bearer` quando há token em sessionStorage |
+| `UnauthorizedRedirectHandler` | 401 com token pré-existente → limpa sessão + navega `/login` |
+| `ApiErrorReader` | Extrai mensagens de `errors[]`, `errors{}`, `detail`, `title`, `message` |
+| `ApiRequestOptions` | `SkipAuthRedirect` (login público), `SkipBearerInjection` (POC sem Bearer) |
+
+Registro em `Program.cs`: pipeline manual `UnauthorizedRedirectHandler` → `BearerTokenHandler` → `HttpClientHandler`.
+
+A POC em `Pages/Home.razor` usa `AuthSessionService.LoginAsync` para login dev e `ApiHttpClient` para health.
+
+## JWT e sessão (B2.3)
+
+| Componente | Função |
+|---|---|
+| `JwtParser` | Parse payload JWT (roles, `tenant_id`, `exp`, email) — paridade `jwt.ts` |
+| `JwtSessionStorage` | `GetSessionAsync`, `SaveTokenAsync`, `ClearAsync` sobre `BrowserSessionStorage` |
+| `AuthSession` | Modelo com `Token`, `Email`, `Roles`, `TenantId` |
+| `CustomAuthStateProvider` | `AuthenticationStateProvider` + `NotifyAuthenticationStateChanged` |
+| `AuthSessionService` | `LoginAsync`, `LogoutAsync`, `GetSessionAsync` |
+
+- `App.razor` usa `CascadingAuthenticationState`; `Program.cs` registra `AddAuthorizationCore()`.
+- 401 no handler limpa sessão **e** notifica auth state antes de navegar `/login`.
+- Storage continua `{ "token": "..." }`; claims derivadas do JWT na leitura.
+
+## DTOs e serialização JSON (B2.4)
+
+| Componente | Função |
+|---|---|
+| `AppJsonSerializerOptions` | Opções globais: camelCase + case-insensitive (paridade API) |
+| `Models/Auth/` | `LoginRequestDto`, `LoginResponseDto` (+ `AuthSession`, `UserRole`) |
+| `Models/Tenants/` | `RegisterTenantRequestDto`, `RegisterTenantResponseDto` |
+| `Models/Sectors/` | `SectorDto` |
+| `Models/SecurityGuards/` | `SecurityGuardDto` |
+| `Models/UnavailableDays/` | `UnavailableDayDto` |
+| `Models/Schedules/` | `ScheduleItemDto`, `MonthlyScheduleDto`, `ScheduleCoverageFailureResponse` |
+
+- DTOs espelham manualmente `src/Api/Contracts/` e `src/Application/*/Common` (sem `ProjectReference` ao backend).
+- `ApiHttpClient.PostJsonAsync` e `ReadJsonAsync` usam as opções globais; `BrowserSessionStorage` serializa `{ "token" }` compatível com React.
+- `AuthSessionService.LoginAsync` usa `LoginRequestDto` / `LoginResponseDto` tipados.
+
+## Testes unitários de infra (B2.5)
+
+Suíte em [`src/Tests/Web.Blazor/`](../Tests/Web.Blazor/) (xUnit + FluentAssertions):
+
+| Arquivo | Cobertura |
+|---|---|
+| `Auth/JwtParserTests.cs` | Parse claims, roles, expiração, tenant — paridade `jwt.test.ts` |
+| `Auth/SessionStorageTests.cs` | `BrowserSessionStorage` + `JwtSessionStorage` — paridade `session.test.ts` |
+| `Api/UnauthorizedRedirectHandlerTests.cs` | 401 com/sem token, `SkipAuthRedirect`, pass-through |
+| `TestHelpers/JwtTestUtils.cs` | Geração de JWT unsigned para testes |
+| `TestHelpers/FakeJsRuntime.cs` | Mock in-memory de `sessionStorageInterop` |
+
+Executar:
+
+```bash
+dotnet test src/Tests/SafetyScale.Tests.csproj --filter "FullyQualifiedName~SafetyScale.Tests.Web.Blazor"
+```
 
 ## SessionStorage (paridade React)
 
 - Chave: `safetyscale.auth.session`
 - Valor: `{ "token": "<jwt>" }`
 - JS: `wwwroot/js/sessionStorage.js`
-- C#: `Services/Auth/BrowserSessionStorage.cs`
+- C#: `Services/Auth/BrowserSessionStorage.cs` (interop) + `JwtSessionStorage.cs` (sessão)
 
 ## CORS
 
@@ -143,4 +224,4 @@ A API em Development aceita origens `http://localhost:4863` (React) e `http://lo
 
 ## Próximas fases
 
-- **B2** — auth provider, handlers HTTP, parser JWT, `ApiClient` por domínio
+- **B3** — layout, roteamento e guards de rota

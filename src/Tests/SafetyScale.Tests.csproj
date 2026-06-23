@@ -23,6 +23,7 @@
     <ProjectReference Include="..\Domain\SafetyScale.Domain.csproj" />
     <ProjectReference Include="..\Infrastructure\SafetyScale.Infrastructure.csproj" />
     <ProjectReference Include="..\Api\SafetyScale.Api.csproj" />
+    <ProjectReference Include="..\Web.Blazor\SafetyScale.Web.Blazor.csproj" />
   </ItemGroup>
 
 </Project>

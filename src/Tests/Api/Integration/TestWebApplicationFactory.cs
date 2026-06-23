@@ -2,11 +2,12 @@ using DotNet.Testcontainers.Builders;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.SqlClient;
+using SafetyScale.Api;
 using Testcontainers.MsSql;
 
 namespace SafetyScale.Tests.Api.Integration;
 
-public sealed class TestWebApplicationFactory : WebApplicationFactory<Program>, IDisposable
+public sealed class TestWebApplicationFactory : WebApplicationFactory<ApiApplicationEntryPoint>, IDisposable
 {
     private static readonly Lock ContainerLock = new();
     private static MsSqlContainer? _container;

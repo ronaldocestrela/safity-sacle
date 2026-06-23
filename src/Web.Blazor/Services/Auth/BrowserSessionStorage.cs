@@ -3,7 +3,7 @@ using Microsoft.JSInterop;
 
 namespace SafetyScale.Web.Blazor.Services.Auth;
 
-public sealed class BrowserSessionStorage(IJSRuntime jsRuntime)
+public sealed class BrowserSessionStorage(IJSRuntime jsRuntime, JsonSerializerOptions jsonOptions)
 {
     public const string AuthSessionStorageKey = "safetyscale.auth.session";
 
@@ -23,7 +23,7 @@ public sealed class BrowserSessionStorage(IJSRuntime jsRuntime)
 
         try
         {
-            var parsed = JsonSerializer.Deserialize<StoredShape>(raw);
+            var parsed = JsonSerializer.Deserialize<StoredShape>(raw, jsonOptions);
             return parsed?.Token;
         }
         catch (JsonException)
@@ -34,7 +34,7 @@ public sealed class BrowserSessionStorage(IJSRuntime jsRuntime)
 
     public async Task SaveTokenAsync(string token, CancellationToken cancellationToken = default)
     {
-        var json = JsonSerializer.Serialize(new StoredShape(token));
+        var json = JsonSerializer.Serialize(new StoredShape(token), jsonOptions);
         await jsRuntime.InvokeVoidAsync(
             "sessionStorageInterop.setItem",
             cancellationToken,

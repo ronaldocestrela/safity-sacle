@@ -2,7 +2,8 @@
 @inject AppConfiguration AppConfig
 @inject ApiUrlBuilder ApiUrls
 @inject BrowserSessionStorage SessionStorage
-@inject HttpClient Http
+@inject ApiHttpClient ApiClient
+@inject AuthSessionService AuthService
 
 <PageTitle>SafetyScale — POC B0.2</PageTitle>
 
@@ -11,7 +12,7 @@
         <span class="material-symbols-outlined spike-icon" aria-hidden="true">shield_person</span>
         <div>
             <h1>SafetyScale Blazor Spike</h1>
-            <p class="spike-subtitle">Fase B0.2 — POC técnica (preservada em <code>Pages/Home.razor</code> até B2)</p>
+            <p class="spike-subtitle">Fase B0.2 — POC técnica (preservada em <code>Pages/Home.razor</code>; auth B2.3, DTOs B2.4)</p>
         </div>
     </header>
 
@@ -157,7 +158,7 @@
         _busy = true;
         try
         {
-            await SessionStorage.ClearAsync();
+            await AuthService.LogoutAsync();
             await RefreshStoredTokenAsync();
             var readBack = await SessionStorage.GetTokenAsync();
             SetStatus(
@@ -179,47 +180,27 @@
         _busy = true;
         try
         {
-            var loginUrl = ApiUrls.Build("/api/auth/login");
-            using var loginRequest = new HttpRequestMessage(HttpMethod.Post, loginUrl)
-            {
-                Content = JsonContent.Create(new { email = _loginForm.Email.Trim(), password = _loginForm.Password }),
-            };
-            loginRequest.Headers.Accept.ParseAdd("application/json");
-
-            using var loginResponse = await Http.SendAsync(loginRequest);
-            var loginBody = await loginResponse.Content.ReadAsStringAsync();
-
-            if (!loginResponse.IsSuccessStatusCode)
+            var login = await AuthService.LoginAsync(_loginForm.Email, _loginForm.Password);
+            if (!login.Ok)
             {
                 SetStatus(
                     true,
-                    $"POST /api/auth/login falhou: HTTP {(int)loginResponse.StatusCode}\n{loginBody}");
+                    login.Reason == LoginFailureReason.Invalid
+                        ? "Login inválido (401)."
+                        : "Falha de rede ou token rejeitado pelo parser JWT.");
                 return;
             }
 
-            using var loginJson = System.Text.Json.JsonDocument.Parse(loginBody);
-            if (!loginJson.RootElement.TryGetProperty("token", out var tokenElement))
-            {
-                SetStatus(true, "Login retornou 200 mas sem campo token.");
-                return;
-            }
-
-            var token = tokenElement.GetString();
-            if (string.IsNullOrEmpty(token))
-            {
-                SetStatus(true, "Campo token vazio na resposta de login.");
-                return;
-            }
-
-            await SessionStorage.SaveTokenAsync(token);
             await RefreshStoredTokenAsync();
 
-            var healthUrl = ApiUrls.Build("/api/health");
-            using var healthRequest = new HttpRequestMessage(HttpMethod.Get, healthUrl);
-            healthRequest.Headers.Accept.ParseAdd("application/json");
-            healthRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            var session = await AuthService.GetSessionAsync();
+            if (session is null)
+            {
+                SetStatus(true, "Login OK mas sessão inválida após parse JWT.");
+                return;
+            }
 
-            using var healthResponse = await Http.SendAsync(healthRequest);
+            using var healthResponse = await ApiClient.GetAsync("/api/health");
             var healthBody = await healthResponse.Content.ReadAsStringAsync();
             var code = (int)healthResponse.StatusCode;
 
@@ -227,13 +208,14 @@
             {
                 SetStatus(
                     false,
-                    $"Login OK → token salvo em sessionStorage.\nGET /api/health autenticado: HTTP {code}\n{healthBody}");
+                    $"Login OK → sessão auth (tenant {session.TenantId}).\nGET /api/health autenticado: HTTP {code}\n{healthBody}");
             }
             else
             {
+                var healthError = await ApiErrorReader.ReadMessageAsync(healthResponse);
                 SetStatus(
                     true,
-                    $"Login OK e token salvo, mas health falhou: HTTP {code}\n{healthBody}");
+                    $"Login OK mas health falhou: HTTP {code}\n{healthError ?? healthBody}");
             }
         }
         catch (HttpRequestException ex)
@@ -257,15 +239,23 @@
         _busy = true;
         try
         {
-            var url = ApiUrls.Build("/api/health");
-            using var request = new HttpRequestMessage(HttpMethod.Get, url);
-            request.Headers.Accept.ParseAdd("application/json");
-            if (!string.IsNullOrEmpty(bearerToken))
+            var pocOptions = new ApiRequestOptions
             {
-                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", bearerToken);
-            }
+                SkipAuthRedirect = true,
+                SkipBearerInjection = bearerToken is null,
+            };
 
-            using var response = await Http.SendAsync(request);
+            using var response = await ApiClient.GetAsync(
+                "/api/health",
+                request =>
+                {
+                    if (!string.IsNullOrEmpty(bearerToken))
+                    {
+                        ApiHttpClient.SetBearer(request, bearerToken);
+                    }
+                },
+                pocOptions);
+
             var body = await response.Content.ReadAsStringAsync();
             var code = (int)response.StatusCode;
             var expected401 = bearerToken is null || bearerToken == "fake.token.here";
