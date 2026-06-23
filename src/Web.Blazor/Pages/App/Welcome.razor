@@ -1,11 +1,12 @@
 @page "/app"
 @layout AppLayout
 @attribute [Authorize]
+@using System.Globalization
 @inject AuthSessionService AuthService
 @inject SecurityGuardsApiClient GuardsClient
 @inject SchedulesApiClient SchedulesClient
 
-<PageTitle>SafetyScale — Dashboard</PageTitle>
+<PageTitle>SafetyScale — Painel</PageTitle>
 
 <div class="page">
     <AppHeader Title="SentryOps"
@@ -46,13 +47,13 @@
         {
             <div role="alert" class="banner banner-error">
                 <span>@_scheduleError</span>
-                <button type="button" class="retry-btn" @onclick="RefreshAsync">Retry</button>
+                <button type="button" class="retry-btn" @onclick="RefreshAsync">Tentar novamente</button>
             </div>
         }
 
         @if (_loading)
         {
-            <div class="skeleton-stack" aria-busy="true" aria-label="Loading dashboard">
+            <div class="skeleton-stack" aria-busy="true" aria-label="Carregando painel">
                 <div class="skeleton-card"></div>
                 <div class="skeleton-grid">
                     <div class="skeleton-kpi"></div>
@@ -67,24 +68,24 @@
         {
             <p class="section-intro">
                 Snapshot operacional para <strong>@PeriodLabel</strong>. As KPIs usam dados da API em tempo real; os agendamentos podem estar ausentes
-                until generated.
+                até serem gerados.
             </p>
 
             <div class="kpi-grid">
                 <div class="kpi-card">
-                    <span class="kpi-label">Active guards</span>
+                    <span class="kpi-label">Seguranças ativos</span>
                     <span class="kpi-value" data-testid="kpi-active">@Kpis.Active</span>
                 </div>
                 <div class="kpi-card">
-                    <span class="kpi-label">Inactive guards</span>
+                    <span class="kpi-label">Seguranças inativos</span>
                     <span class="kpi-value" data-testid="kpi-inactive">@Kpis.Inactive</span>
                 </div>
                 <div class="kpi-card">
-                    <span class="kpi-label">Assignments</span>
+                    <span class="kpi-label">Agendamentos</span>
                     <span class="kpi-value" data-testid="kpi-assignments">@Kpis.Assignments</span>
                 </div>
                 <div class="kpi-card">
-                    <span class="kpi-label">Weekend shifts</span>
+                    <span class="kpi-label">Turnos de fim de semana</span>
                     <span class="kpi-value" data-testid="kpi-weekend">@Kpis.Weekend</span>
                 </div>
             </div>
@@ -104,7 +105,7 @@
                             }
                             else
                             {
-                                <text>Ask an administrator to generate the schedule, or open Schedules to review when available.</text>
+                                <text>Peça a um administrador para gerar a escala ou abra Escalas para revisar quando disponível.</text>
                             }
                         </p>
                         <NavLink class="@(IsAdmin ? "cta-primary" : "cta-secondary")" href="/app/schedules">
@@ -235,9 +236,11 @@
 @code {
     private static readonly string[] MonthNames =
     [
-        "January", "February", "March", "April", "May", "June",
-        "July", "August", "September", "October", "November", "December",
+        "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+        "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
     ];
+
+    private static readonly CultureInfo PtBr = CultureInfo.GetCultureInfo("pt-BR");
 
     private AuthSession? _session;
     private int _month;
@@ -322,7 +325,7 @@
         }
         catch (HttpRequestException)
         {
-            return (null, "Could not load personnel.");
+            return (null, "Não foi possível carregar os seguranças.");
         }
     }
 
@@ -338,7 +341,7 @@
         }
         catch (HttpRequestException)
         {
-            return (null, "Could not load monthly roster.");
+            return (null, "Não foi possível carregar a rotação mensal.");
         }
     }
 
@@ -407,7 +410,7 @@
         if (DateOnly.TryParseExact(iso, "yyyy-MM-dd", out var date))
         {
             var dt = new DateTime(date.Year, date.Month, date.Day);
-            return dt.ToString("ddd, MMM d, yyyy", System.Globalization.CultureInfo.GetCultureInfo("en-US"));
+            return dt.ToString("ddd, d 'de' MMM 'de' yyyy", PtBr);
         }
 
         return iso;
@@ -418,9 +421,9 @@
         var label = DisplayAssignmentDate(dateKey);
         return count switch
         {
-            0 => $"{label}, no assignments",
-            1 => $"{label}, 1 assignment",
-            _ => $"{label}, {count} assignments",
+            0 => $"{label}, sem agendamentos",
+            1 => $"{label}, 1 agendamento",
+            _ => $"{label}, {count} agendamentos",
         };
     }
 

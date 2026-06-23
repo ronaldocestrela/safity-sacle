@@ -355,13 +355,13 @@
         {
             _sectorsPickList = [];
             _sectorPickError = string.IsNullOrWhiteSpace(ex.Message)
-                ? "Could not load active sectors."
+                ? "Não foi possível carregar os setores ativos."
                 : ex.Message;
         }
         catch (HttpRequestException)
         {
             _sectorsPickList = [];
-            _sectorPickError = "Could not load active sectors.";
+            _sectorPickError = "Não foi possível carregar os setores ativos.";
         }
     }
 
@@ -400,7 +400,7 @@
             }
 
             _loadError = string.IsNullOrWhiteSpace(ex.Message)
-                ? "Could not load personnel."
+                ? "Não foi possível carregar os seguranças."
                 : ex.Message;
         }
         catch (HttpRequestException)
@@ -410,7 +410,7 @@
                 return;
             }
 
-            _loadError = "Could not load personnel.";
+            _loadError = "Não foi possível carregar os seguranças.";
         }
         finally
         {

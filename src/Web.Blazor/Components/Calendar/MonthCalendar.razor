@@ -9,14 +9,14 @@
         <div class="@MonthNav.HeadClassName">
             <button type="button"
                     class="@MonthNav.NavButtonClassName"
-                    aria-label="@(MonthNav.PrevAriaLabel ?? "Previous month")"
+                    aria-label="@(MonthNav.PrevAriaLabel ?? "Mês anterior")"
                     @onclick="MonthNav.OnPrevMonth">
                 <span class="material-symbols-outlined @(MonthNav.NavIconClassName ?? "nav-icon")">chevron_left</span>
             </button>
             <h2 class="@MonthNav.TitleClassName">@MonthNav.Title</h2>
             <button type="button"
                     class="@MonthNav.NavButtonClassName"
-                    aria-label="@(MonthNav.NextAriaLabel ?? "Next month")"
+                    aria-label="@(MonthNav.NextAriaLabel ?? "Próximo mês")"
                     @onclick="MonthNav.OnNextMonth">
                 <span class="material-symbols-outlined @(MonthNav.NavIconClassName ?? "nav-icon")">chevron_right</span>
             </button>

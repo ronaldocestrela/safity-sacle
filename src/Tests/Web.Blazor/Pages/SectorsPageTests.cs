@@ -25,7 +25,7 @@ public sealed class SectorsPageTests : BlazorComponentTestBase
 
         cut.WaitForAssertion(() =>
         {
-            cut.Find("section[aria-label='Sectors list']").TextContent.Should().Contain("Perimeter");
+            cut.Find("section[aria-label='Lista de setores']").TextContent.Should().Contain("Perimeter");
             cut.Markup.Should().Contain("2 positions/day");
             cut.FindAll("button.fab").Should().BeEmpty();
             cut.FindAll("button.name-btn").Should().BeEmpty();

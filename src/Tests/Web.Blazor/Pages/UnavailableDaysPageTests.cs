@@ -85,7 +85,7 @@ public sealed class UnavailableDaysPageTests : BlazorComponentTestBase
 
         var cut = RenderPage();
 
-        cut.WaitForAssertion(() => cut.Markup.Should().Contain("UNAVAIL"));
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("INDISP."));
     }
 
     [Fact]

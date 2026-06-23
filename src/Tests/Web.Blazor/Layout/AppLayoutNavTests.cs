@@ -44,4 +44,22 @@ public sealed class AppLayoutNavTests : BlazorComponentTestBase
         HasActiveClass(sectors).Should().BeTrue();
         links.Where(HasActiveClass).Should().ContainSingle();
     }
+
+    [Fact]
+    public void BottomNav_ShowsPortugueseLabels()
+    {
+        RegisterAuthSessionServices("/app", UserRole.Admin);
+
+        var cut = RenderComponent<AppLayout>(parameters => parameters
+            .Add(p => p.Body, (RenderFragment)(builder => builder.AddMarkupContent(0, "<p>Body</p>"))));
+
+        var markup = cut.Markup;
+        markup.Should().Contain("Painel");
+        markup.Should().Contain("Setores");
+        markup.Should().Contain("Seguranças");
+        markup.Should().Contain("Disponibilidade");
+        markup.Should().Contain("Escalas");
+        markup.Should().NotContain(">Dashboard<");
+        markup.Should().NotContain(">Schedules<");
+    }
 }

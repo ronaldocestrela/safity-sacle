@@ -136,7 +136,7 @@
                             Dados em tempo real da API SafetyScale. Os itens preservam os nomes históricos dos seguranças mesmo se eles estiverem inativos.
                         </p>
                     </div>
-                    <div class="list-scroll" aria-busy="@_loading" aria-label="Assignment list">
+                    <div class="list-scroll" aria-busy="@_loading" aria-label="Lista de agendamentos">
                         @if (_loading)
                         {
                             <div class="empty-list">Carregando agendamentos…</div>
@@ -210,7 +210,7 @@
                     </div>
 
                     <div class="audit-card audit-col">
-                        <div class="audit-label">LAST UPDATE</div>
+                        <div class="audit-label">ÚLTIMA ATUALIZAÇÃO</div>
                         <div class="audit-row">
                             <span class="mono-headline">
                                 @(_schedule is not null ? FormatGeneratedAt(_schedule.GeneratedAt) : "2023.10.24 14:32")
@@ -219,7 +219,7 @@
                             <span class="audit-meta">
                                 @if (_schedule is not null)
                                 {
-                                    @($"Schedule ID · {_schedule.Id.ToString()[..8]}…")
+                                    @($"ID da escala · {_schedule.Id.ToString()[..8]}…")
                                 }
                                 else
                                 {
@@ -228,7 +228,7 @@
                             </span>
                         </div>
                         <button type="button" class="audit-link" @onclick="ScrollToAssignmentsAsync">
-                            VIEW FULL ASSIGNMENT LIST
+                            VER LISTA COMPLETA DE AGENDAMENTOS
                             <span class="material-symbols-outlined audit-link-icon">arrow_forward</span>
                         </button>
                         <div class="audit-watermark" aria-hidden="true">
@@ -246,22 +246,22 @@
         "https://lh3.googleusercontent.com/aida-public/AB6AXuB3nCVQo7BaVjs8Plm0dqDT-E72JA3LPXwRXpOy29LCTHdvE1U5-EfUrZ-8tZimS_qhsHFF3tbZ6vUGALNuRIHq8a5badgeFrh0VuT0tqtWlBDhJf5B5Sz-BuS67N70iHrMJCJ41gO9PFGy0Ga9TSdJapjQQgFQDMHxQkrg7PRBL7RegsZqWDyLHaWh-oG6vUTddUnGkCKhX-8Evg0_qkcqk07E1eOADjs_HqJVISLP6Auwqyg11YgZnaa2ozlYUht-0ThG-nIE8lY9UU";
 
     private static readonly UserRole[] ModuleRoles = [UserRole.Admin, UserRole.Supervisor];
-    private static readonly CultureInfo EnUs = CultureInfo.GetCultureInfo("en-US");
+    private static readonly CultureInfo PtBr = CultureInfo.GetCultureInfo("pt-BR");
 
     private static readonly (int Value, string Label)[] MonthOptions =
     [
-        (1, "January"),
-        (2, "February"),
-        (3, "March"),
-        (4, "April"),
-        (5, "May"),
-        (6, "June"),
-        (7, "July"),
-        (8, "August"),
-        (9, "September"),
-        (10, "October"),
-        (11, "November"),
-        (12, "December"),
+        (1, "Janeiro"),
+        (2, "Fevereiro"),
+        (3, "Março"),
+        (4, "Abril"),
+        (5, "Maio"),
+        (6, "Junho"),
+        (7, "Julho"),
+        (8, "Agosto"),
+        (9, "Setembro"),
+        (10, "Outubro"),
+        (11, "Novembro"),
+        (12, "Dezembro"),
     ];
 
     private enum BannerKind
@@ -330,7 +330,7 @@
         try
         {
             await SchedulesClient.GenerateAsync(_month, _year);
-            ShowSuccessBanner("Monthly schedule generated successfully.");
+            ShowSuccessBanner("Escala mensal gerada com sucesso.");
             await LoadScheduleAsync(_month, _year);
         }
         catch (ApiException ex)
@@ -339,7 +339,7 @@
         }
         catch
         {
-            ShowErrorBanner("Could not generate schedule.");
+            ShowErrorBanner("Não foi possível gerar a escala.");
         }
         finally
         {
@@ -372,7 +372,7 @@
             _schedule = data;
             if (data is null)
             {
-                ShowErrorBanner($"No schedule found for {month:D2}/{year}.");
+                ShowErrorBanner($"Nenhuma escala encontrada para {month:D2}/{year}.");
             }
         }
         catch (ApiException ex)
@@ -393,7 +393,7 @@
             }
 
             _schedule = null;
-            ShowErrorBanner("Could not load roster.");
+            ShowErrorBanner("Não foi possível carregar a rotação.");
         }
         finally
         {
@@ -415,12 +415,12 @@
     {
         if (month is < 1 or > 12)
         {
-            return "Month must be between 1 and 12.";
+            return "O mês deve estar entre 1 e 12.";
         }
 
         if (year is < 2000 or > 2100)
         {
-            return "Year must be between 2000 and 2100.";
+            return "O ano deve estar entre 2000 e 2100.";
         }
 
         return null;
@@ -430,7 +430,7 @@
         $"{iso.Year:D4}.{iso.Month:D2}.{iso.Day:D2} {iso.Hour:D2}:{iso.Minute:D2}";
 
     private static string DisplayDateLabel(DateOnly date) =>
-        date.ToDateTime(TimeOnly.MinValue).ToString("ddd, MMM d, yyyy", EnUs);
+        date.ToDateTime(TimeOnly.MinValue).ToString("ddd, d 'de' MMM 'de' yyyy", PtBr);
 
     private void ClearBanner() => _banner = null;
 

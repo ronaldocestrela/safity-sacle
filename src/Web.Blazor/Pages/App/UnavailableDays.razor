@@ -17,7 +17,7 @@
 
 <RoleAuthorizeView AllowedRoles="ModuleRoles">
     <div class="page">
-        <AppHeader Title="Availability"
+        <AppHeader Title="Disponibilidade"
                    Subtitle="Indisponibilidade e disponibilidade da equipe."
                    Email="@_session?.Email"
                    ShowNotifications="true"
@@ -35,7 +35,7 @@
                 }
 
                 <div class="field">
-                    <label class="label-caps" for="personnel-select">Select Personnel</label>
+                    <label class="label-caps" for="personnel-select">Selecionar segurança</label>
                     <div class="select-wrap">
                         <span class="select-icon-left">
                             <span class="material-symbols-outlined material-icon">search</span>
@@ -47,7 +47,7 @@
                                 disabled="@(_guardsLoading || _guards.Count == 0)">
                             @if (_guards.Count == 0)
                             {
-                                <option value="">No personnel</option>
+                                <option value="">Nenhum segurança</option>
                             }
                             else
                             {
@@ -65,7 +65,7 @@
 
                 @if (_guardsLoading)
                 {
-                    <p class="spinner-text">Loading personnel…</p>
+                    <p class="spinner-text">Carregando seguranças…</p>
                 }
 
                 @if (_guardsError is not null)
@@ -73,14 +73,14 @@
                     <div class="empty" role="alert">
                         @_guardsError
                         <div>
-                            <button type="button" class="retry-btn" @onclick="RefreshGuardsAsync">Retry</button>
+                            <button type="button" class="retry-btn" @onclick="RefreshGuardsAsync">Tentar novamente</button>
                         </div>
                     </div>
                 }
 
                 @if (!_guardsLoading && _guards.Count == 0 && _guardsError is null)
                 {
-                    <p class="empty">No personnel found.</p>
+                    <p class="empty">Nenhum segurança encontrado.</p>
                 }
 
                 @if (ShowCalendar)
@@ -108,7 +108,7 @@
                                 <span class="day-num">@cell.Label</span>
                                 @if (unav)
                                 {
-                                    <span class="unavail-tag">UNAVAIL</span>
+                                    <span class="unavail-tag">INDISP.</span>
                                 }
                                 @if (focused)
                                 {
@@ -121,19 +121,19 @@
                     <div class="info-box">
                         <span class="material-symbols-outlined material-icon info-icon">info</span>
                         <p class="info-text">
-                            Tapping a date will toggle it as <strong style="color: #ba1a1a">Unavailable</strong>.
-                            These restrictions will automatically prevent scheduling this personnel for any shifts on the selected days.
+                            Toque em uma data para alterná-la como <strong style="color: #ba1a1a">Indisponível</strong>.
+                            Essas restrições impedem automaticamente o agendamento deste segurança em quaisquer turnos nos dias selecionados.
                         </p>
                     </div>
 
                     @if (IsAdmin)
                     {
                         <div class="field">
-                            <label class="label-caps" for="reason-optional">Reason (optional)</label>
+                            <label class="label-caps" for="reason-optional">Motivo (opcional)</label>
                             <textarea id="reason-optional"
                                       class="reason-input"
                                       maxlength="250"
-                                      placeholder="Applied to newly saved unavailable days."
+                                      placeholder="Aplicado aos novos dias indisponíveis salvos."
                                       @bind="_reasonDraft"></textarea>
                         </div>
                     }
@@ -147,7 +147,7 @@
                 <form @onsubmit="HandleSaveAsync" @onsubmit:preventDefault="true">
                     <button class="save-btn" type="submit" disabled="@(_saving || !HasPending)">
                         <span class="material-symbols-outlined material-icon save-icon">save</span>
-                        SAVE RESTRICTIONS
+                        SALVAR RESTRIÇÕES
                     </button>
                 </form>
             </div>
@@ -157,7 +157,7 @@
 
 @code {
     private static readonly UserRole[] ModuleRoles = [UserRole.Admin, UserRole.Supervisor];
-    private static readonly CultureInfo EnUs = CultureInfo.GetCultureInfo("en-US");
+    private static readonly CultureInfo PtBr = CultureInfo.GetCultureInfo("pt-BR");
 
     private enum BannerKind
     {
@@ -220,7 +220,7 @@
         __builder.OpenElement(0, "p");
         __builder.AddAttribute(1, "class", "spinner-text");
         __builder.AddAttribute(2, "style", "padding: 1rem");
-        __builder.AddContent(3, "Loading calendar…");
+        __builder.AddContent(3, "Carregando calendário…");
         __builder.CloseElement();
     };
 
@@ -235,7 +235,7 @@
         __builder.AddAttribute(6, "type", "button");
         __builder.AddAttribute(7, "class", "retry-btn");
         __builder.AddAttribute(8, "onclick", EventCallback.Factory.Create(this, RefreshDaysAsync));
-        __builder.AddContent(9, "Retry");
+        __builder.AddContent(9, "Tentar novamente");
         __builder.CloseElement();
         __builder.CloseElement();
         __builder.CloseElement();
@@ -244,7 +244,7 @@
     private void RebuildCalendar()
     {
         _calendarCells = MonthGrid.BuildMonthGrid(_viewYear, _viewMonth0);
-        var monthTitle = new DateTime(_viewYear, _viewMonth0 + 1, 1).ToString("MMMM yyyy", EnUs);
+        var monthTitle = new DateTime(_viewYear, _viewMonth0 + 1, 1).ToString("MMMM yyyy", PtBr);
         _monthNav = new MonthCalendar.MonthCalendarMonthNav
         {
             Title = monthTitle,
@@ -252,8 +252,8 @@
             TitleClassName = "month-title",
             NavButtonClassName = "cal-nav-btn",
             NavIconClassName = "material-icon",
-            PrevAriaLabel = "Previous month",
-            NextAriaLabel = "Next month",
+            PrevAriaLabel = "Mês anterior",
+            NextAriaLabel = "Próximo mês",
             OnPrevMonth = EventCallback.Factory.Create(this, () => ShiftMonth(-1)),
             OnNextMonth = EventCallback.Factory.Create(this, () => ShiftMonth(1)),
         };
@@ -309,7 +309,7 @@
                 return;
             }
 
-            _guardsError = "Could not load personnel.";
+            _guardsError = "Não foi possível carregar os seguranças.";
         }
         finally
         {
@@ -379,7 +379,7 @@
                 return;
             }
 
-            _daysError = "Could not load restrictions.";
+            _daysError = "Não foi possível carregar as restrições.";
             _serverDays = [];
             _baseline = new Dictionary<string, Guid>(StringComparer.Ordinal);
         }
@@ -447,7 +447,7 @@
 
             _pending = new Dictionary<string, PendingAction>(StringComparer.Ordinal);
             _reasonDraft = string.Empty;
-            ShowSuccessBanner("Restrictions saved.");
+            ShowSuccessBanner("Restrições salvas.");
             await RefreshDaysAsync();
         }
         catch (ApiException ex)
@@ -458,7 +458,7 @@
         }
         catch
         {
-            ShowErrorBanner("Save failed.");
+            ShowErrorBanner("Falha ao salvar.");
             await RefreshDaysAsync();
             _pending = new Dictionary<string, PendingAction>(StringComparer.Ordinal);
         }

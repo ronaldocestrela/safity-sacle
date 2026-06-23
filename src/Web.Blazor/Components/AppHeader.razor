@@ -24,13 +24,13 @@
         <div class="top-app-bar-actions">
             @if (ShowNotifications)
             {
-                <button type="button" class="icon-ghost" aria-label="Notifications">
+                <button type="button" class="icon-ghost" aria-label="Notificações">
                     <span class="material-symbols-outlined icon-md">notifications</span>
                 </button>
             }
             @if (ShowLogout && OnLogout.HasDelegate)
             {
-                <button type="button" class="icon-ghost" aria-label="Log out" @onclick="HandleLogout">
+                <button type="button" class="icon-ghost" aria-label="Sair" @onclick="HandleLogout">
                     <span class="material-symbols-outlined icon-md">logout</span>
                 </button>
             }

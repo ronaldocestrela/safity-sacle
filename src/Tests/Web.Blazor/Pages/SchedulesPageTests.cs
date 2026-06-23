@@ -108,7 +108,7 @@ public sealed class SchedulesPageTests : BlazorComponentTestBase
 
         cut.WaitForAssertion(() =>
         {
-            cut.Find("[role='alert']").TextContent.Should().Contain("No schedule found");
+            cut.Find("[role='alert']").TextContent.Should().Contain("Nenhuma escala encontrada");
         });
     }
 
