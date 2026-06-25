@@ -1,0 +1,240 @@
+@page "/platform/tenants"
+@layout PlatformLayout
+@attribute [Authorize(Roles = "PlatformOwner,PlatformAdmin,PlatformSupport")]
+@inject PlatformAuthSessionService AuthService
+@inject PlatformTenantsApiClient TenantsClient
+
+<PageTitle>SafetyScale — Tenants</PageTitle>
+
+<div class="page">
+    <header class="header">
+        <div>
+            <p class="eyebrow">Portal da plataforma</p>
+            <h1>Gestão de tenants</h1>
+            <p class="subtitle">@_session?.Email</p>
+        </div>
+        <button type="button" class="logout" @onclick="HandleLogoutAsync">Sair</button>
+    </header>
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <p class="error" role="alert">@_errorMessage</p>
+    }
+
+    @if (!string.IsNullOrEmpty(_successMessage))
+    {
+        <p class="success" role="status">@_successMessage</p>
+    }
+
+    <AuthorizeView Roles="PlatformOwner,PlatformAdmin" Context="managementAuth">
+        <section class="panel">
+            <h2>Novo tenant</h2>
+            <EditForm Model="_createForm" FormName="create-tenant" OnValidSubmit="HandleCreateAsync">
+                <div class="grid">
+                    <label>
+                        Empresa
+                        <input @bind="_createForm.TenantName" class="input" disabled="@_busy" />
+                    </label>
+                    <label>
+                        Admin — nome
+                        <input @bind="_createForm.AdminName" class="input" disabled="@_busy" />
+                    </label>
+                    <label>
+                        Admin — e-mail
+                        <input @bind="_createForm.AdminEmail" type="email" class="input" disabled="@_busy" />
+                    </label>
+                    <label>
+                        Admin — senha
+                        <input @bind="_createForm.AdminPassword" type="password" class="input" disabled="@_busy" />
+                    </label>
+                </div>
+                <button type="submit" class="primary" disabled="@_busy">Criar tenant</button>
+            </EditForm>
+        </section>
+    </AuthorizeView>
+
+    <section class="panel">
+        <div class="panel-head">
+            <h2>Tenants cadastrados</h2>
+            <button type="button" class="secondary" disabled="@_busy" @onclick="LoadTenantsAsync">Atualizar</button>
+        </div>
+
+        @if (_loading)
+        {
+            <p>Carregando…</p>
+        }
+        else if (_tenants.Count == 0)
+        {
+            <p>Nenhum tenant encontrado.</p>
+        }
+        else
+        {
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Empresa</th>
+                            <th>Slug</th>
+                            <th>Status</th>
+                            <th>Criado em</th>
+                            <AuthorizeView Roles="PlatformOwner,PlatformAdmin" Context="rowActionsAuth">
+                                <th>Ações</th>
+                            </AuthorizeView>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var tenant in _tenants)
+                        {
+                            <tr>
+                                <td>@tenant.Name</td>
+                                <td><code>@tenant.Slug</code></td>
+                                <td>
+                                    <span class="@(tenant.IsActive ? "badge-active" : "badge-inactive")">
+                                        @(tenant.IsActive ? "Ativo" : "Inativo")
+                                    </span>
+                                </td>
+                                <td>@tenant.CreatedAt.ToLocalTime().ToString("g")</td>
+                                <AuthorizeView Roles="PlatformOwner,PlatformAdmin" Context="rowActionsAuth">
+                                    <td>
+                                        @if (tenant.IsActive)
+                                        {
+                                            <button type="button"
+                                                    class="link-btn"
+                                                    disabled="@_busy"
+                                                    @onclick="() => SetActiveAsync(tenant.Id, false)">
+                                                Desativar
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button type="button"
+                                                    class="link-btn"
+                                                    disabled="@_busy"
+                                                    @onclick="() => SetActiveAsync(tenant.Id, true)">
+                                                Ativar
+                                            </button>
+                                        }
+                                    </td>
+                                </AuthorizeView>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+</div>
+
+@code {
+    private PlatformAuthSession? _session;
+    private readonly List<PlatformTenantDto> _tenants = [];
+    private readonly CreateTenantForm _createForm = new();
+    private bool _loading = true;
+    private bool _busy;
+    private string? _errorMessage;
+    private string? _successMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _session = await AuthService.GetSessionAsync();
+        await LoadTenantsAsync();
+    }
+
+    private async Task LoadTenantsAsync()
+    {
+        _loading = true;
+        _errorMessage = null;
+        try
+        {
+            var items = await TenantsClient.ListAsync();
+            _tenants.Clear();
+            _tenants.AddRange(items);
+        }
+        catch (Exception)
+        {
+            _errorMessage = "Não foi possível carregar os tenants.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task HandleCreateAsync()
+    {
+        _busy = true;
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            var result = await TenantsClient.CreateAsync(new CreatePlatformTenantRequestDto(
+                _createForm.TenantName.Trim(),
+                _createForm.AdminName.Trim(),
+                _createForm.AdminEmail.Trim(),
+                _createForm.AdminPassword));
+
+            if (!result.Ok)
+            {
+                _errorMessage = result.Message ?? "Não foi possível criar o tenant.";
+                return;
+            }
+
+            _successMessage = "Tenant criado com sucesso.";
+            _createForm.Clear();
+            await LoadTenantsAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task SetActiveAsync(Guid tenantId, bool isActive)
+    {
+        _busy = true;
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            var ok = isActive
+                ? await TenantsClient.ActivateAsync(tenantId)
+                : await TenantsClient.DeactivateAsync(tenantId);
+
+            if (!ok)
+            {
+                _errorMessage = "Não foi possível atualizar o status do tenant.";
+                return;
+            }
+
+            _successMessage = isActive ? "Tenant ativado." : "Tenant desativado.";
+            await LoadTenantsAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task HandleLogoutAsync()
+    {
+        await AuthService.LogoutAsync(navigateToLogin: true);
+    }
+
+    private sealed class CreateTenantForm
+    {
+        public string TenantName { get; set; } = string.Empty;
+        public string AdminName { get; set; } = string.Empty;
+        public string AdminEmail { get; set; } = string.Empty;
+        public string AdminPassword { get; set; } = string.Empty;
+
+        public void Clear()
+        {
+            TenantName = string.Empty;
+            AdminName = string.Empty;
+            AdminEmail = string.Empty;
+            AdminPassword = string.Empty;
+        }
+    }
+}

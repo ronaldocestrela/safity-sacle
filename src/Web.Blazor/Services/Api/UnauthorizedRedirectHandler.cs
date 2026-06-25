@@ -3,12 +3,9 @@ using SafetyScale.Web.Blazor.Services.Auth;
 
 namespace SafetyScale.Web.Blazor.Services.Api;
 
-/// <summary>
-/// Clears session and navigates to <c>/login</c> on 401 when a token existed before the request.
-/// Parity with React <c>setOnUnauthorized</c> + <c>apiFetch</c> 401 handling.
-/// </summary>
 public sealed class UnauthorizedRedirectHandler(
-    JwtSessionStorage sessionStorage,
+    JwtSessionStorage tenantSessionStorage,
+    PlatformJwtSessionStorage platformSessionStorage,
     CustomAuthStateProvider authStateProvider,
     NavigationManager navigationManager) : DelegatingHandler
 {
@@ -25,12 +22,30 @@ public sealed class UnauthorizedRedirectHandler(
 
         var skipRedirect = request.Options.TryGetValue(ApiHttpContext.SkipAuthRedirectKey, out var skip) && skip;
         var hadToken = request.Options.TryGetValue(ApiHttpContext.HadTokenKey, out var had) && had;
+        var usesPlatformToken = request.Options.TryGetValue(ApiHttpContext.UsesPlatformTokenKey, out var platform) &&
+                                platform;
 
         if (!skipRedirect && hadToken)
         {
-            await sessionStorage.ClearAsync(cancellationToken);
+            if (usesPlatformToken)
+            {
+                await platformSessionStorage.ClearAsync(cancellationToken);
+            }
+            else
+            {
+                await tenantSessionStorage.ClearAsync(cancellationToken);
+            }
+
             authStateProvider.NotifyAuthenticationStateChanged();
-            navigationManager.NavigateTo("/login?reason=session-expired", replace: true);
+
+            if (usesPlatformToken)
+            {
+                navigationManager.NavigateTo("/platform/login?reason=session-expired", replace: true);
+            }
+            else
+            {
+                navigationManager.NavigateTo("/login?reason=session-expired", replace: true);
+            }
         }
 
         return response;

@@ -3,7 +3,9 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using SafetyScale.Api.Authorization;
 using SafetyScale.Infrastructure.Authentication;
+using SafetyScale.Infrastructure.Identity;
 using System.Text;
 using System.Text.Json;
 
@@ -43,7 +45,21 @@ public static class ServiceCollectionExtensions
                 };
             });
 
-        services.AddAuthorization();
+        services.AddAuthorization(options =>
+        {
+            options.AddPolicy(
+                AuthorizationPolicies.PlatformManagement,
+                policy => policy.RequireRole(
+                    IdentitySeeder.PlatformRoles.Owner,
+                    IdentitySeeder.PlatformRoles.Admin));
+
+            options.AddPolicy(
+                AuthorizationPolicies.PlatformRead,
+                policy => policy.RequireRole(
+                    IdentitySeeder.PlatformRoles.Owner,
+                    IdentitySeeder.PlatformRoles.Admin,
+                    IdentitySeeder.PlatformRoles.Support));
+        });
         services.AddSwaggerGen();
 
         var corsOrigins = CorsConfigurationHelper.ResolveAllowedOrigins(configuration);

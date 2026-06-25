@@ -44,12 +44,14 @@ public class ApplicationDbContext(
 
         builder.Entity<AppUser>(entity =>
         {
-            entity.Property(u => u.TenantId).IsRequired();
+            entity.Property(u => u.UserKind).IsRequired();
+            entity.Property(u => u.TenantId).IsRequired(false);
             entity.Property(u => u.DisplayName).HasMaxLength(200).IsRequired();
             entity.HasOne(u => u.Tenant)
                 .WithMany()
                 .HasForeignKey(u => u.TenantId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired(false);
 
             // Intentionally no global query filter: Identity's UserStore queries must not be blocked
             // by tenant resolution during login/seed, and EF cannot reliably translate combined filters here.

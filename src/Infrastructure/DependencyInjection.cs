@@ -22,9 +22,10 @@ public static class DependencyInjection
         IConfiguration configuration)
     {
         var connectionString = configuration.GetConnectionString("DefaultConnection")
-            ?? "Server=localhost,1433;Database=safetyscale;User Id=sa;Password=Your_Strong_LocalDev_Pwd1;Encrypt=True;TrustServerCertificate=True;";
+            ?? "Server=127.0.0.1,1433;Database=safetyscale;User Id=sa;Password=changeme_UseStrongPw1!;Encrypt=False;TrustServerCertificate=True;";
 
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
+        services.Configure<BootstrapUserOptions>(configuration.GetSection(BootstrapUserOptions.SectionName));
         services.Configure<PublicUrlsOptions>(configuration.GetSection(PublicUrlsOptions.SectionName));
         services.Configure<SmtpOptions>(configuration.GetSection(SmtpOptions.SectionName));
         services.Configure<EmailQueueWorkerOptions>(configuration.GetSection(EmailQueueWorkerOptions.SectionName));
@@ -51,6 +52,7 @@ public static class DependencyInjection
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IEmailConfirmationService, EmailConfirmationService>();
         services.AddScoped<ITenantRegistrationService, TenantRegistrationService>();
+        services.AddScoped<IPlatformTenantService, PlatformTenantService>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IdentitySeeder>();
         services.AddScoped<ISecurityGuardRepository, SecurityGuardRepository>();

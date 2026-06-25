@@ -49,35 +49,17 @@ internal static class SectorsPageTestHelper
         string initialUri = "/app/sectors",
         params UserRole[] roles)
     {
-        var js = new FakeJsRuntime();
+        var authStack = BlazorAuthTestFactory.CreateAuthStack(initialUri);
+        var sessionStorage = authStack.TenantSessionStorage;
+        var authProvider = authStack.AuthProvider;
+        var navigation = authStack.Navigation;
         var jsonOptions = AppJsonSerializerOptions.Create();
-        var browserStorage = new BrowserSessionStorage(js, jsonOptions);
-        var sessionStorage = new JwtSessionStorage(browserStorage);
-        var authProvider = new CustomAuthStateProvider(sessionStorage);
-        var navigation = new TestNavigationManager(initialUri);
 
-        object roleClaim = roles.Length switch
-        {
-            0 => Array.Empty<string>(),
-            1 => roles[0].ToString()!,
-            _ => roles.Select(r => r.ToString()).ToArray(),
-        };
+        sessionStorage.SaveTokenAsync(BlazorAuthTestFactory.CreateTenantToken(roles))
+            .GetAwaiter()
+            .GetResult();
 
-        var token = JwtTestUtils.MakeUnsignedJwt(new Dictionary<string, object?>
-        {
-            ["exp"] = JwtTestUtils.ExpSoon(),
-            ["email"] = "user@example.com",
-            ["role"] = roleClaim,
-        });
-
-        sessionStorage.SaveTokenAsync(token).GetAwaiter().GetResult();
-
-        services.AddSingleton(navigation);
-        services.AddSingleton<NavigationManager>(navigation);
-        services.AddSingleton(browserStorage);
-        services.AddSingleton(sessionStorage);
-        services.AddSingleton(authProvider);
-        services.AddSingleton<AuthenticationStateProvider>(authProvider);
+        BlazorAuthTestFactory.RegisterAuthServices(services, authStack);
 
         var urlBuilder = services.BuildServiceProvider().GetRequiredService<ApiUrlBuilder>();
         var httpClient = new HttpClient(new FuncHttpMessageHandler(responseFactory))

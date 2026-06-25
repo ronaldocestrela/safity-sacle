@@ -30,6 +30,8 @@ public sealed class JwtParserTests
         var adminToken = JwtTestUtils.MakeUnsignedJwt(new Dictionary<string, object?>
         {
             ["role"] = "Admin",
+            ["tenant_id"] = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            ["user_kind"] = "Tenant",
             ["exp"] = JwtTestUtils.ExpSoon(),
         });
 
@@ -40,6 +42,8 @@ public sealed class JwtParserTests
         {
             ["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] =
                 new[] { "Supervisor", "Extra" },
+            ["tenant_id"] = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            ["user_kind"] = "Tenant",
             ["exp"] = JwtTestUtils.ExpSoon(),
         });
 
@@ -116,5 +120,35 @@ public sealed class JwtParserTests
         });
 
         JwtParser.BuildSessionFromToken(noTenantToken).Should().BeNull();
+    }
+
+    [Fact]
+    public void BuildPlatformSessionFromToken_FiltersPlatformRoles()
+    {
+        var token = JwtTestUtils.MakeUnsignedJwt(new Dictionary<string, object?>
+        {
+            ["role"] = "PlatformOwner",
+            ["user_kind"] = "Platform",
+            ["email"] = "owner@platform.local",
+            ["exp"] = JwtTestUtils.ExpSoon(),
+        });
+
+        var session = JwtParser.BuildPlatformSessionFromToken(token);
+        session.Should().NotBeNull();
+        session!.Roles.Should().Equal(PlatformUserRole.PlatformOwner);
+        session.Email.Should().Be("owner@platform.local");
+    }
+
+    [Fact]
+    public void BuildSessionFromToken_ReturnsNullForPlatformToken()
+    {
+        var token = JwtTestUtils.MakeUnsignedJwt(new Dictionary<string, object?>
+        {
+            ["role"] = "PlatformOwner",
+            ["user_kind"] = "Platform",
+            ["exp"] = JwtTestUtils.ExpSoon(),
+        });
+
+        JwtParser.BuildSessionFromToken(token).Should().BeNull();
     }
 }

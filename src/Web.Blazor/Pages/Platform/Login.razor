@@ -1,0 +1,165 @@
+@page "/platform/login"
+@inject NavigationManager Navigation
+@inject PlatformAuthSessionService AuthService
+
+<PageTitle>SafetyScale — Portal da Plataforma</PageTitle>
+
+@if (!_checkingSession)
+{
+    <div class="page">
+        <div class="card">
+            <div class="card-header">
+                <span class="logo">SafetyScale Platform</span>
+                <h1 class="title">Login do Portal</h1>
+                <p class="lead">Acesso restrito à equipe de operação da plataforma.</p>
+            </div>
+
+            <EditForm Model="_form" FormName="platform-login" OnValidSubmit="HandleSubmitAsync">
+                <div class="form">
+                    @if (_sessionExpiredHint)
+                    {
+                        <p class="banner">Sua sessão expirou. Entre novamente.</p>
+                    }
+
+                    @if (!string.IsNullOrEmpty(_errorMessage))
+                    {
+                        <p class="error" role="alert">@_errorMessage</p>
+                    }
+
+                    <label class="label">
+                        E-mail
+                        <input @bind="_form.Email"
+                               @bind:event="oninput"
+                               type="email"
+                               autocomplete="username"
+                               class="@InputClass(EmailInvalid)"
+                               disabled="@_submitting"
+                               aria-invalid="@EmailInvalid"
+                               @onblur="MarkTouched" />
+                        @if (EmailInvalid)
+                        {
+                            <span class="field-error">Informe o e-mail.</span>
+                        }
+                    </label>
+
+                    <label class="label">
+                        Senha
+                        <input @bind="_form.Password"
+                               @bind:event="oninput"
+                               type="password"
+                               autocomplete="current-password"
+                               class="@InputClass(PasswordInvalid)"
+                               disabled="@_submitting"
+                               aria-invalid="@PasswordInvalid"
+                               @onblur="MarkTouched" />
+                        @if (PasswordInvalid)
+                        {
+                            <span class="field-error">Informe a senha.</span>
+                        }
+                    </label>
+
+                    <button type="submit" class="submit" disabled="@_submitting">
+                        @(_submitting ? "Entrando…" : "Entrar no portal")
+                    </button>
+                </div>
+            </EditForm>
+
+            <p class="footer">
+                <a class="link" href="/">Voltar à página inicial</a>
+            </p>
+        </div>
+    </div>
+}
+
+@code {
+    private readonly LoginFormModel _form = new();
+    private bool _checkingSession = true;
+    private bool _touched;
+    private bool _submitting;
+    private string? _errorMessage;
+
+    [SupplyParameterFromQuery(Name = "returnUrl")]
+    public string? ReturnUrl { get; set; }
+
+    [SupplyParameterFromQuery(Name = "reason")]
+    public string? Reason { get; set; }
+
+    private bool _sessionExpiredHint =>
+        string.Equals(Reason, "session-expired", StringComparison.OrdinalIgnoreCase);
+
+    private bool EmailInvalid => _touched && string.IsNullOrWhiteSpace(_form.Email);
+
+    private bool PasswordInvalid => _touched && string.IsNullOrEmpty(_form.Password);
+
+    protected override async Task OnInitializedAsync()
+    {
+        var session = await AuthService.GetSessionAsync();
+        if (session is not null)
+        {
+            Navigation.NavigateTo(ResolveReturnUrl(), replace: true);
+            return;
+        }
+
+        _checkingSession = false;
+    }
+
+    private void MarkTouched() => _touched = true;
+
+    private async Task HandleSubmitAsync()
+    {
+        _touched = true;
+        _errorMessage = null;
+
+        if (EmailInvalid || PasswordInvalid)
+        {
+            return;
+        }
+
+        _submitting = true;
+        try
+        {
+            var result = await AuthService.LoginAsync(_form.Email, _form.Password);
+            if (!result.Ok)
+            {
+                _errorMessage = result.Reason switch
+                {
+                    LoginFailureReason.EmailNotConfirmed =>
+                        "Confirme seu e-mail antes de entrar.",
+                    LoginFailureReason.Invalid => "E-mail ou senha inválidos.",
+                    _ => "Não foi possível conectar à API. Verifique se o servidor está no ar.",
+                };
+                return;
+            }
+
+            Navigation.NavigateTo(ResolveReturnUrl(), replace: true);
+        }
+        finally
+        {
+            _submitting = false;
+        }
+    }
+
+    internal string ResolveReturnUrl()
+    {
+        if (!string.IsNullOrWhiteSpace(ReturnUrl) &&
+            ReturnUrl.StartsWith('/') &&
+            !ReturnUrl.StartsWith("//", StringComparison.Ordinal) &&
+            ReturnUrl.StartsWith("/platform", StringComparison.OrdinalIgnoreCase) &&
+            !ReturnUrl.Equals("/platform/login", StringComparison.OrdinalIgnoreCase))
+        {
+            return ReturnUrl;
+        }
+
+        return "/platform/tenants";
+    }
+
+    private static string InputClass(bool invalid) =>
+        invalid ? "input input-invalid" : "input";
+
+    private sealed class LoginFormModel
+    {
+        public string Email { get; set; } = string.Empty;
+
+        public string Password { get; set; } = string.Empty;
+    }
+}

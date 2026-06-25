@@ -13,13 +13,27 @@ public class AuthService(
     UserManager<AppUser> userManager,
     IOptions<JwtOptions> jwtOptions) : IAuthService
 {
-    public async Task<LoginResult> LoginAsync(
+    public Task<LoginResult> LoginAsync(
         string email,
         string password,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) =>
+        LoginInternalAsync(email, password, UserKind.Tenant, includeTenantClaim: true, cancellationToken);
+
+    public Task<LoginResult> PlatformLoginAsync(
+        string email,
+        string password,
+        CancellationToken cancellationToken = default) =>
+        LoginInternalAsync(email, password, UserKind.Platform, includeTenantClaim: false, cancellationToken);
+
+    private async Task<LoginResult> LoginInternalAsync(
+        string email,
+        string password,
+        UserKind expectedKind,
+        bool includeTenantClaim,
+        CancellationToken cancellationToken)
     {
         var user = await userManager.FindByEmailAsync(email);
-        if (user is null)
+        if (user is null || user.UserKind != expectedKind)
         {
             return new LoginResult(LoginResultStatus.InvalidCredentials);
         }
@@ -30,22 +44,29 @@ public class AuthService(
             return new LoginResult(LoginResultStatus.InvalidCredentials);
         }
 
-        if (user.TenantId == Guid.Empty)
+        if (expectedKind == UserKind.Tenant)
         {
-            return new LoginResult(LoginResultStatus.InvalidCredentials);
-        }
+            if (user.TenantId is null || user.TenantId == Guid.Empty)
+            {
+                return new LoginResult(LoginResultStatus.InvalidCredentials);
+            }
 
-        if (!user.EmailConfirmed)
+            if (!user.EmailConfirmed)
+            {
+                return new LoginResult(LoginResultStatus.EmailNotConfirmed);
+            }
+        }
+        else if (!user.EmailConfirmed)
         {
             return new LoginResult(LoginResultStatus.EmailNotConfirmed);
         }
 
         var roles = await userManager.GetRolesAsync(user);
-        var token = GenerateJwtToken(user, roles);
+        var token = GenerateJwtToken(user, roles, includeTenantClaim);
         return new LoginResult(LoginResultStatus.Success, token);
     }
 
-    private string GenerateJwtToken(AppUser user, IEnumerable<string> roles)
+    private string GenerateJwtToken(AppUser user, IEnumerable<string> roles, bool includeTenantClaim)
     {
         var options = jwtOptions.Value;
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(options.Key));
@@ -57,8 +78,13 @@ public class AuthService(
             new(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
             new(ClaimTypes.NameIdentifier, user.Id),
             new(ClaimTypes.Name, user.UserName ?? string.Empty),
-            new(TenantClaimTypes.TenantId, user.TenantId.ToString())
+            new(AuthClaimTypes.UserKind, user.UserKind.ToString()),
         };
+
+        if (includeTenantClaim && user.TenantId is not null)
+        {
+            claims.Add(new Claim(TenantClaimTypes.TenantId, user.TenantId.Value.ToString()));
+        }
 
         claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 

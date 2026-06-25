@@ -140,6 +140,7 @@ public class MultiTenantIsolationIntegrationTests
             Email = email,
             UserName = email,
             EmailConfirmed = true,
+            UserKind = UserKind.Tenant,
             TenantId = SecondTenantId,
         };
 
