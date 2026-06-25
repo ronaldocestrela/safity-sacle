@@ -13,28 +13,36 @@ public class AuthService(
     UserManager<AppUser> userManager,
     IOptions<JwtOptions> jwtOptions) : IAuthService
 {
-    public async Task<string?> LoginAsync(string email, string password, CancellationToken cancellationToken = default)
+    public async Task<LoginResult> LoginAsync(
+        string email,
+        string password,
+        CancellationToken cancellationToken = default)
     {
         var user = await userManager.FindByEmailAsync(email);
         if (user is null)
         {
-            return null;
+            return new LoginResult(LoginResultStatus.InvalidCredentials);
         }
 
         var passwordIsValid = await userManager.CheckPasswordAsync(user, password);
         if (!passwordIsValid)
         {
-            return null;
+            return new LoginResult(LoginResultStatus.InvalidCredentials);
         }
 
-        // Users without a tenant cannot access tenant-scoped data.
         if (user.TenantId == Guid.Empty)
         {
-            return null;
+            return new LoginResult(LoginResultStatus.InvalidCredentials);
+        }
+
+        if (!user.EmailConfirmed)
+        {
+            return new LoginResult(LoginResultStatus.EmailNotConfirmed);
         }
 
         var roles = await userManager.GetRolesAsync(user);
-        return GenerateJwtToken(user, roles);
+        var token = GenerateJwtToken(user, roles);
+        return new LoginResult(LoginResultStatus.Success, token);
     }
 
     private string GenerateJwtToken(AppUser user, IEnumerable<string> roles)

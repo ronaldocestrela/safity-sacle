@@ -1,0 +1,99 @@
+@page "/confirm-email"
+@inject NavigationManager Navigation
+@inject AuthSessionService AuthService
+
+<PageTitle>SafetyScale — Confirmar e-mail</PageTitle>
+
+<div class="page">
+    <div class="card">
+        <div class="card-header">
+            <span class="logo">SafetyScale</span>
+            <h1 class="title">Confirmar e-mail</h1>
+            <p class="lead">Ative sua conta para acessar a plataforma.</p>
+        </div>
+
+        <div class="form">
+            @if (_isProcessing)
+            {
+                <p class="banner">Confirmando seu e-mail…</p>
+            }
+            else if (_status == ConfirmEmailOutcomeStatus.Success || _status == ConfirmEmailOutcomeStatus.AlreadyConfirmed)
+            {
+                <p class="banner">@_message</p>
+                <a class="submit link-button" href="/login">Ir para login</a>
+            }
+            else if (_status == ConfirmEmailOutcomeStatus.InvalidToken)
+            {
+                <p class="error" role="alert">@_message</p>
+                <a class="link" href="/login">Voltar ao login</a>
+            }
+            else if (_status == ConfirmEmailOutcomeStatus.UserNotFound)
+            {
+                <p class="error" role="alert">@_message</p>
+                <a class="link" href="/signup">Cadastrar empresa</a>
+            }
+            else if (_status == ConfirmEmailOutcomeStatus.Network)
+            {
+                <p class="error" role="alert">@_message</p>
+                <button type="button" class="submit" @onclick="RetryAsync">Tentar novamente</button>
+            }
+            else
+            {
+                <p class="error" role="alert">Link de confirmação inválido.</p>
+                <a class="link" href="/login">Voltar ao login</a>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private bool _isProcessing = true;
+    private ConfirmEmailOutcomeStatus? _status;
+    private string? _message;
+
+    [SupplyParameterFromQuery(Name = "userId")]
+    public string? UserId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "token")]
+    public string? Token { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ConfirmAsync();
+    }
+
+    private async Task RetryAsync()
+    {
+        _isProcessing = true;
+        _status = null;
+        _message = null;
+        await ConfirmAsync();
+    }
+
+    private async Task ConfirmAsync()
+    {
+        if (string.IsNullOrWhiteSpace(UserId) || string.IsNullOrWhiteSpace(Token))
+        {
+            _isProcessing = false;
+            _status = ConfirmEmailOutcomeStatus.InvalidToken;
+            _message = "Link de confirmação inválido ou expirado.";
+            return;
+        }
+
+        var result = await AuthService.ConfirmEmailAsync(UserId, Token);
+        _status = result.Status;
+        _message = result.Message ?? ResolveDefaultMessage(result.Status);
+        _isProcessing = false;
+    }
+
+    private static string ResolveDefaultMessage(ConfirmEmailOutcomeStatus status) =>
+        status switch
+        {
+            ConfirmEmailOutcomeStatus.Success => "E-mail confirmado com sucesso. Você já pode entrar.",
+            ConfirmEmailOutcomeStatus.AlreadyConfirmed => "Seu e-mail já estava confirmado. Faça login normalmente.",
+            ConfirmEmailOutcomeStatus.InvalidToken => "Link de confirmação inválido ou expirado.",
+            ConfirmEmailOutcomeStatus.UserNotFound => "Usuário não encontrado.",
+            ConfirmEmailOutcomeStatus.Network => "Não foi possível conectar à API. Tente novamente.",
+            _ => "Não foi possível confirmar o e-mail.",
+        };
+}

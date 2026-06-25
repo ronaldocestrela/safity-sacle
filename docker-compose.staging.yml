@@ -38,6 +38,7 @@ services:
       Jwt__Audience: ${JWT_AUDIENCE:?define JWT_AUDIENCE in .env.staging}
       Jwt__ExpiryMinutes: ${JWT_EXPIRY_MINUTES:-120}
       Cors__OriginsCsv: ${CORS_ORIGINS:-}
+      PublicUrls__WebBaseUrl: ${PUBLIC_WEB_BASE_URL:-http://localhost}
       Smtp__Host: ${SMTP_HOST:-}
       Smtp__Port: ${SMTP_PORT:-587}
       Smtp__Username: ${SMTP_USERNAME:-}

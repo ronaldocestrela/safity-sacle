@@ -25,6 +25,7 @@ public static class DependencyInjection
             ?? "Server=localhost,1433;Database=safetyscale;User Id=sa;Password=Your_Strong_LocalDev_Pwd1;Encrypt=True;TrustServerCertificate=True;";
 
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
+        services.Configure<PublicUrlsOptions>(configuration.GetSection(PublicUrlsOptions.SectionName));
         services.Configure<SmtpOptions>(configuration.GetSection(SmtpOptions.SectionName));
         services.Configure<EmailQueueWorkerOptions>(configuration.GetSection(EmailQueueWorkerOptions.SectionName));
 
@@ -44,9 +45,11 @@ public static class DependencyInjection
                 options.User.RequireUniqueEmail = true;
             })
             .AddRoles<IdentityRole>()
-            .AddEntityFrameworkStores<ApplicationDbContext>();
+            .AddEntityFrameworkStores<ApplicationDbContext>()
+            .AddDefaultTokenProviders();
 
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IEmailConfirmationService, EmailConfirmationService>();
         services.AddScoped<ITenantRegistrationService, TenantRegistrationService>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IdentitySeeder>();

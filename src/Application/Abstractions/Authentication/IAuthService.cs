@@ -2,5 +2,5 @@ namespace SafetyScale.Application.Abstractions.Authentication;
 
 public interface IAuthService
 {
-    Task<string?> LoginAsync(string email, string password, CancellationToken cancellationToken = default);
+    Task<LoginResult> LoginAsync(string email, string password, CancellationToken cancellationToken = default);
 }
