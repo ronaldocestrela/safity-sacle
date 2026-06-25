@@ -4,14 +4,18 @@
     protected override void OnInitialized()
     {
         var returnPath = BuildReturnPath();
+        var isPlatformRoute = returnPath?.StartsWith("/platform", StringComparison.OrdinalIgnoreCase) == true;
+
         if (returnPath is null)
         {
-            Navigation.NavigateTo("/login", replace: true);
+            Navigation.NavigateTo(isPlatformRoute ? "/platform/login" : "/login", replace: true);
             return;
         }
 
         var encoded = Uri.EscapeDataString(returnPath);
-        Navigation.NavigateTo($"/login?returnUrl={encoded}", replace: true);
+        Navigation.NavigateTo(
+            isPlatformRoute ? $"/platform/login?returnUrl={encoded}" : $"/login?returnUrl={encoded}",
+            replace: true);
     }
 
     private string? BuildReturnPath()
@@ -29,7 +33,8 @@
             path = path[..queryIndex];
         }
 
-        if (path.Equals("/login", StringComparison.OrdinalIgnoreCase))
+        if (path.Equals("/login", StringComparison.OrdinalIgnoreCase) ||
+            path.Equals("/platform/login", StringComparison.OrdinalIgnoreCase))
         {
             return null;
         }

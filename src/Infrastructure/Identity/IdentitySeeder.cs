@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using SafetyScale.Domain.Entities;
+using SafetyScale.Infrastructure.Authentication;
 using SafetyScale.Infrastructure.Persistence;
 
 namespace SafetyScale.Infrastructure.Identity;
@@ -10,6 +12,7 @@ public class IdentitySeeder(
     RoleManager<IdentityRole> roleManager,
     UserManager<AppUser> userManager,
     ApplicationDbContext dbContext,
+    IOptions<BootstrapUserOptions> bootstrapUserOptions,
     ILogger<IdentitySeeder> logger)
 {
     public static class Roles
@@ -18,11 +21,21 @@ public class IdentitySeeder(
         public const string Supervisor = "Supervisor";
     }
 
+    public static class PlatformRoles
+    {
+        public const string Owner = "PlatformOwner";
+        public const string Admin = "PlatformAdmin";
+        public const string Support = "PlatformSupport";
+
+        public static readonly string[] All = [Owner, Admin, Support];
+    }
+
     public async Task SeedAsync(bool isDevelopment)
     {
-        var roles = new[] { Roles.Admin, Roles.Supervisor };
+        var tenantRoles = new[] { Roles.Admin, Roles.Supervisor };
+        var allRoles = tenantRoles.Concat(PlatformRoles.All);
 
-        foreach (var role in roles)
+        foreach (var role in allRoles)
         {
             if (await roleManager.RoleExistsAsync(role))
             {
@@ -38,6 +51,7 @@ public class IdentitySeeder(
 
         var defaultTenantId = await EnsureDefaultTenantAsync();
         await AssignMissingTenantToUsersAsync(defaultTenantId);
+        await SeedBootstrapPlatformUserAsync();
 
         if (!isDevelopment)
         {
@@ -68,6 +82,7 @@ public class IdentitySeeder(
                 Email = email,
                 UserName = email,
                 EmailConfirmed = true,
+                UserKind = UserKind.Tenant,
                 TenantId = defaultTenantId,
                 DisplayName = email.Split('@')[0],
             };
@@ -83,6 +98,86 @@ public class IdentitySeeder(
         }
 
         await EnsureSupervisorUserAsync(defaultTenantId);
+    }
+
+    private async Task SeedBootstrapPlatformUserAsync()
+    {
+        var options = bootstrapUserOptions.Value;
+        var email = options.Email?.Trim();
+        var password = options.Password;
+        var displayName = string.IsNullOrWhiteSpace(options.DisplayName)
+            ? email?.Split('@')[0] ?? "Platform Admin"
+            : options.DisplayName.Trim();
+        var role = string.IsNullOrWhiteSpace(options.Role)
+            ? PlatformRoles.Owner
+            : options.Role.Trim();
+
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+        {
+            logger.LogInformation(
+                "Bootstrap platform user skipped: BootstrapUser__Email and BootstrapUser__Password must be set.");
+            return;
+        }
+
+        if (!PlatformRoles.All.Contains(role, StringComparer.Ordinal))
+        {
+            logger.LogWarning(
+                "Bootstrap platform user skipped: role {Role} is not a valid platform role.",
+                role);
+            return;
+        }
+
+        if (!await roleManager.RoleExistsAsync(role))
+        {
+            var createRole = await roleManager.CreateAsync(new IdentityRole(role));
+            if (!createRole.Succeeded)
+            {
+                logger.LogWarning("Failed to ensure bootstrap role {Role}.", role);
+                return;
+            }
+        }
+
+        var existing = await userManager.FindByEmailAsync(email);
+        if (existing is not null)
+        {
+            if (existing.UserKind != UserKind.Platform)
+            {
+                logger.LogWarning(
+                    "Bootstrap platform user skipped: email {Email} already belongs to a tenant user.",
+                    email);
+                return;
+            }
+
+            if (!await userManager.IsInRoleAsync(existing, role))
+            {
+                await userManager.AddToRoleAsync(existing, role);
+            }
+
+            return;
+        }
+
+        var user = new AppUser
+        {
+            Email = email,
+            UserName = email,
+            EmailConfirmed = true,
+            UserKind = UserKind.Platform,
+            TenantId = null,
+            DisplayName = displayName,
+        };
+
+        var createResult = await userManager.CreateAsync(user, password);
+        if (!createResult.Succeeded)
+        {
+            logger.LogWarning(
+                "Failed to create bootstrap platform user {Email}: {Errors}",
+                email,
+                string.Join("; ", createResult.Errors.Select(e => e.Description)));
+            return;
+        }
+
+        await userManager.AddToRoleAsync(user, role);
+        logger.LogInformation("Bootstrap platform user {Email} created with role {Role}.", email, role);
     }
 
     private async Task<Guid> EnsureDefaultTenantAsync()
@@ -141,7 +236,8 @@ public class IdentitySeeder(
     {
         var users = await dbContext.Users
             .IgnoreQueryFilters()
-            .Where(u => u.TenantId == Guid.Empty)
+            .Where(u => u.UserKind == UserKind.Tenant &&
+                        (u.TenantId == null || u.TenantId == Guid.Empty))
             .ToListAsync();
 
         foreach (var user in users)
@@ -176,6 +272,7 @@ public class IdentitySeeder(
             Email = email,
             UserName = email,
             EmailConfirmed = true,
+            UserKind = UserKind.Tenant,
             TenantId = defaultTenantId,
             DisplayName = "Supervisor dev",
         };

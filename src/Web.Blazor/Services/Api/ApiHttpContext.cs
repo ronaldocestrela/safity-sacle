@@ -14,4 +14,7 @@ internal static class ApiHttpContext
 
     public static readonly HttpRequestOptionsKey<bool> HadTokenKey =
         new("SafetyScale.HadToken");
+
+    public static readonly HttpRequestOptionsKey<bool> UsesPlatformTokenKey =
+        new("SafetyScale.UsesPlatformToken");
 }

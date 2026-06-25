@@ -18,7 +18,19 @@ public sealed class TenantRegistrationService(
 {
     private const int MaxSlugAttempts = 500;
 
-    public async Task<RegisterTenantResult> RegisterAsync(RegisterTenantInput input, CancellationToken cancellationToken = default)
+    public Task<RegisterTenantResult> RegisterAsync(RegisterTenantInput input, CancellationToken cancellationToken = default) =>
+        RegisterInternalAsync(input, confirmEmailImmediately: false, sendConfirmationEmail: true, cancellationToken);
+
+    public Task<RegisterTenantResult> RegisterFromPlatformAsync(
+        RegisterTenantInput input,
+        CancellationToken cancellationToken = default) =>
+        RegisterInternalAsync(input, confirmEmailImmediately: true, sendConfirmationEmail: false, cancellationToken);
+
+    private async Task<RegisterTenantResult> RegisterInternalAsync(
+        RegisterTenantInput input,
+        bool confirmEmailImmediately,
+        bool sendConfirmationEmail,
+        CancellationToken cancellationToken = default)
     {
         var trimmedTenantName = input.TenantName.Trim();
         var trimmedAdminName = input.AdminName.Trim();
@@ -98,8 +110,9 @@ public sealed class TenantRegistrationService(
                 UserName = rawEmail,
                 Email = rawEmail,
                 TenantId = tenant.Id,
+                UserKind = UserKind.Tenant,
                 DisplayName = trimmedAdminName,
-                EmailConfirmed = false,
+                EmailConfirmed = confirmEmailImmediately,
             };
 
             var createResult = await userManager.CreateAsync(admin, input.AdminPassword);
@@ -146,11 +159,14 @@ public sealed class TenantRegistrationService(
 
             await transaction.CommitAsync(cancellationToken);
 
-            await emailConfirmationService.EnqueueConfirmationEmailAsync(
-                admin.Id,
-                rawEmail,
-                trimmedAdminName,
-                cancellationToken);
+            if (sendConfirmationEmail)
+            {
+                await emailConfirmationService.EnqueueConfirmationEmailAsync(
+                    admin.Id,
+                    rawEmail,
+                    trimmedAdminName,
+                    cancellationToken);
+            }
 
             return new RegisterTenantResult(
                 RegisterTenantStatus.Success,

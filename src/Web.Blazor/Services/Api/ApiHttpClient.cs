@@ -47,6 +47,13 @@ public sealed class ApiHttpClient(HttpClient httpClient, ApiUrlBuilder urlBuilde
             options: options,
             cancellationToken: cancellationToken);
 
+    public Task<HttpResponseMessage> PatchAsync(
+        string path,
+        HttpContent? content = null,
+        ApiRequestOptions? options = null,
+        CancellationToken cancellationToken = default) =>
+        SendAsync(path, HttpMethod.Patch, content, options: options, cancellationToken: cancellationToken);
+
     public Task<T?> ReadJsonAsync<T>(
         HttpResponseMessage response,
         CancellationToken cancellationToken = default) =>

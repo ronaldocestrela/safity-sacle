@@ -32,17 +32,18 @@ internal static class PublicAuthTestHelper
         Func<HttpRequestMessage, HttpResponseMessage> responseFactory,
         string initialUri = "/login")
     {
-        var js = new FakeJsRuntime();
+        var authStack = BlazorAuthTestFactory.CreateAuthStack(initialUri);
+        var sessionStorage = authStack.TenantSessionStorage;
+        var authProvider = authStack.AuthProvider;
+        var navigation = authStack.Navigation;
         var jsonOptions = AppJsonSerializerOptions.Create();
-        var browserStorage = new BrowserSessionStorage(js, jsonOptions);
-        var sessionStorage = new JwtSessionStorage(browserStorage);
-        var authProvider = new CustomAuthStateProvider(sessionStorage);
-        var navigation = new TestNavigationManager(initialUri);
 
         services.AddSingleton(navigation);
         services.AddSingleton<NavigationManager>(navigation);
-        services.AddSingleton(browserStorage);
+        services.AddSingleton(authStack.BrowserStorage);
+        services.AddSingleton(authStack.PlatformBrowserStorage);
         services.AddSingleton(sessionStorage);
+        services.AddSingleton(authStack.PlatformSessionStorage);
         services.AddSingleton(authProvider);
         services.AddSingleton<AuthenticationStateProvider>(authProvider);
 
@@ -69,6 +70,8 @@ internal static class PublicAuthTestHelper
             ["exp"] = JwtTestUtils.ExpSoon(),
             ["email"] = email,
             ["role"] = "Admin",
+            ["tenant_id"] = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            ["user_kind"] = "Tenant",
         });
 
         var json = JsonSerializer.Serialize(new { token });

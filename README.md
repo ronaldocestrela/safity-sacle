@@ -284,10 +284,21 @@ Usuario **Supervisor** (apenas Development — role `Supervisor` para testes e i
 Execucao local com Docker (alinha porta/senha padrao de `appsettings*.json`; ajuste a senha antes de usar em producao):
 
 ```bash
-docker run -e 'ACCEPT_EULA=Y' -e 'MSSQL_SA_PASSWORD=Your_Strong_LocalDev_Pwd1' \
+docker run -e 'ACCEPT_EULA=Y' -e 'MSSQL_SA_PASSWORD=changeme_UseStrongPw1!' \
   -p 1433:1433 --name safetyscale-sql -d \
   mcr.microsoft.com/mssql/server:2022-latest
 ```
+
+Ou suba apenas o SQL via Compose (usa a mesma senha de `.env.example`):
+
+```bash
+cp .env.example .env
+docker compose -f docker-compose.prod.yml up -d sqlserver
+```
+
+**Importante:** a senha do `sa` fica gravada no volume Docker na primeira subida. Se voce alterar `MSSQL_SA_PASSWORD` depois, recrie o volume (`docker compose down -v`) ou mantenha a senha original em `appsettings.Development.json`.
+
+Para dev local no WSL, a connection string usa `127.0.0.1` (evita problemas de handshake com `localhost`) e `Encrypt=False`.
 
 Criar nova migration:
 
@@ -351,6 +362,15 @@ O servico **`web`** publica **HTTP na porta configurada por `WEB_PORT` (padrao 8
 A cada subida da API, **migrations EF** aplicam-se automaticamente.
 
 **Production:** onboarding via **`/signup`** na SPA Blazor.
+
+**Portal da plataforma:** acesse **`/platform/login`** para gerenciar tenants. Na primeira subida, defina no `.env`:
+
+- `BOOTSTRAP_USER_EMAIL` — e-mail do operador inicial
+- `BOOTSTRAP_USER_PASSWORD` — senha forte
+- `BOOTSTRAP_USER_DISPLAY_NAME` — nome exibido (opcional)
+- `BOOTSTRAP_USER_ROLE` — role inicial (`PlatformOwner`, `PlatformAdmin` ou `PlatformSupport`; padrao `PlatformOwner`)
+
+O seed cria o usuario apenas se ele ainda nao existir.
 
 ```bash
 cp .env.example .env

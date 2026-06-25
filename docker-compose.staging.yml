@@ -53,6 +53,10 @@ services:
       EmailQueue__InitialRetryDelaySeconds: ${EMAIL_QUEUE_INITIAL_RETRY_DELAY_SECONDS:-30}
       EmailQueue__MaxRetryDelaySeconds: ${EMAIL_QUEUE_MAX_RETRY_DELAY_SECONDS:-3600}
       EmailQueue__StaleProcessingMinutes: ${EMAIL_QUEUE_STALE_PROCESSING_MINUTES:-10}
+      BootstrapUser__Email: ${BOOTSTRAP_USER_EMAIL:-}
+      BootstrapUser__Password: ${BOOTSTRAP_USER_PASSWORD:-}
+      BootstrapUser__DisplayName: ${BOOTSTRAP_USER_DISPLAY_NAME:-Platform Admin}
+      BootstrapUser__Role: ${BOOTSTRAP_USER_ROLE:-PlatformOwner}
     ports:
       - "${API_PORT:-8082}:8080"
     depends_on:

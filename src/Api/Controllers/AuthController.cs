@@ -30,6 +30,24 @@ public class AuthController(
     }
 
     [AllowAnonymous]
+    [HttpPost("platform/login")]
+    public async Task<IActionResult> PlatformLogin([FromBody] LoginRequest request, CancellationToken cancellationToken)
+    {
+        var result = await authService.PlatformLoginAsync(request.Email, request.Password, cancellationToken);
+
+        return result.Status switch
+        {
+            LoginResultStatus.Success => Ok(new { token = result.Token }),
+            LoginResultStatus.EmailNotConfirmed => Unauthorized(new
+            {
+                message = "Confirme seu e-mail antes de entrar.",
+                code = "email_not_confirmed",
+            }),
+            _ => Unauthorized(new { message = "Invalid credentials." }),
+        };
+    }
+
+    [AllowAnonymous]
     [HttpPost("confirm-email")]
     public async Task<IActionResult> ConfirmEmail(
         [FromBody] ConfirmEmailRequest request,

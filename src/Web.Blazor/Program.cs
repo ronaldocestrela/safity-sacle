@@ -16,11 +16,15 @@ builder.Services.AddSingleton(AppJsonSerializerOptions.Create());
 builder.Services.AddSingleton<AppConfiguration>();
 builder.Services.AddSingleton<ApiUrlBuilder>();
 builder.Services.AddScoped<BrowserSessionStorage>();
+builder.Services.AddScoped<PlatformBrowserSessionStorage>();
 builder.Services.AddScoped<JwtSessionStorage>();
+builder.Services.AddScoped<PlatformJwtSessionStorage>();
 builder.Services.AddScoped<CustomAuthStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<CustomAuthStateProvider>());
 builder.Services.AddScoped<AuthSessionService>();
+builder.Services.AddScoped<PlatformAuthSessionService>();
 builder.Services.AddScoped<TenantsRegistrationClient>();
+builder.Services.AddScoped<PlatformTenantsApiClient>();
 builder.Services.AddScoped<SecurityGuardsApiClient>();
 builder.Services.AddScoped<SchedulesApiClient>();
 builder.Services.AddScoped<SectorsApiClient>();
@@ -31,12 +35,17 @@ builder.Services.AddScoped<ApiHttpClient>(sp =>
     var urlBuilder = sp.GetRequiredService<ApiUrlBuilder>();
     var jsonOptions = sp.GetRequiredService<JsonSerializerOptions>();
     var sessionStorage = sp.GetRequiredService<JwtSessionStorage>();
+    var platformSessionStorage = sp.GetRequiredService<PlatformJwtSessionStorage>();
     var authStateProvider = sp.GetRequiredService<CustomAuthStateProvider>();
     var navigationManager = sp.GetRequiredService<NavigationManager>();
 
-    var handlerPipeline = new UnauthorizedRedirectHandler(sessionStorage, authStateProvider, navigationManager)
+    var handlerPipeline = new UnauthorizedRedirectHandler(
+            sessionStorage,
+            platformSessionStorage,
+            authStateProvider,
+            navigationManager)
     {
-        InnerHandler = new BearerTokenHandler(sessionStorage)
+        InnerHandler = new BearerTokenHandler(sessionStorage, platformSessionStorage)
         {
             InnerHandler = new HttpClientHandler(),
         },

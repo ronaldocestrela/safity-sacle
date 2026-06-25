@@ -10,6 +10,7 @@ namespace SafetyScale.Web.Blazor.Services.Auth;
 public static class JwtParser
 {
     public const string TenantClaimKey = "tenant_id";
+    public const string UserKindClaimKey = "user_kind";
 
     private static readonly string[] RoleClaimKeys =
     [
@@ -55,6 +56,11 @@ public static class JwtParser
             return null;
         }
 
+        if (IsPlatformUser(root))
+        {
+            return null;
+        }
+
         var tenantId = TenantIdFromPayload(root);
         if (string.IsNullOrEmpty(tenantId))
         {
@@ -63,6 +69,40 @@ public static class JwtParser
 
         var roles = FilterAppRoles(CollectRoleClaims(root));
         return new AuthSession(token, EmailFromPayload(root), roles, tenantId);
+    }
+
+    public static PlatformAuthSession? BuildPlatformSessionFromToken(string token)
+    {
+        var payload = ParseJwtPayload(token);
+        if (payload is null)
+        {
+            return null;
+        }
+
+        var root = payload.Value;
+        if (IsJwtExpired(root))
+        {
+            return null;
+        }
+
+        if (!IsPlatformUser(root))
+        {
+            return null;
+        }
+
+        var roles = FilterPlatformRoles(CollectRoleClaims(root));
+        return new PlatformAuthSession(token, EmailFromPayload(root), roles);
+    }
+
+    public static bool IsPlatformUser(JsonElement payload)
+    {
+        if (!payload.TryGetProperty(UserKindClaimKey, out var kind) ||
+            kind.ValueKind != JsonValueKind.String)
+        {
+            return false;
+        }
+
+        return string.Equals(kind.GetString(), "Platform", StringComparison.Ordinal);
     }
 
     public static bool IsJwtExpired(JsonElement payload, DateTimeOffset? now = null)
@@ -175,6 +215,33 @@ public static class JwtParser
             }
 
             if (Enum.TryParse<UserRole>(role, ignoreCase: false, out var parsed) &&
+                !result.Contains(parsed))
+            {
+                result.Add(parsed);
+            }
+        }
+
+        return result;
+    }
+
+    internal static IReadOnlyList<PlatformUserRole> FilterPlatformRoles(IReadOnlyList<string> roles)
+    {
+        var allowed = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "PlatformOwner",
+            "PlatformAdmin",
+            "PlatformSupport",
+        };
+        var result = new List<PlatformUserRole>();
+
+        foreach (var role in roles)
+        {
+            if (!allowed.Contains(role))
+            {
+                continue;
+            }
+
+            if (Enum.TryParse<PlatformUserRole>(role, ignoreCase: false, out var parsed) &&
                 !result.Contains(parsed))
             {
                 result.Add(parsed);
