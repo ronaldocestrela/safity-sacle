@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using SafetyScale.Application.Abstractions.Authentication;
 using SafetyScale.Application.Abstractions.Tenancy;
 using SafetyScale.Domain.Entities;
 using SafetyScale.Infrastructure.Identity;
@@ -11,7 +12,8 @@ namespace SafetyScale.Infrastructure.Tenancy;
 public sealed class TenantRegistrationService(
     ApplicationDbContext dbContext,
     UserManager<AppUser> userManager,
-    RoleManager<IdentityRole> roleManager)
+    RoleManager<IdentityRole> roleManager,
+    IEmailConfirmationService emailConfirmationService)
     : ITenantRegistrationService
 {
     private const int MaxSlugAttempts = 500;
@@ -97,7 +99,7 @@ public sealed class TenantRegistrationService(
                 Email = rawEmail,
                 TenantId = tenant.Id,
                 DisplayName = trimmedAdminName,
-                EmailConfirmed = true,
+                EmailConfirmed = false,
             };
 
             var createResult = await userManager.CreateAsync(admin, input.AdminPassword);
@@ -143,6 +145,12 @@ public sealed class TenantRegistrationService(
             }
 
             await transaction.CommitAsync(cancellationToken);
+
+            await emailConfirmationService.EnqueueConfirmationEmailAsync(
+                admin.Id,
+                rawEmail,
+                trimmedAdminName,
+                cancellationToken);
 
             return new RegisterTenantResult(
                 RegisterTenantStatus.Success,

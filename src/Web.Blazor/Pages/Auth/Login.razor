@@ -23,7 +23,7 @@
 
                     @if (_registrationHint)
                     {
-                        <p class="banner">Empresa cadastrada com sucesso. Faça login com as credenciais informadas.</p>
+                        <p class="banner">Empresa cadastrada com sucesso. Confirme seu e-mail pelo link enviado antes de entrar.</p>
                     }
 
                     @if (!string.IsNullOrEmpty(_errorMessage))
@@ -141,9 +141,13 @@
             var result = await AuthService.LoginAsync(_form.Email, _form.Password);
             if (!result.Ok)
             {
-                _errorMessage = result.Reason == LoginFailureReason.Invalid
-                    ? "E-mail ou senha inválidos."
-                    : "Não foi possível conectar à API. Verifique se o servidor está no ar.";
+                _errorMessage = result.Reason switch
+                {
+                    LoginFailureReason.EmailNotConfirmed =>
+                        "Confirme seu e-mail pelo link enviado antes de entrar.",
+                    LoginFailureReason.Invalid => "E-mail ou senha inválidos.",
+                    _ => "Não foi possível conectar à API. Verifique se o servidor está no ar.",
+                };
                 return;
             }
 

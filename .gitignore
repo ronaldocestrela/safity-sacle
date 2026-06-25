@@ -39,6 +39,7 @@ node_modules/
 !.env.example
 secrets.json
 appsettings.Local.json
+appsettings.Development.json
 appsettings.*.local.json
 
 # OS generated files
@@ -51,3 +52,4 @@ src/Api/*.db-wal
 src/Api/*.db-shm
 
 .cursor/
+src/Api/appsettings.Development.json

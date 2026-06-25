@@ -184,7 +184,7 @@
             {
                 var encodedEmail = Uri.EscapeDataString(_form.AdminEmail.Trim());
                 Navigation.NavigateTo(
-                    $"/login?registrationSuccess=true&email={encodedEmail}",
+                    $"/login?registrationSuccess=true&email={encodedEmail}&confirmEmail=true",
                     replace: true);
                 return;
             }

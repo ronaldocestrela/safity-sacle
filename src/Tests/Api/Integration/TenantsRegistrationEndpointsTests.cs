@@ -3,6 +3,10 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using FluentAssertions;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.DependencyInjection;
+using SafetyScale.Infrastructure.Identity;
+using SafetyScale.Tests.Api.Integration;
 
 namespace SafetyScale.Tests.Api.Integration;
 
@@ -16,7 +20,7 @@ public class TenantsRegistrationEndpointsTests
     private sealed record RegisterTenantResponseDto(Guid TenantId, string AdminUserId, string TenantSlug);
 
     [Fact]
-    public async Task PostRegister_ShouldCreateTenant_And_AdminGetsJwt_WithTenantClaim()
+    public async Task PostRegister_ShouldCreateTenant_And_AdminGetsJwt_AfterEmailConfirmation()
     {
         using var factory = new TestWebApplicationFactory();
         using var client = CreateHttpsClient(factory);
@@ -40,6 +44,24 @@ public class TenantsRegistrationEndpointsTests
         body.Should().NotBeNull();
         body!.TenantId.Should().NotBe(Guid.Empty);
         body.AdminUserId.Should().NotBeNullOrWhiteSpace();
+
+        var loginBeforeConfirm = await client.PostAsJsonAsync(
+            "/api/auth/login",
+            new { email, password });
+
+        loginBeforeConfirm.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+
+        using var scope = factory.Services.CreateScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+        var user = await userManager.FindByIdAsync(body.AdminUserId);
+        user.Should().NotBeNull();
+        var confirmationToken = await userManager.GenerateEmailConfirmationTokenAsync(user!);
+
+        var confirmResponse = await client.PostAsJsonAsync(
+            "/api/auth/confirm-email",
+            new { userId = user!.Id, token = confirmationToken });
+
+        confirmResponse.EnsureSuccessStatusCode();
 
         var loginResp = await client.PostAsJsonAsync(
             "/api/auth/login",

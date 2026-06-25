@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Components;
 using SafetyScale.Web.Blazor.Models.Auth;
 using SafetyScale.Web.Blazor.Services.Api;
@@ -33,6 +34,12 @@ public sealed class AuthSessionService(
 
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
+                var body = await response.Content.ReadAsStringAsync(cancellationToken);
+                if (IsEmailNotConfirmed(body))
+                {
+                    return new LoginAttemptResult(false, LoginFailureReason.EmailNotConfirmed);
+                }
+
                 return new LoginAttemptResult(false, LoginFailureReason.Invalid);
             }
 
@@ -62,6 +69,43 @@ public sealed class AuthSessionService(
         }
     }
 
+    public async Task<ConfirmEmailOutcome> ConfirmEmailAsync(
+        string userId,
+        string token,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var response = await apiClient.PostJsonAsync(
+                "/api/auth/confirm-email",
+                new ConfirmEmailRequestDto(userId, token),
+                PublicRequest,
+                cancellationToken);
+
+            var message = await ApiErrorReader.ReadMessageAsync(response, cancellationToken);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return message?.Contains("já estava", StringComparison.OrdinalIgnoreCase) == true
+                    ? new ConfirmEmailOutcome(ConfirmEmailOutcomeStatus.AlreadyConfirmed, message)
+                    : new ConfirmEmailOutcome(ConfirmEmailOutcomeStatus.Success, message);
+            }
+
+            return response.StatusCode switch
+            {
+                System.Net.HttpStatusCode.BadRequest =>
+                    new ConfirmEmailOutcome(ConfirmEmailOutcomeStatus.InvalidToken, message),
+                System.Net.HttpStatusCode.NotFound =>
+                    new ConfirmEmailOutcome(ConfirmEmailOutcomeStatus.UserNotFound, message),
+                _ => new ConfirmEmailOutcome(ConfirmEmailOutcomeStatus.Network, message),
+            };
+        }
+        catch (HttpRequestException)
+        {
+            return new ConfirmEmailOutcome(ConfirmEmailOutcomeStatus.Network);
+        }
+    }
+
     public async Task LogoutAsync(
         bool navigateToLogin = false,
         CancellationToken cancellationToken = default)
@@ -82,5 +126,31 @@ public sealed class AuthSessionService(
     {
         await sessionStorage.ClearAsync(cancellationToken);
         authStateProvider.NotifyAuthenticationStateChanged();
+    }
+
+    private static bool IsEmailNotConfirmed(string body)
+    {
+        if (string.IsNullOrWhiteSpace(body))
+        {
+            return false;
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            if (doc.RootElement.TryGetProperty("code", out var codeElement) &&
+                codeElement.ValueKind == JsonValueKind.String)
+            {
+                return string.Equals(
+                    codeElement.GetString(),
+                    "email_not_confirmed",
+                    StringComparison.OrdinalIgnoreCase);
+            }
+        }
+        catch (JsonException)
+        {
+        }
+
+        return false;
     }
 }

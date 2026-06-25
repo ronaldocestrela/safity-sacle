@@ -81,6 +81,33 @@ internal static class PublicAuthTestHelper
     public static HttpResponseMessage LoginUnauthorizedResponse() =>
         new(HttpStatusCode.Unauthorized);
 
+    public static HttpResponseMessage LoginEmailNotConfirmedResponse() =>
+        new(HttpStatusCode.Unauthorized)
+        {
+            Content = new StringContent(
+                """{"message":"Confirme seu e-mail antes de entrar.","code":"email_not_confirmed"}""",
+                Encoding.UTF8,
+                "application/json"),
+        };
+
+    public static HttpResponseMessage ConfirmEmailSuccessResponse() =>
+        new(HttpStatusCode.OK)
+        {
+            Content = new StringContent(
+                """{"message":"E-mail confirmado com sucesso."}""",
+                Encoding.UTF8,
+                "application/json"),
+        };
+
+    public static HttpResponseMessage ConfirmEmailInvalidResponse() =>
+        new(HttpStatusCode.BadRequest)
+        {
+            Content = new StringContent(
+                """{"message":"Link de confirmação inválido ou expirado."}""",
+                Encoding.UTF8,
+                "application/json"),
+        };
+
     public static HttpResponseMessage SignupEmailConflictResponse() =>
         new(HttpStatusCode.Conflict)
         {
