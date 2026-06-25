@@ -1,10 +1,12 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SafetyScale.Application.Abstractions.Authentication;
+using SafetyScale.Application.Abstractions.Messaging;
 using SafetyScale.Application.Abstractions.Persistence;
 using SafetyScale.Application.Abstractions.Tenancy;
 using SafetyScale.Infrastructure.Authentication;
 using SafetyScale.Infrastructure.Identity;
+using SafetyScale.Infrastructure.Messaging.Email;
 using SafetyScale.Infrastructure.Persistence;
 using SafetyScale.Infrastructure.Persistence.Repositories;
 using SafetyScale.Infrastructure.Tenancy;
@@ -23,6 +25,8 @@ public static class DependencyInjection
             ?? "Server=localhost,1433;Database=safetyscale;User Id=sa;Password=Your_Strong_LocalDev_Pwd1;Encrypt=True;TrustServerCertificate=True;";
 
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
+        services.Configure<SmtpOptions>(configuration.GetSection(SmtpOptions.SectionName));
+        services.Configure<EmailQueueWorkerOptions>(configuration.GetSection(EmailQueueWorkerOptions.SectionName));
 
         services.AddScoped<ITenantExecutionContext, TenantExecutionContext>();
 
@@ -51,6 +55,11 @@ public static class DependencyInjection
         services.AddScoped<IMonthlyScheduleRepository, MonthlyScheduleRepository>();
         services.AddScoped<ISectorRepository, SectorRepository>();
         services.AddScoped<ISecurityGuardSectorRepository, SecurityGuardSectorRepository>();
+        services.AddScoped<IEmailQueueRepository, EmailQueueRepository>();
+        services.AddScoped<IEmailQueueService, EmailQueueService>();
+        services.AddScoped<IEmailSender, SmtpEmailSender>();
+        services.AddScoped<IEmailQueueProcessor, EmailQueueProcessor>();
+        services.AddHostedService<EmailQueueWorker>();
 
         return services;
     }

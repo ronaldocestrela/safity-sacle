@@ -21,6 +21,7 @@ public class ApplicationDbContext(
     public DbSet<UnavailableDay> UnavailableDays => Set<UnavailableDay>();
     public DbSet<MonthlySchedule> MonthlySchedules => Set<MonthlySchedule>();
     public DbSet<ScheduleItem> ScheduleItems => Set<ScheduleItem>();
+    public DbSet<EmailQueueMessage> EmailQueueMessages => Set<EmailQueueMessage>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -199,6 +200,22 @@ public class ApplicationDbContext(
             entity.HasQueryFilter(si =>
                 !_tenant.IsTenantIsolationEnabled ||
                 si.TenantId == (_tenant.TenantId ?? Guid.Empty));
+        });
+
+        builder.Entity<EmailQueueMessage>(entity =>
+        {
+            entity.ToTable("EmailQueueMessages");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.To).HasMaxLength(320).IsRequired();
+            entity.Property(x => x.Subject).HasMaxLength(500).IsRequired();
+            entity.Property(x => x.BodyHtml).HasColumnType("nvarchar(max)");
+            entity.Property(x => x.BodyText).HasColumnType("nvarchar(max)");
+            entity.Property(x => x.Status).IsRequired();
+            entity.Property(x => x.Attempts).IsRequired();
+            entity.Property(x => x.AvailableAtUtc).IsRequired();
+            entity.Property(x => x.LastError).HasMaxLength(2000);
+            entity.Property(x => x.CreatedAtUtc).IsRequired();
+            entity.HasIndex(x => new { x.Status, x.AvailableAtUtc });
         });
     }
 
