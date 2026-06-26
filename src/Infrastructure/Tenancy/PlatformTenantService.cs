@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.EntityFrameworkCore;
 using SafetyScale.Application.Abstractions.Tenancy;
+using SafetyScale.Domain.Entities;
 using SafetyScale.Infrastructure.Persistence;
 
 namespace SafetyScale.Infrastructure.Tenancy;
@@ -21,7 +22,10 @@ public sealed class PlatformTenantService(
                 t.Name,
                 t.Slug,
                 t.IsActive,
-                t.CreatedAt))
+                t.CreatedAt,
+                (LeadStatusDto)t.LeadStatus,
+                t.PlatformPlanId,
+                t.PlatformPlan != null ? t.PlatformPlan.Name : null))
             .ToListAsync(cancellationToken);
     }
 
@@ -58,12 +62,26 @@ public sealed class PlatformTenantService(
                 Errors: validationErrors);
         }
 
+        var planValidation = await ValidatePlanAssignmentAsync(
+            input.PlatformPlanId,
+            input.LeadStatus,
+            cancellationToken);
+
+        if (planValidation is not null)
+        {
+            return planValidation;
+        }
+
+        var adminEmail = input.AdminEmail!.Trim();
+
         var registerInput = new RegisterTenantInput(
             input.TenantName,
             input.AdminName,
-            input.AdminEmail.Trim(),
+            adminEmail,
             input.AdminPassword,
-            input.AdminPassword);
+            input.AdminPassword,
+            input.PlatformPlanId,
+            input.LeadStatus);
 
         var result = await tenantRegistrationService.RegisterFromPlatformAsync(registerInput, cancellationToken);
 
@@ -105,5 +123,83 @@ public sealed class PlatformTenantService(
         tenant.IsActive = isActive;
         await dbContext.SaveChangesAsync(cancellationToken);
         return new SetTenantActiveResult(SetTenantActiveStatus.Success);
+    }
+
+    public async Task<UpdateTenantCommercialResult> UpdateCommercialAsync(
+        Guid tenantId,
+        UpdateTenantCommercialInput input,
+        CancellationToken cancellationToken = default)
+    {
+        var tenant = await dbContext.Tenants
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(t => t.Id == tenantId, cancellationToken);
+
+        if (tenant is null)
+        {
+            return new UpdateTenantCommercialResult(UpdateTenantCommercialStatus.NotFound);
+        }
+
+        var planValidation = await ValidatePlanAssignmentAsync(
+            input.PlatformPlanId,
+            input.LeadStatus,
+            cancellationToken,
+            currentPlanId: tenant.PlatformPlanId);
+
+        if (planValidation is not null)
+        {
+            return new UpdateTenantCommercialResult(
+                planValidation.Status switch
+                {
+                    CreatePlatformTenantStatus.PlanNotFound => UpdateTenantCommercialStatus.PlanNotFound,
+                    CreatePlatformTenantStatus.PlanInactive => UpdateTenantCommercialStatus.PlanInactive,
+                    CreatePlatformTenantStatus.ContractedRequiresPlan => UpdateTenantCommercialStatus.ContractedRequiresPlan,
+                    _ => UpdateTenantCommercialStatus.ValidationFailed,
+                },
+                planValidation.Errors);
+        }
+
+        tenant.PlatformPlanId = input.PlatformPlanId;
+        tenant.LeadStatus = (LeadStatus)input.LeadStatus;
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return new UpdateTenantCommercialResult(UpdateTenantCommercialStatus.Success);
+    }
+
+    private async Task<CreatePlatformTenantResult?> ValidatePlanAssignmentAsync(
+        Guid? platformPlanId,
+        LeadStatusDto leadStatus,
+        CancellationToken cancellationToken,
+        Guid? currentPlanId = null)
+    {
+        if (leadStatus == LeadStatusDto.Contracted && platformPlanId is null)
+        {
+            return new CreatePlatformTenantResult(
+                CreatePlatformTenantStatus.ContractedRequiresPlan,
+                Errors: ["Status contratado exige um plano ativo."]);
+        }
+
+        if (platformPlanId is null)
+        {
+            return null;
+        }
+
+        var plan = await dbContext.PlatformPlans
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Id == platformPlanId.Value, cancellationToken);
+
+        if (plan is null)
+        {
+            return new CreatePlatformTenantResult(CreatePlatformTenantStatus.PlanNotFound);
+        }
+
+        var isSamePlan = currentPlanId == platformPlanId;
+        if (!plan.IsActive && !isSamePlan)
+        {
+            return new CreatePlatformTenantResult(
+                CreatePlatformTenantStatus.PlanInactive,
+                Errors: ["Somente planos ativos podem ser selecionados."]);
+        }
+
+        return null;
     }
 }

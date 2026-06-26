@@ -5,4 +5,6 @@ public sealed record RegisterTenantInput(
     string AdminName,
     string AdminEmail,
     string AdminPassword,
-    string ConfirmPassword);
+    string ConfirmPassword,
+    Guid? PlatformPlanId = null,
+    LeadStatusDto LeadStatus = LeadStatusDto.New);

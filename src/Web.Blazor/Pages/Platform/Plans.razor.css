@@ -91,11 +91,25 @@
     font-weight: 600;
 }
 
+.full-width {
+    grid-column: 1 / -1;
+}
+
 .input {
     font: inherit;
     padding: 0.55rem 0.65rem;
     border-radius: 4px;
     border: 1px solid #cbd5e1;
+}
+
+.textarea {
+    resize: vertical;
+    min-height: 4rem;
+}
+
+.form-actions {
+    display: flex;
+    gap: 0.75rem;
 }
 
 .primary,
@@ -134,6 +148,12 @@ td {
     vertical-align: middle;
 }
 
+.actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
 .badge-active,
 .badge-inactive {
     display: inline-block;
@@ -160,19 +180,6 @@ td {
     cursor: pointer;
     padding: 0;
     font: inherit;
-}
-
-.actions {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-    align-items: center;
-}
-
-.inline-select {
-    min-width: 120px;
-    padding: 0.35rem 0.45rem;
-    font-size: 0.8125rem;
 }
 
 .error,

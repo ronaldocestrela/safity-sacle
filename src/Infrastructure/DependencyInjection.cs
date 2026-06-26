@@ -57,6 +57,7 @@ public static class DependencyInjection
         services.AddScoped<ISecurityGuardInviteService, SecurityGuardInviteService>();
         services.AddScoped<ITenantRegistrationService, TenantRegistrationService>();
         services.AddScoped<IPlatformTenantService, PlatformTenantService>();
+        services.AddScoped<IPlatformPlanService, PlatformPlanService>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IdentitySeeder>();
         services.AddScoped<ISecurityGuardRepository, SecurityGuardRepository>();

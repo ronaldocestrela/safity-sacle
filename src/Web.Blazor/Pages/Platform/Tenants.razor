@@ -3,6 +3,7 @@
 @attribute [Authorize(Roles = "PlatformOwner,PlatformAdmin,PlatformSupport")]
 @inject PlatformAuthSessionService AuthService
 @inject PlatformTenantsApiClient TenantsClient
+@inject PlatformPlansApiClient PlansClient
 
 <PageTitle>SafetyScale — Tenants</PageTitle>
 
@@ -13,7 +14,10 @@
             <h1>Gestão de tenants</h1>
             <p class="subtitle">@_session?.Email</p>
         </div>
-        <button type="button" class="logout" @onclick="HandleLogoutAsync">Sair</button>
+        <div class="header-actions">
+            <a href="/platform/plans" class="nav-link">Planos</a>
+            <button type="button" class="logout" @onclick="HandleLogoutAsync">Sair</button>
+        </div>
     </header>
 
     @if (!string.IsNullOrEmpty(_errorMessage))
@@ -47,6 +51,25 @@
                         Admin — senha
                         <input @bind="_createForm.AdminPassword" type="password" class="input" disabled="@_busy" />
                     </label>
+                    <label>
+                        Plano
+                        <select @bind="_createForm.PlatformPlanId" class="input" disabled="@_busy">
+                            <option value="">Sem plano</option>
+                            @foreach (var plan in _activePlans)
+                            {
+                                <option value="@plan.Id">@plan.Name (@plan.PriceMonthly.ToString("C2"))</option>
+                            }
+                        </select>
+                    </label>
+                    <label>
+                        Status do lead
+                        <select @bind="_createForm.LeadStatus" class="input" disabled="@_busy">
+                            @foreach (var status in _leadStatuses)
+                            {
+                                <option value="@status">@LeadStatusLabels.GetLabel(status)</option>
+                            }
+                        </select>
+                    </label>
                 </div>
                 <button type="submit" class="primary" disabled="@_busy">Criar tenant</button>
             </EditForm>
@@ -75,6 +98,8 @@
                         <tr>
                             <th>Empresa</th>
                             <th>Slug</th>
+                            <th>Plano</th>
+                            <th>Status lead</th>
                             <th>Status</th>
                             <th>Criado em</th>
                             <AuthorizeView Roles="PlatformOwner,PlatformAdmin" Context="rowActionsAuth">
@@ -88,6 +113,8 @@
                             <tr>
                                 <td>@tenant.Name</td>
                                 <td><code>@tenant.Slug</code></td>
+                                <td>@(tenant.PlatformPlanName ?? "—")</td>
+                                <td>@LeadStatusLabels.GetLabel(tenant.LeadStatus)</td>
                                 <td>
                                     <span class="@(tenant.IsActive ? "badge-active" : "badge-inactive")">
                                         @(tenant.IsActive ? "Ativo" : "Inativo")
@@ -95,14 +122,33 @@
                                 </td>
                                 <td>@tenant.CreatedAt.ToLocalTime().ToString("g")</td>
                                 <AuthorizeView Roles="PlatformOwner,PlatformAdmin" Context="rowActionsAuth">
-                                    <td>
-                                        @if (tenant.IsActive)
+                                    <td class="actions">
+                                        @if (_editingTenantId == tenant.Id)
                                         {
+                                            <select @bind="_editCommercialForm.PlatformPlanId" class="input inline-select" disabled="@_busy">
+                                                <option value="">Sem plano</option>
+                                                @foreach (var plan in GetPlanOptionsForTenant(tenant))
+                                                {
+                                                    <option value="@plan.Id">@plan.Name</option>
+                                                }
+                                            </select>
+                                            <select @bind="_editCommercialForm.LeadStatus" class="input inline-select" disabled="@_busy">
+                                                @foreach (var status in _leadStatuses)
+                                                {
+                                                    <option value="@status">@LeadStatusLabels.GetLabel(status)</option>
+                                                }
+                                            </select>
                                             <button type="button"
                                                     class="link-btn"
                                                     disabled="@_busy"
-                                                    @onclick="() => SetActiveAsync(tenant.Id, false)">
-                                                Desativar
+                                                    @onclick="() => SaveCommercialAsync(tenant.Id)">
+                                                Salvar
+                                            </button>
+                                            <button type="button"
+                                                    class="link-btn"
+                                                    disabled="@_busy"
+                                                    @onclick="CancelCommercialEdit">
+                                                Cancelar
                                             </button>
                                         }
                                         else
@@ -110,9 +156,27 @@
                                             <button type="button"
                                                     class="link-btn"
                                                     disabled="@_busy"
-                                                    @onclick="() => SetActiveAsync(tenant.Id, true)">
-                                                Ativar
+                                                    @onclick="() => StartCommercialEdit(tenant)">
+                                                Comercial
                                             </button>
+                                            @if (tenant.IsActive)
+                                            {
+                                                <button type="button"
+                                                        class="link-btn"
+                                                        disabled="@_busy"
+                                                        @onclick="() => SetActiveAsync(tenant.Id, false)">
+                                                    Desativar
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button type="button"
+                                                        class="link-btn"
+                                                        disabled="@_busy"
+                                                        @onclick="() => SetActiveAsync(tenant.Id, true)">
+                                                    Ativar
+                                                </button>
+                                            }
                                         }
                                     </td>
                                 </AuthorizeView>
@@ -128,7 +192,12 @@
 @code {
     private PlatformAuthSession? _session;
     private readonly List<PlatformTenantDto> _tenants = [];
+    private readonly List<PlatformPlanDto> _activePlans = [];
+    private readonly List<PlatformPlanDto> _allPlans = [];
     private readonly CreateTenantForm _createForm = new();
+    private readonly EditCommercialForm _editCommercialForm = new();
+    private readonly LeadStatusDto[] _leadStatuses = Enum.GetValues<LeadStatusDto>();
+    private Guid? _editingTenantId;
     private bool _loading = true;
     private bool _busy;
     private string? _errorMessage;
@@ -137,7 +206,24 @@
     protected override async Task OnInitializedAsync()
     {
         _session = await AuthService.GetSessionAsync();
-        await LoadTenantsAsync();
+        await Task.WhenAll(LoadTenantsAsync(), LoadPlansAsync());
+    }
+
+    private async Task LoadPlansAsync()
+    {
+        try
+        {
+            var active = await PlansClient.ListActiveAsync();
+            var all = await PlansClient.ListAsync();
+            _activePlans.Clear();
+            _activePlans.AddRange(active);
+            _allPlans.Clear();
+            _allPlans.AddRange(all);
+        }
+        catch (Exception)
+        {
+            _errorMessage = "Não foi possível carregar os planos.";
+        }
     }
 
     private async Task LoadTenantsAsync()
@@ -160,6 +246,22 @@
         }
     }
 
+    private IEnumerable<PlatformPlanDto> GetPlanOptionsForTenant(PlatformTenantDto tenant)
+    {
+        var options = _activePlans.ToList();
+        if (tenant.PlatformPlanId is Guid currentPlanId &&
+            options.All(p => p.Id != currentPlanId))
+        {
+            var current = _allPlans.FirstOrDefault(p => p.Id == currentPlanId);
+            if (current is not null)
+            {
+                options.Add(current);
+            }
+        }
+
+        return options.OrderBy(p => p.Name);
+    }
+
     private async Task HandleCreateAsync()
     {
         _busy = true;
@@ -168,11 +270,17 @@
 
         try
         {
+            Guid? planId = string.IsNullOrEmpty(_createForm.PlatformPlanId)
+                ? null
+                : Guid.Parse(_createForm.PlatformPlanId);
+
             var result = await TenantsClient.CreateAsync(new CreatePlatformTenantRequestDto(
                 _createForm.TenantName.Trim(),
                 _createForm.AdminName.Trim(),
                 _createForm.AdminEmail.Trim(),
-                _createForm.AdminPassword));
+                _createForm.AdminPassword,
+                planId,
+                _createForm.LeadStatus));
 
             if (!result.Ok)
             {
@@ -182,6 +290,51 @@
 
             _successMessage = "Tenant criado com sucesso.";
             _createForm.Clear();
+            await LoadTenantsAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void StartCommercialEdit(PlatformTenantDto tenant)
+    {
+        _editingTenantId = tenant.Id;
+        _editCommercialForm.PlatformPlanId = tenant.PlatformPlanId?.ToString() ?? string.Empty;
+        _editCommercialForm.LeadStatus = tenant.LeadStatus;
+    }
+
+    private void CancelCommercialEdit()
+    {
+        _editingTenantId = null;
+        _editCommercialForm.Clear();
+    }
+
+    private async Task SaveCommercialAsync(Guid tenantId)
+    {
+        _busy = true;
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            Guid? planId = string.IsNullOrEmpty(_editCommercialForm.PlatformPlanId)
+                ? null
+                : Guid.Parse(_editCommercialForm.PlatformPlanId);
+
+            var ok = await TenantsClient.UpdateCommercialAsync(
+                tenantId,
+                new UpdateTenantCommercialRequestDto(planId, _editCommercialForm.LeadStatus));
+
+            if (!ok)
+            {
+                _errorMessage = "Não foi possível atualizar os dados comerciais.";
+                return;
+            }
+
+            _successMessage = "Dados comerciais atualizados.";
+            CancelCommercialEdit();
             await LoadTenantsAsync();
         }
         finally
@@ -228,6 +381,8 @@
         public string AdminName { get; set; } = string.Empty;
         public string AdminEmail { get; set; } = string.Empty;
         public string AdminPassword { get; set; } = string.Empty;
+        public string PlatformPlanId { get; set; } = string.Empty;
+        public LeadStatusDto LeadStatus { get; set; } = LeadStatusDto.New;
 
         public void Clear()
         {
@@ -235,6 +390,20 @@
             AdminName = string.Empty;
             AdminEmail = string.Empty;
             AdminPassword = string.Empty;
+            PlatformPlanId = string.Empty;
+            LeadStatus = LeadStatusDto.New;
+        }
+    }
+
+    private sealed class EditCommercialForm
+    {
+        public string PlatformPlanId { get; set; } = string.Empty;
+        public LeadStatusDto LeadStatus { get; set; } = LeadStatusDto.New;
+
+        public void Clear()
+        {
+            PlatformPlanId = string.Empty;
+            LeadStatus = LeadStatusDto.New;
         }
     }
 }
