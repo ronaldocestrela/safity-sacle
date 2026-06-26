@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600;700&amp;family=Inter:wght@400;500;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary-fixed-variant": "#6e3900",
+                    "surface-container-high": "#e5e9eb",
+                    "surface-container-low": "#f1f4f6",
+                    "primary-fixed": "#d2e4fb",
+                    "tertiary-fixed": "#ffdea0",
+                    "on-error-container": "#93000a",
+                    "on-tertiary": "#ffffff",
+                    "surface-container-highest": "#e0e3e5",
+                    "tertiary": "#1e1400",
+                    "secondary-fixed-dim": "#ffb77d",
+                    "surface-dim": "#d7dadc",
+                    "on-surface": "#181c1e",
+                    "on-tertiary-container": "#b98900",
+                    "tertiary-container": "#382700",
+                    "inverse-primary": "#b7c8de",
+                    "on-error": "#ffffff",
+                    "surface-tint": "#4f6073",
+                    "primary": "#041627",
+                    "surface-bright": "#f7fafc",
+                    "error": "#ba1a1a",
+                    "outline": "#74777d",
+                    "inverse-on-surface": "#eef1f3",
+                    "background": "#f7fafc",
+                    "primary-fixed-dim": "#b7c8de",
+                    "tertiary-fixed-dim": "#f6be3b",
+                    "on-secondary-container": "#603100",
+                    "on-secondary": "#ffffff",
+                    "on-primary-fixed": "#0b1d2d",
+                    "secondary-container": "#fd8b00",
+                    "on-primary": "#ffffff",
+                    "on-surface-variant": "#44474c",
+                    "outline-variant": "#c4c6cd",
+                    "surface": "#f7fafc",
+                    "error-container": "#ffdad6",
+                    "surface-variant": "#e0e3e5",
+                    "primary-container": "#1a2b3c",
+                    "inverse-surface": "#2d3133",
+                    "on-primary-container": "#8192a7",
+                    "surface-container-lowest": "#ffffff",
+                    "on-tertiary-fixed": "#261900",
+                    "on-primary-fixed-variant": "#38485a",
+                    "on-secondary-fixed": "#2f1500",
+                    "secondary": "#904d00",
+                    "surface-container": "#ebeef0",
+                    "on-tertiary-fixed-variant": "#5c4300",
+                    "on-background": "#181c1e",
+                    "secondary-fixed": "#ffdcc3"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "gutter": "16px",
+                    "base": "4px",
+                    "margin": "24px",
+                    "grid_columns": "12",
+                    "md": "16px",
+                    "sm": "12px",
+                    "lg": "24px",
+                    "xl": "32px",
+                    "xs": "8px"
+            },
+            "fontFamily": {
+                    "display-xl": ["IBM Plex Sans"],
+                    "data-tabular": ["JetBrains Mono"],
+                    "body-lg": ["Inter"],
+                    "body-sm": ["Inter"],
+                    "headline-md": ["IBM Plex Sans"],
+                    "label-caps": ["Inter"]
+            },
+            "fontSize": {
+                    "display-xl": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "data-tabular": ["13px", {"lineHeight": "16px", "letterSpacing": "-0.01em", "fontWeight": "500"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "letterSpacing": "0", "fontWeight": "400"}],
+                    "body-sm": ["14px", {"lineHeight": "20px", "letterSpacing": "0", "fontWeight": "400"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .restricted-tile {
+            background-image: repeating-linear-gradient(45deg, #ffdad6 0, #ffdad6 5px, #ffffff 5px, #ffffff 10px);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen flex flex-col font-body-sm text-body-sm">
+<header class="bg-surface dark:bg-inverse-surface border-b border-outline-variant dark:border-outline flex justify-between items-center w-full px-margin py-xs max-w-full docked full-width top-0 z-50">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center overflow-hidden border border-outline-variant">
+<img alt="Security Supervisor Profile" data-alt="A professional headshot of a security operations supervisor wearing a dark navy tactical polo shirt. The lighting is crisp and even, suggesting a high-tech command center environment. The supervisor has a neutral, vigilant expression, embodying the authoritative and systematic brand persona. The background is a slightly blurred array of digital monitors and status lights." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDndxHrw67DGd1UN4qTa7jvXonuyaJMhqITqz4MI5rw7jPVe0aN6aqa6Xj4MJ3QbysM-Dz_0zbfAeXJKTSiztLMHY8uPC1KhftW6yUFmTlHr8LH5h-yhNwVTJa1VZ5AdIh3QPQpqAqyAM-eVL5mBlLBcUoT3yIgkwHPng112kuSe8pU4juguMzde1KKFogLI1Lt-wZ7OiIQnI9sdT68vfmagkRqu5PUi8v-QLNtkaZUOA3NmcyBP_dz59T3MJy-2rdfh0h5iV8wUXE"/>
+</div>
+<h1 class="font-headline-md text-headline-md text-primary dark:text-primary-fixed">Availability</h1>
+</div>
+<button class="w-10 h-10 flex items-center justify-center text-primary dark:text-primary-fixed hover:bg-surface-container transition-colors duration-200">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+</header>
+<main class="flex-1 px-margin pt-lg pb-32 max-w-md mx-auto w-full">
+<section class="space-y-lg">
+<div class="space-y-xs">
+<label class="font-label-caps text-label-caps text-on-surface-variant">Select Personnel</label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-md flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-outline" data-icon="search">search</span>
+</div>
+<select class="w-full pl-xl pr-md py-sm bg-surface border border-outline rounded-lg focus:ring-2 focus:ring-primary focus:border-primary appearance-none font-body-lg text-body-lg">
+<option>Marcus Vane (ID: 4492)</option>
+<option>Sarah Jenkins (ID: 3120)</option>
+<option>Officer K. Chen (ID: 8821)</option>
+<option>David Miller (ID: 1092)</option>
+</select>
+<div class="absolute inset-y-0 right-0 pr-md flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-outline" data-icon="arrow_drop_down">arrow_drop_down</span>
+</div>
+</div>
+</div>
+<div class="bg-surface border border-outline-variant rounded-xl overflow-hidden">
+<div class="p-md flex justify-between items-center border-b border-outline-variant bg-surface-container-low">
+<button class="p-xs hover:bg-surface-container rounded-lg transition-all">
+<span class="material-symbols-outlined" data-icon="chevron_left">chevron_left</span>
+</button>
+<h2 class="font-headline-md text-headline-md text-primary">October 2023</h2>
+<button class="p-xs hover:bg-surface-container rounded-lg transition-all">
+<span class="material-symbols-outlined" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+<div class="grid grid-cols-7 text-center py-sm border-b border-outline-variant bg-surface-container-lowest">
+<span class="font-label-caps text-label-caps text-outline">S</span>
+<span class="font-label-caps text-label-caps text-outline">M</span>
+<span class="font-label-caps text-label-caps text-outline">T</span>
+<span class="font-label-caps text-label-caps text-outline">W</span>
+<span class="font-label-caps text-label-caps text-outline">T</span>
+<span class="font-label-caps text-label-caps text-outline">F</span>
+<span class="font-label-caps text-label-caps text-outline">S</span>
+</div>
+<div class="grid grid-cols-7 border-outline-variant">
+<div class="h-16 border-r border-b border-outline-variant p-1 text-outline opacity-30 flex flex-col justify-start items-center">
+<span class="font-data-tabular text-data-tabular">26</span>
+</div>
+<div class="h-16 border-r border-b border-outline-variant p-1 text-outline opacity-30 flex flex-col justify-start items-center">
+<span class="font-data-tabular text-data-tabular">27</span>
+</div>
+<div class="h-16 border-r border-b border-outline-variant p-1 text-outline opacity-30 flex flex-col justify-start items-center">
+<span class="font-data-tabular text-data-tabular">28</span>
+</div>
+<div class="h-16 border-r border-b border-outline-variant p-1 text-outline opacity-30 flex flex-col justify-start items-center">
+<span class="font-data-tabular text-data-tabular">29</span>
+</div>
+<div class="h-16 border-r border-b border-outline-variant p-1 text-outline opacity-30 flex flex-col justify-start items-center">
+<span class="font-data-tabular text-data-tabular">30</span>
+</div>
+<div class="h-16 border-r border-b border-outline-variant p-1 bg-surface-container-lowest flex flex-col justify-start items-center cursor-pointer hover:bg-surface-container-high transition-colors">
+<span class="font-data-tabular text-data-tabular">1</span>
+</div>
+<div class="h-16 border-b border-outline-variant p-1 bg-surface-container-lowest flex flex-col justify-start items-center cursor-pointer hover:bg-surface-container-high transition-colors">
+<span class="font-data-tabular text-data-tabular">2</span>
+</div>
+<div class="h-16 border-r border-b border-outline-variant p-1 bg-surface-container-lowest flex flex-col justify-start items-center cursor-pointer">
+<span class="font-data-tabular text-data-tabular">3</span>
+</div>
+<div class="h-16 border-r border-b border-outline-variant p-1 restricted-tile flex flex-col justify-between items-center border-2 border-error">
+<span class="font-data-tabular text-data-tabular text-error font-bold">4</span>
+<span class="text-[10px] bg-error text-white px-1 rounded mb-1">UNAVAIL</span>
+</div>
+<div class="h-16 border-r border-b border-outline-variant p-1 bg-surface-container-lowest flex flex-col justify-start items-center">
+<span class="font-data-tabular text-data-tabular">5</span>
+</div>
+<div class="h-16 border-r border-b border-outline-variant p-1 bg-surface-container-lowest flex flex-col justify-start items-center">
+<span class="font-data-tabular text-data-tabular">6</span>
+</div>
+<div class="h-16 border-r border-b border-outline-variant p-1 bg-surface-container-lowest flex flex-col justify-start items-center">
+<span class="font-data-tabular text-data-tabular">7</span>
+</div>
+<div class="h-16 border-r border-b border-outline-variant p-1 restricted-tile flex flex-col justify-between items-center border-2 border-error">
+<span class="font-data-tabular text-data-tabular text-error font-bold">8</span>
+<span class="text-[10px] bg-error text-white px-1 rounded mb-1">UNAVAIL</span>
+</div>
+<div class="h-16 border-b border-outline-variant p-1 bg-surface-container-lowest flex flex-col justify-start items-center">
+<span class="font-data-tabular text-data-tabular">9</span>
+</div>
+<div class="h-16 border-r border-b border-outline-variant p-1 bg-surface-container-lowest flex flex-col justify-start items-center">
+<span class="font-data-tabular text-data-tabular">10</span>
+</div>
+<div class="h-16 border-r border-b border-outline-variant p-1 bg-surface-container-lowest flex flex-col justify-start items-center">
+<span class="font-data-tabular text-data-tabular">11</span>
+</div>
+<div class="h-16 border-r border-b border-outline-variant p-1 bg-surface-container-lowest flex flex-col justify-start items-center">
+<span class="font-data-tabular text-data-tabular">12</span>
+</div>
+<div class="h-16 border-r border-b border-outline-variant p-1 bg-primary text-white flex flex-col justify-between items-center">
+<span class="font-data-tabular text-data-tabular font-bold">13</span>
+<div class="w-2 h-2 rounded-full bg-secondary mb-1"></div>
+</div>
+<div class="h-16 border-r border-b border-outline-variant p-1 bg-surface-container-lowest flex flex-col justify-start items-center">
+<span class="font-data-tabular text-data-tabular">14</span>
+</div>
+<div class="h-16 border-r border-b border-outline-variant p-1 bg-surface-container-lowest flex flex-col justify-start items-center">
+<span class="font-data-tabular text-data-tabular">15</span>
+</div>
+<div class="h-16 border-b border-outline-variant p-1 bg-surface-container-lowest flex flex-col justify-start items-center">
+<span class="font-data-tabular text-data-tabular">16</span>
+</div>
+</div>
+</div>
+<div class="p-md bg-surface-container rounded-xl flex items-start gap-sm border border-outline-variant">
+<span class="material-symbols-outlined text-secondary" data-icon="info">info</span>
+<p class="text-on-surface-variant font-body-sm leading-tight">
+                    Tapping a date will toggle it as <span class="font-bold text-error">Unavailable</span>. These restrictions will automatically prevent scheduling this personnel for any shifts on the selected days.
+                </p>
+</div>
+</section>
+</main>
+<div class="fixed bottom-20 left-0 w-full px-margin pb-sm bg-gradient-to-t from-background via-background to-transparent pt-lg">
+<button class="w-full bg-primary text-white font-label-caps text-label-caps py-md rounded-xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-xs">
+<span class="material-symbols-outlined" data-icon="save" style="font-variation-settings: 'FILL' 1;">save</span>
+            SAVE RESTRICTIONS
+        </button>
+</div>
+<nav class="fixed bottom-0 left-0 w-full z-50 bg-surface dark:bg-inverse-surface border-t border-outline-variant dark:border-outline flex justify-around items-center px-gutter py-sm docked full-width bottom-0">
+<div class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant px-4 py-1 hover:text-primary dark:hover:text-primary-fixed scale-95 active:scale-90 transition-transform">
+<span class="material-symbols-outlined" data-icon="calendar_month">calendar_month</span>
+<span class="font-label-caps text-label-caps">Dashboard</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant px-4 py-1 hover:text-primary dark:hover:text-primary-fixed scale-95 active:scale-90 transition-transform">
+<span class="material-symbols-outlined" data-icon="shield_person">shield_person</span>
+<span class="font-label-caps text-label-caps">Guards</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-primary-container dark:bg-primary text-on-primary-container dark:text-on-primary rounded-xl px-4 py-1 scale-95 active:scale-90 transition-transform">
+<span class="material-symbols-outlined" data-icon="event_available">event_available</span>
+<span class="font-label-caps text-label-caps">Availability</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant px-4 py-1 hover:text-primary dark:hover:text-primary-fixed scale-95 active:scale-90 transition-transform">
+<span class="material-symbols-outlined" data-icon="settings_suggest">settings_suggest</span>
+<span class="font-label-caps text-label-caps">Rules</span>
+</div>
+</nav>
+</body></html>
