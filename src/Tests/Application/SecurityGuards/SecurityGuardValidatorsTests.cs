@@ -12,7 +12,9 @@ public class SecurityGuardValidatorsTests
     [Fact]
     public async Task CreateValidator_ShouldFail_WhenNameIsEmpty()
     {
-        var validator = new CreateSecurityGuardCommandValidator(new FakeSecurityGuardInviteService());
+        var validator = new CreateSecurityGuardCommandValidator(
+            new FakeSecurityGuardInviteService(),
+            new FakePlanLimitEvaluator());
 
         var result = await validator.ValidateAsync(new CreateSecurityGuardCommand(string.Empty, "guard@example.com"));
 
@@ -22,7 +24,9 @@ public class SecurityGuardValidatorsTests
     [Fact]
     public async Task CreateValidator_ShouldFail_WhenEmailIsAlreadyUsed()
     {
-        var validator = new CreateSecurityGuardCommandValidator(new FakeSecurityGuardInviteService { EmailAvailable = false });
+        var validator = new CreateSecurityGuardCommandValidator(
+            new FakeSecurityGuardInviteService { EmailAvailable = false },
+            new FakePlanLimitEvaluator());
 
         var result = await validator.ValidateAsync(new CreateSecurityGuardCommand("Maria", "used@example.com"));
 

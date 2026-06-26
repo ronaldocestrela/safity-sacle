@@ -42,6 +42,8 @@ public class PlatformPlansIntegrationTests
             code,
             description = "Plano inicial",
             priceMonthly = 99.90m,
+            maxSecurityGuards = 10,
+            maxSectors = 5,
         });
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
@@ -62,6 +64,8 @@ public class PlatformPlansIntegrationTests
             code,
             description = "Plano inicial",
             priceMonthly = 99.90m,
+            maxSecurityGuards = 10,
+            maxSectors = 5,
         };
 
         var first = await client.PostAsJsonAsync("/api/platform/plans", payload);
@@ -161,7 +165,50 @@ public class PlatformPlansIntegrationTests
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
-    private static async Task<Guid> CreatePlanAsync(HttpClient client)
+    [Fact]
+    public async Task PlatformTenants_UpdateCommercial_DowngradeBelowUsage_ReturnsBadRequest()
+    {
+        using var factory = new TestWebApplicationFactory();
+        await PlatformTestHelper.EnsurePlatformUsersAsync(factory);
+        using var client = PlatformTestHelper.CreateHttpsClient(factory);
+        await PlatformTestHelper.AuthenticateAsPlatformUserAsync(client, PlatformOwnerEmail, PlatformOwnerPassword);
+
+        var largePlanId = await CreatePlanAsync(client, maxSecurityGuards: 10, maxSectors: 10);
+        var smallPlanId = await CreatePlanAsync(client, maxSecurityGuards: 1, maxSectors: 1);
+        var tenantId = await CreateTenantAsync(client, largePlanId);
+        await SeedExtraSectorAsync(factory, tenantId);
+
+        var response = await client.PatchAsJsonAsync(
+            $"/api/platform/tenants/{tenantId}/commercial",
+            new
+            {
+                platformPlanId = smallPlanId,
+                leadStatus = 3,
+            });
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    private static async Task SeedExtraSectorAsync(TestWebApplicationFactory factory, Guid tenantId)
+    {
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<SafetyScale.Infrastructure.Persistence.ApplicationDbContext>();
+        db.Sectors.Add(new SafetyScale.Domain.Entities.Sector
+        {
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
+            Name = "Extra Sector",
+            RequiredGuardsPerDay = 1,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow,
+        });
+        await db.SaveChangesAsync();
+    }
+
+    private static async Task<Guid> CreatePlanAsync(
+        HttpClient client,
+        int maxSecurityGuards = 10,
+        int maxSectors = 5)
     {
         var code = $"plan-{Guid.NewGuid():N}"[..20];
         var response = await client.PostAsJsonAsync("/api/platform/plans", new
@@ -170,6 +217,8 @@ public class PlatformPlansIntegrationTests
             code,
             description = "Plano business",
             priceMonthly = 199.90m,
+            maxSecurityGuards,
+            maxSectors,
         });
 
         response.EnsureSuccessStatusCode();
@@ -178,7 +227,7 @@ public class PlatformPlansIntegrationTests
         return document.RootElement.GetProperty("id").GetGuid();
     }
 
-    private static async Task<Guid> CreateTenantAsync(HttpClient client)
+    private static async Task<Guid> CreateTenantAsync(HttpClient client, Guid? platformPlanId = null)
     {
         var email = $"tenant.commercial.{Guid.NewGuid():N}@test.local";
         var response = await client.PostAsJsonAsync("/api/platform/tenants", new
@@ -187,6 +236,8 @@ public class PlatformPlansIntegrationTests
             adminName = "Commercial Admin",
             adminEmail = email,
             adminPassword = "Created@12345",
+            platformPlanId,
+            leadStatus = platformPlanId.HasValue ? 3 : 0,
         });
 
         response.EnsureSuccessStatusCode();

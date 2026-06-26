@@ -57,6 +57,8 @@ public sealed partial class PlatformPlanService(ApplicationDbContext dbContext) 
             Code = normalizedCode,
             Description = string.IsNullOrWhiteSpace(input.Description) ? null : input.Description.Trim(),
             PriceMonthly = input.PriceMonthly,
+            MaxSecurityGuards = input.MaxSecurityGuards,
+            MaxSectors = input.MaxSectors,
             IsActive = true,
             CreatedAt = DateTime.UtcNow,
         };
@@ -91,6 +93,8 @@ public sealed partial class PlatformPlanService(ApplicationDbContext dbContext) 
         plan.Name = input.Name.Trim();
         plan.Description = string.IsNullOrWhiteSpace(input.Description) ? null : input.Description.Trim();
         plan.PriceMonthly = input.PriceMonthly;
+        plan.MaxSecurityGuards = input.MaxSecurityGuards;
+        plan.MaxSectors = input.MaxSectors;
 
         await dbContext.SaveChangesAsync(cancellationToken);
         return new UpdatePlatformPlanResult(UpdatePlatformPlanStatus.Success);
@@ -121,17 +125,14 @@ public sealed partial class PlatformPlanService(ApplicationDbContext dbContext) 
             p.Code,
             p.Description,
             p.PriceMonthly,
+            p.MaxSecurityGuards,
+            p.MaxSectors,
             p.IsActive,
             p.CreatedAt);
 
     private static List<string> ValidateCreateInput(CreatePlatformPlanInput input)
     {
-        var errors = new List<string>();
-
-        if (string.IsNullOrWhiteSpace(input.Name) || input.Name.Trim().Length > 200)
-        {
-            errors.Add("Informe um nome válido para o plano (até 200 caracteres).");
-        }
+        var errors = ValidateCommonInput(input.Name, input.Description, input.PriceMonthly, input.MaxSecurityGuards, input.MaxSectors);
 
         var normalizedCode = NormalizeCode(input.Code);
         if (string.IsNullOrWhiteSpace(normalizedCode) || normalizedCode.Length > 50)
@@ -143,36 +144,44 @@ public sealed partial class PlatformPlanService(ApplicationDbContext dbContext) 
             errors.Add("O código do plano deve conter apenas letras minúsculas, números e hífen.");
         }
 
-        if (input.Description?.Length > 1000)
-        {
-            errors.Add("A descrição deve ter no máximo 1000 caracteres.");
-        }
-
-        if (input.PriceMonthly < 0)
-        {
-            errors.Add("O preço mensal não pode ser negativo.");
-        }
-
         return errors;
     }
 
-    private static List<string> ValidateUpdateInput(UpdatePlatformPlanInput input)
+    private static List<string> ValidateUpdateInput(UpdatePlatformPlanInput input) =>
+        ValidateCommonInput(input.Name, input.Description, input.PriceMonthly, input.MaxSecurityGuards, input.MaxSectors);
+
+    private static List<string> ValidateCommonInput(
+        string name,
+        string? description,
+        decimal priceMonthly,
+        int maxSecurityGuards,
+        int maxSectors)
     {
         var errors = new List<string>();
 
-        if (string.IsNullOrWhiteSpace(input.Name) || input.Name.Trim().Length > 200)
+        if (string.IsNullOrWhiteSpace(name) || name.Trim().Length > 200)
         {
             errors.Add("Informe um nome válido para o plano (até 200 caracteres).");
         }
 
-        if (input.Description?.Length > 1000)
+        if (description?.Length > 1000)
         {
             errors.Add("A descrição deve ter no máximo 1000 caracteres.");
         }
 
-        if (input.PriceMonthly < 0)
+        if (priceMonthly < 0)
         {
             errors.Add("O preço mensal não pode ser negativo.");
+        }
+
+        if (maxSecurityGuards < 1)
+        {
+            errors.Add("O limite de seguranças deve ser no mínimo 1.");
+        }
+
+        if (maxSectors < 1)
+        {
+            errors.Add("O limite de setores deve ser no mínimo 1.");
         }
 
         return errors;

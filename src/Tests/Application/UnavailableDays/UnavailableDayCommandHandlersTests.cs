@@ -164,6 +164,9 @@ public class UnavailableDayCommandHandlersTests
         public Task<IReadOnlyList<SecurityGuard>> GetActiveAsync(CancellationToken cancellationToken = default)
             => Task.FromResult((IReadOnlyList<SecurityGuard>)_items.Where(x => x.IsActive).OrderBy(x => x.Name).ToList());
 
+        public Task<int> CountAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult(_items.Count);
+
         public void Update(SecurityGuard securityGuard)
         {
             var i = _items.FindIndex(x => x.Id == securityGuard.Id);

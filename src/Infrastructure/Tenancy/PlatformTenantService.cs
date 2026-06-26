@@ -8,7 +8,8 @@ namespace SafetyScale.Infrastructure.Tenancy;
 
 public sealed class PlatformTenantService(
     ApplicationDbContext dbContext,
-    ITenantRegistrationService tenantRegistrationService) : IPlatformTenantService
+    ITenantRegistrationService tenantRegistrationService,
+    IPlanLimitEvaluator planLimitEvaluator) : IPlatformTenantService
 {
     public async Task<IReadOnlyList<PlatformTenantSummaryDto>> ListAsync(
         CancellationToken cancellationToken = default)
@@ -156,6 +157,18 @@ public sealed class PlatformTenantService(
                     _ => UpdateTenantCommercialStatus.ValidationFailed,
                 },
                 planValidation.Errors);
+        }
+
+        var downgradeValidation = await planLimitEvaluator.EvaluatePlanAssignmentAsync(
+            tenantId,
+            input.PlatformPlanId,
+            cancellationToken);
+
+        if (!downgradeValidation.IsAllowed)
+        {
+            return new UpdateTenantCommercialResult(
+                UpdateTenantCommercialStatus.PlanDowngradeNotAllowed,
+                Errors: [downgradeValidation.ErrorMessage ?? "Não é possível trocar para um plano com limites menores que o uso atual."]);
         }
 
         tenant.PlatformPlanId = input.PlatformPlanId;

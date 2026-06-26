@@ -1,10 +1,11 @@
 using FluentValidation;
+using SafetyScale.Application.Abstractions.Tenancy;
 
 namespace SafetyScale.Application.Sectors.Commands.CreateSector;
 
 public sealed class CreateSectorCommandValidator : AbstractValidator<CreateSectorCommand>
 {
-    public CreateSectorCommandValidator()
+    public CreateSectorCommandValidator(IPlanLimitEvaluator planLimitEvaluator)
     {
         RuleFor(x => x.Name)
             .NotEmpty()
@@ -16,5 +17,15 @@ public sealed class CreateSectorCommandValidator : AbstractValidator<CreateSecto
 
         RuleFor(x => x.RequiredGuardsPerDay)
             .InclusiveBetween(1, 500);
+
+        RuleFor(x => x)
+            .CustomAsync(async (_, context, cancellation) =>
+            {
+                var result = await planLimitEvaluator.EvaluateCreateSectorAsync(cancellation);
+                if (!result.IsAllowed)
+                {
+                    context.AddFailure(result.ErrorMessage ?? "Limite de setores do plano atingido.");
+                }
+            });
     }
 }

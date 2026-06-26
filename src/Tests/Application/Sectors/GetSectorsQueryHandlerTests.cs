@@ -46,6 +46,9 @@ public class GetSectorsQueryHandlerTests
         public Task<IReadOnlyList<Sector>> GetAllAsync(CancellationToken cancellationToken = default)
             => Task.FromResult((IReadOnlyList<Sector>)_items.OrderBy(x => x.Name).ToList());
 
+        public Task<int> CountAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult(_items.Count);
+
         public void Update(Sector sector)
         {
         }

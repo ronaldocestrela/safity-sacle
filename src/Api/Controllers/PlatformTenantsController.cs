@@ -134,7 +134,7 @@ public sealed class PlatformTenantsController(IPlatformTenantService platformTen
             UpdateTenantCommercialStatus.NotFound => NotFound(new { message = "Tenant não encontrado." }),
             UpdateTenantCommercialStatus.PlanNotFound =>
                 BadRequest(new { message = "Plano não encontrado." }),
-            UpdateTenantCommercialStatus.PlanInactive or UpdateTenantCommercialStatus.ContractedRequiresPlan =>
+            UpdateTenantCommercialStatus.PlanInactive or UpdateTenantCommercialStatus.ContractedRequiresPlan or UpdateTenantCommercialStatus.PlanDowngradeNotAllowed =>
                 BadRequest(new { errors = result.Errors ?? Array.Empty<string>() }),
             UpdateTenantCommercialStatus.ValidationFailed =>
                 BadRequest(new { errors = result.Errors ?? Array.Empty<string>() }),

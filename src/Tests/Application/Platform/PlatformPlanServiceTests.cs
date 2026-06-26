@@ -19,7 +19,9 @@ public class PlatformPlanServiceTests
             "Starter",
             "INVALID CODE",
             null,
-            99.90m));
+            99.90m,
+            10,
+            5));
 
         result.Status.Should().Be(CreatePlatformPlanStatus.ValidationFailed);
         result.Errors.Should().NotBeNullOrEmpty();
@@ -35,6 +37,8 @@ public class PlatformPlanServiceTests
             Name = "Existing",
             Code = "starter",
             PriceMonthly = 50m,
+            MaxSecurityGuards = 10,
+            MaxSectors = 5,
             IsActive = true,
             CreatedAt = DateTime.UtcNow,
         });
@@ -45,9 +49,30 @@ public class PlatformPlanServiceTests
             "Starter",
             "starter",
             null,
-            99.90m));
+            99.90m,
+            10,
+            5));
 
         result.Status.Should().Be(CreatePlatformPlanStatus.CodeAlreadyExists);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WithInvalidLimits_ReturnsValidationFailed()
+    {
+        await using var db = CreateDbContext();
+        var service = new PlatformPlanService(db);
+
+        var result = await service.CreateAsync(new CreatePlatformPlanInput(
+            "Starter",
+            "starter",
+            null,
+            99.90m,
+            0,
+            0));
+
+        result.Status.Should().Be(CreatePlatformPlanStatus.ValidationFailed);
+        result.Errors.Should().Contain(e => e.Contains("seguranças"));
+        result.Errors.Should().Contain(e => e.Contains("setores"));
     }
 
     [Fact]
@@ -61,6 +86,8 @@ public class PlatformPlanServiceTests
             Name = "Business",
             Code = "business",
             PriceMonthly = 199m,
+            MaxSecurityGuards = 20,
+            MaxSectors = 10,
             IsActive = true,
             CreatedAt = DateTime.UtcNow,
         });

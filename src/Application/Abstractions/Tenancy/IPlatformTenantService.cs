@@ -66,6 +66,7 @@ public enum UpdateTenantCommercialStatus
     PlanNotFound,
     PlanInactive,
     ContractedRequiresPlan,
+    PlanDowngradeNotAllowed,
 }
 
 public sealed record UpdateTenantCommercialResult(

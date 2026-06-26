@@ -36,6 +36,8 @@ public class ApplicationDbContext(
             entity.Property(x => x.Code).HasMaxLength(50).IsRequired();
             entity.Property(x => x.Description).HasMaxLength(1000);
             entity.Property(x => x.PriceMonthly).HasPrecision(18, 2).IsRequired();
+            entity.Property(x => x.MaxSecurityGuards).IsRequired();
+            entity.Property(x => x.MaxSectors).IsRequired();
             entity.Property(x => x.IsActive).IsRequired();
             entity.Property(x => x.CreatedAt).IsRequired();
             entity.HasIndex(x => x.Code).IsUnique();

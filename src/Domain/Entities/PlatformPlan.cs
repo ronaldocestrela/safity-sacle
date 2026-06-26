@@ -13,6 +13,10 @@ public sealed class PlatformPlan
 
     public decimal PriceMonthly { get; set; }
 
+    public int MaxSecurityGuards { get; set; }
+
+    public int MaxSectors { get; set; }
+
     public bool IsActive { get; set; } = true;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

@@ -6,6 +6,8 @@ public sealed record PlatformPlanDto(
     string Code,
     string? Description,
     decimal PriceMonthly,
+    int MaxSecurityGuards,
+    int MaxSectors,
     bool IsActive,
     DateTime CreatedAt);
 
@@ -13,9 +15,13 @@ public sealed record CreatePlatformPlanRequestDto(
     string Name,
     string Code,
     string? Description,
-    decimal PriceMonthly);
+    decimal PriceMonthly,
+    int MaxSecurityGuards,
+    int MaxSectors);
 
 public sealed record UpdatePlatformPlanRequestDto(
     string Name,
     string? Description,
-    decimal PriceMonthly);
+    decimal PriceMonthly,
+    int MaxSecurityGuards,
+    int MaxSectors);

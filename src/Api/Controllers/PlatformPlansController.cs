@@ -40,7 +40,9 @@ public sealed class PlatformPlansController(IPlatformPlanService platformPlanSer
             request.Name,
             request.Code,
             request.Description,
-            request.PriceMonthly);
+            request.PriceMonthly,
+            request.MaxSecurityGuards,
+            request.MaxSectors);
 
         var result = await platformPlanService.CreateAsync(input, cancellationToken);
 
@@ -55,6 +57,8 @@ public sealed class PlatformPlansController(IPlatformPlanService platformPlanSer
                         request.Code.Trim().ToLowerInvariant(),
                         string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim(),
                         request.PriceMonthly,
+                        request.MaxSecurityGuards,
+                        request.MaxSectors,
                         true,
                         DateTime.UtcNow)),
 
@@ -81,7 +85,9 @@ public sealed class PlatformPlansController(IPlatformPlanService platformPlanSer
         var input = new UpdatePlatformPlanInput(
             request.Name,
             request.Description,
-            request.PriceMonthly);
+            request.PriceMonthly,
+            request.MaxSecurityGuards,
+            request.MaxSectors);
 
         var result = await platformPlanService.UpdateAsync(planId, input, cancellationToken);
 
@@ -132,6 +138,8 @@ public sealed class PlatformPlansController(IPlatformPlanService platformPlanSer
             plan.Code,
             plan.Description,
             plan.PriceMonthly,
+            plan.MaxSecurityGuards,
+            plan.MaxSectors,
             plan.IsActive,
             plan.CreatedAt);
 }
