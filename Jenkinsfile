@@ -13,6 +13,9 @@
  *   safetyscale-web-port           → porta HTTP publicada pelo Nginx do front
  *   safetyscale-cors-origins       → origens CORS da API (CSV; vazio = same-origin)
  *   safetyscale-api-base-url       → URL absoluta da API no build Blazor (vazio = /api via Nginx)
+ *   safetyscale-public-web-base-url → URL pública do front (links em e-mail)
+ *   safetyscale-bootstrap-user-email → e-mail bootstrap do Platform Admin
+ *   safetyscale-bootstrap-user-password → senha bootstrap do Platform Admin
  *
  * Opcional: JWT_EXPIRY_MINUTES e MSSQL_PID no estágio Prepare Env.
  */
@@ -72,6 +75,9 @@ pipeline {
           string(credentialsId: 'safetyscale-web-port', variable: 'CRED_WEB_PORT'),
           string(credentialsId: 'safetyscale-cors-origins', variable: 'CRED_CORS_ORIGINS'),
           string(credentialsId: 'safetyscale-api-base-url', variable: 'CRED_API_BASE_URL'),
+          string(credentialsId: 'safetyscale-public-web-base-url', variable: 'CRED_PUBLIC_WEB_BASE_URL'),
+          string(credentialsId: 'safetyscale-bootstrap-user-email', variable: 'CRED_BOOTSTRAP_USER_EMAIL'),
+          string(credentialsId: 'safetyscale-bootstrap-user-password', variable: 'CRED_BOOTSTRAP_USER_PASSWORD'),
         ]) {
           script {
             def normalizeOptionalCred = { raw ->
@@ -94,6 +100,26 @@ pipeline {
                 + 'WEB_PORT=' + (env.CRED_WEB_PORT ?: '') + '\n'
                 + 'CORS_ORIGINS=' + cors + '\n'
                 + 'API_BASE_URL=' + apiBase + '\n')
+                + 'MSSQL_PID=Developer\n'
+                + 'PUBLIC_WEB_BASE_URL=' + (env.CRED_PUBLIC_WEB_BASE_URL ?: '') + '\n'
+                + 'SMTP_HOST=\n'
+                + 'SMTP_PORT=587\n'
+                + 'SMTP_USERNAME=\n'
+                + 'SMTP_PASSWORD=\n'
+                + 'SMTP_FROM_ADDRESS=\n'
+                + 'SMTP_FROM_DISPLAY_NAME=SafetyScale\n'
+                + 'SMTP_ENABLE_SSL=true\n'
+                + 'EMAIL_QUEUE_ENABLED=true\n'
+                + 'EMAIL_QUEUE_POLL_INTERVAL_SECONDS=5\n'
+                + 'EMAIL_QUEUE_BATCH_SIZE=10\n'
+                + 'EMAIL_QUEUE_MAX_ATTEMPTS=5\n'
+                + 'EMAIL_QUEUE_INITIAL_RETRY_DELAY_SECONDS=30\n'
+                + 'EMAIL_QUEUE_MAX_RETRY_DELAY_SECONDS=3600\n'
+                + 'EMAIL_QUEUE_STALE_PROCESSING_MINUTES=10\n'
+                + 'BOOTSTRAP_USER_EMAIL=' + (env.CRED_BOOTSTRAP_USER_EMAIL ?: '') + '\n'
+                + 'BOOTSTRAP_USER_PASSWORD=' + (env.CRED_BOOTSTRAP_USER_PASSWORD ?: '') + '\n'
+                + 'BOOTSTRAP_USER_DISPLAY_NAME=Platform Admin\n'
+                + 'BOOTSTRAP_USER_ROLE=PlatformOwner\n')
             writeFile file: '.env', text: content, encoding: 'UTF-8'
             sh 'chmod 600 .env'
           }
