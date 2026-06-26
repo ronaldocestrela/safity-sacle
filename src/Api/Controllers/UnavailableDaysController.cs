@@ -11,7 +11,7 @@ namespace SafetyScale.Api.Controllers;
 [ApiController]
 public sealed class UnavailableDaysController(ISender sender) : ControllerBase
 {
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,SecurityGuard")]
     [HttpPost("~/api/security-guards/{guardId:guid}/unavailable-days")]
     public async Task<IActionResult> AddForGuard(
         [FromRoute] Guid guardId,
@@ -24,6 +24,7 @@ public sealed class UnavailableDaysController(ISender sender) : ControllerBase
 
         return result.Status switch
         {
+            AddUnavailableDayStatus.Forbidden => Forbid(),
             AddUnavailableDayStatus.Success =>
                 Created($"/api/unavailable-days/{result.Id!.Value}", new { id = result.Id }),
             AddUnavailableDayStatus.GuardNotFound => NotFound(),
@@ -33,7 +34,7 @@ public sealed class UnavailableDaysController(ISender sender) : ControllerBase
         };
     }
 
-    [Authorize(Roles = "Admin,Supervisor")]
+    [Authorize(Roles = "Admin,Supervisor,SecurityGuard")]
     [HttpGet("~/api/security-guards/{guardId:guid}/unavailable-days")]
     public async Task<IActionResult> ListForGuard(
         [FromRoute] Guid guardId,
@@ -49,7 +50,7 @@ public sealed class UnavailableDaysController(ISender sender) : ControllerBase
         return Ok(result.Items);
     }
 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,SecurityGuard")]
     [HttpDelete("~/api/unavailable-days/{id:guid}")]
     public async Task<IActionResult> Remove(
         [FromRoute] Guid id,

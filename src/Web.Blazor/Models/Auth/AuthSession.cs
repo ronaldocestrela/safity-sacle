@@ -7,4 +7,5 @@ public sealed record AuthSession(
     string Token,
     string? Email,
     IReadOnlyList<UserRole> Roles,
-    string TenantId);
+    string TenantId,
+    Guid? SecurityGuardId = null);

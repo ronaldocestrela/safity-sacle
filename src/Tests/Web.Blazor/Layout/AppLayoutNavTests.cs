@@ -62,4 +62,19 @@ public sealed class AppLayoutNavTests : BlazorComponentTestBase
         markup.Should().NotContain(">Dashboard<");
         markup.Should().NotContain(">Schedules<");
     }
+
+    [Fact]
+    public void BottomNav_ForSecurityGuard_ShowsLimitedNavigation()
+    {
+        RegisterAuthSessionServices("/app", UserRole.SecurityGuard);
+
+        var cut = RenderComponent<AppLayout>(parameters => parameters
+            .Add(p => p.Body, (RenderFragment)(builder => builder.AddMarkupContent(0, "<p>Body</p>"))));
+
+        var links = cut.FindAll("nav.bottom-nav a");
+        links.Should().HaveCount(2);
+        cut.Markup.Should().Contain("Minha escala");
+        cut.Markup.Should().Contain("Disponibilidade");
+        cut.Markup.Should().NotContain("/app/sectors");
+    }
 }

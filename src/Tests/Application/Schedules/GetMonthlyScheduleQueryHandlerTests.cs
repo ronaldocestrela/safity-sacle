@@ -2,16 +2,18 @@ using FluentAssertions;
 using SafetyScale.Application.Abstractions.Persistence;
 using SafetyScale.Application.Schedules.Queries.GetMonthlySchedule;
 using SafetyScale.Domain.Entities;
+using SafetyScale.Tests.Application.Common;
 
 namespace SafetyScale.Tests.Application.Schedules;
 
 public class GetMonthlyScheduleQueryHandlerTests
 {
+    private static readonly FakeCurrentUserContext UnrestrictedUser = FakeCurrentUserContext.Unrestricted;
     [Fact]
     public async Task Handle_ShouldReturnNull_WhenScheduleMissing()
     {
         var repo = new InMemoryMonthlyScheduleRepository();
-        var handler = new GetMonthlyScheduleQueryHandler(repo);
+        var handler = new GetMonthlyScheduleQueryHandler(repo, UnrestrictedUser);
 
         var result = await handler.Handle(new GetMonthlyScheduleQuery(Guid.NewGuid()), CancellationToken.None);
 
@@ -62,7 +64,7 @@ public class GetMonthlyScheduleQueryHandlerTests
             Items = new List<ScheduleItem> { item1, item2 },
         };
         var repo = new InMemoryMonthlyScheduleRepository(schedule);
-        var handler = new GetMonthlyScheduleQueryHandler(repo);
+        var handler = new GetMonthlyScheduleQueryHandler(repo, UnrestrictedUser);
 
         var result = await handler.Handle(new GetMonthlyScheduleQuery(scheduleId), CancellationToken.None);
 

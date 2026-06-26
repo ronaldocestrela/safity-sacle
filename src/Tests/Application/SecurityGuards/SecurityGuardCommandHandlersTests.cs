@@ -5,6 +5,7 @@ using SafetyScale.Application.SecurityGuards.Commands.ActivateSecurityGuard;
 using SafetyScale.Application.SecurityGuards.Commands.InactivateSecurityGuard;
 using SafetyScale.Application.SecurityGuards.Commands.UpdateSecurityGuard;
 using SafetyScale.Domain.Entities;
+using SafetyScale.Tests.Application.Common;
 
 namespace SafetyScale.Tests.Application.SecurityGuards;
 
@@ -17,19 +18,25 @@ public class SecurityGuardCommandHandlersTests
         var sectorRepository = new MinimalSectorRepository();
         var guardSectorRepository = new CreateGuardSectorLinkRecordingRepository();
         var unitOfWork = new FakeUnitOfWork();
+        var inviteService = new FakeSecurityGuardInviteService();
         var handler = new CreateSecurityGuardCommandHandler(
             repository,
             sectorRepository,
             guardSectorRepository,
+            inviteService,
             unitOfWork);
 
-        var id = await handler.Handle(new CreateSecurityGuardCommand("  Maria Silva  "), CancellationToken.None);
+        var id = await handler.Handle(
+            new CreateSecurityGuardCommand("  Maria Silva  ", "maria@example.com"),
+            CancellationToken.None);
 
         repository.Items.Should().ContainSingle(x => x.Id == id);
         repository.Items.Single().Name.Should().Be("Maria Silva");
         repository.Items.Single().IsActive.Should().BeTrue();
         unitOfWork.SaveChangesCalls.Should().Be(1);
         guardSectorRepository.EnsureCalls.Should().BeEmpty();
+        inviteService.Invites.Should().ContainSingle(i =>
+            i.GuardId == id && i.Email == "maria@example.com" && i.DisplayName == "Maria Silva");
     }
 
     [Fact]
@@ -40,13 +47,17 @@ public class SecurityGuardCommandHandlersTests
         var sectorRepository = new MinimalSectorRepository(defaultSectorId);
         var guardSectorRepository = new CreateGuardSectorLinkRecordingRepository();
         var unitOfWork = new FakeUnitOfWork();
+        var inviteService = new FakeSecurityGuardInviteService();
         var handler = new CreateSecurityGuardCommandHandler(
             repository,
             sectorRepository,
             guardSectorRepository,
+            inviteService,
             unitOfWork);
 
-        var id = await handler.Handle(new CreateSecurityGuardCommand("Link Test"), CancellationToken.None);
+        var id = await handler.Handle(
+            new CreateSecurityGuardCommand("Link Test", "link@example.com"),
+            CancellationToken.None);
 
         unitOfWork.SaveChangesCalls.Should().Be(2);
         guardSectorRepository.EnsureCalls.Should().ContainSingle(c => c.GuardId == id && c.SectorId == defaultSectorId);

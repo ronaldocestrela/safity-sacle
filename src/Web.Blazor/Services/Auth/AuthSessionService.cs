@@ -106,6 +106,44 @@ public sealed class AuthSessionService(
         }
     }
 
+    public async Task<SetPasswordOutcome> SetPasswordAsync(
+        string userId,
+        string token,
+        string password,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var response = await apiClient.PostJsonAsync(
+                "/api/auth/set-password",
+                new SetPasswordRequestDto(userId, token, password),
+                PublicRequest,
+                cancellationToken);
+
+            var message = await ApiErrorReader.ReadMessageAsync(response, cancellationToken);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return new SetPasswordOutcome(SetPasswordOutcomeStatus.Success, message);
+            }
+
+            return response.StatusCode switch
+            {
+                System.Net.HttpStatusCode.BadRequest when message?.Contains("Senha inválida", StringComparison.OrdinalIgnoreCase) == true =>
+                    new SetPasswordOutcome(SetPasswordOutcomeStatus.InvalidPassword, message),
+                System.Net.HttpStatusCode.BadRequest =>
+                    new SetPasswordOutcome(SetPasswordOutcomeStatus.InvalidToken, message),
+                System.Net.HttpStatusCode.NotFound =>
+                    new SetPasswordOutcome(SetPasswordOutcomeStatus.UserNotFound, message),
+                _ => new SetPasswordOutcome(SetPasswordOutcomeStatus.Network, message),
+            };
+        }
+        catch (HttpRequestException)
+        {
+            return new SetPasswordOutcome(SetPasswordOutcomeStatus.Network);
+        }
+    }
+
     public async Task LogoutAsync(
         bool navigateToLogin = false,
         CancellationToken cancellationToken = default)

@@ -11,6 +11,7 @@ public static class JwtParser
 {
     public const string TenantClaimKey = "tenant_id";
     public const string UserKindClaimKey = "user_kind";
+    public const string SecurityGuardClaimKey = "security_guard_id";
 
     private static readonly string[] RoleClaimKeys =
     [
@@ -68,7 +69,8 @@ public static class JwtParser
         }
 
         var roles = FilterAppRoles(CollectRoleClaims(root));
-        return new AuthSession(token, EmailFromPayload(root), roles, tenantId);
+        var securityGuardId = SecurityGuardIdFromPayload(root);
+        return new AuthSession(token, EmailFromPayload(root), roles, tenantId, securityGuardId);
     }
 
     public static PlatformAuthSession? BuildPlatformSessionFromToken(string token)
@@ -161,6 +163,18 @@ public static class JwtParser
         return null;
     }
 
+    public static Guid? SecurityGuardIdFromPayload(JsonElement payload)
+    {
+        if (payload.TryGetProperty(SecurityGuardClaimKey, out var guardId) &&
+            guardId.ValueKind == JsonValueKind.String &&
+            Guid.TryParse(guardId.GetString(), out var parsed))
+        {
+            return parsed;
+        }
+
+        return null;
+    }
+
     internal static IReadOnlyList<string> CollectRoleClaims(JsonElement payload)
     {
         var roles = new HashSet<string>(StringComparer.Ordinal);
@@ -204,7 +218,7 @@ public static class JwtParser
 
     internal static IReadOnlyList<UserRole> FilterAppRoles(IReadOnlyList<string> roles)
     {
-        var allowed = new HashSet<string>(StringComparer.Ordinal) { "Admin", "Supervisor" };
+        var allowed = new HashSet<string>(StringComparer.Ordinal) { "Admin", "Supervisor", "SecurityGuard" };
         var result = new List<UserRole>();
 
         foreach (var role in roles)

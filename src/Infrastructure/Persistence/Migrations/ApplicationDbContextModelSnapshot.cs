@@ -467,6 +467,9 @@ namespace SafetyScale.Infrastructure.Persistence.Migrations
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("bit");
 
+                    b.Property<Guid?>("SecurityGuardId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("nvarchar(max)");
 
@@ -492,6 +495,8 @@ namespace SafetyScale.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasDatabaseName("UserNameIndex")
                         .HasFilter("[NormalizedUserName] IS NOT NULL");
+
+                    b.HasIndex("SecurityGuardId");
 
                     b.HasIndex("TenantId");
 
@@ -665,10 +670,17 @@ namespace SafetyScale.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("SafetyScale.Infrastructure.Identity.AppUser", b =>
                 {
+                    b.HasOne("SafetyScale.Domain.Entities.SecurityGuard", "SecurityGuard")
+                        .WithMany()
+                        .HasForeignKey("SecurityGuardId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("SafetyScale.Domain.Entities.Tenant", "Tenant")
                         .WithMany()
                         .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("SecurityGuard");
 
                     b.Navigation("Tenant");
                 });

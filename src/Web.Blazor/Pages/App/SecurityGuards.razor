@@ -181,6 +181,26 @@
                             <span class="field-err">Enter a name.</span>
                         }
 
+                        @if (_nameFormOpen == FormMode.Create)
+                        {
+                            <label class="label" for="sg-email-input">
+                                E-mail
+                                <input id="sg-email-input"
+                                       class="@($"input {(_emailInvalid ? "input-invalid" : "")}")"
+                                       type="email"
+                                       value="@_emailDraft"
+                                       @oninput="OnEmailInput"
+                                       @onblur="() => _emailTouched = true"
+                                       aria-invalid="@_emailInvalid"
+                                       disabled="@_submitting"
+                                       autocomplete="email" />
+                            </label>
+                            @if (_emailInvalid)
+                            {
+                                <span class="field-err">Informe um e-mail válido.</span>
+                            }
+                        }
+
                         @if (IsAdmin)
                         {
                             <fieldset class="sector-fieldset">
@@ -279,8 +299,10 @@
     private FormMode? _nameFormOpen;
     private SecurityGuardDto? _editing;
     private string _nameDraft = string.Empty;
+    private string _emailDraft = string.Empty;
     private HashSet<Guid> _selectedSectorIds = [];
     private bool _nameTouched;
+    private bool _emailTouched;
     private bool _submitting;
     private string? _nameFormError;
 
@@ -290,6 +312,7 @@
     private bool IsAdmin => _session?.Roles.Contains(UserRole.Admin) == true;
 
     private bool _nameInvalid => _nameTouched && string.IsNullOrWhiteSpace(_nameDraft);
+    private bool _emailInvalid => _emailTouched && !IsValidEmail(_emailDraft);
 
     private IReadOnlyList<SecurityGuardDto> DisplayedRows
     {
@@ -430,8 +453,10 @@
         _nameFormOpen = FormMode.Create;
         _editing = null;
         _nameDraft = string.Empty;
+        _emailDraft = string.Empty;
         _selectedSectorIds = [];
         _nameTouched = false;
+        _emailTouched = false;
         _nameFormError = null;
         _submitting = false;
         await LoadSectorsPickListAsync();
@@ -460,8 +485,10 @@
         _nameFormOpen = null;
         _editing = null;
         _nameDraft = string.Empty;
+        _emailDraft = string.Empty;
         _selectedSectorIds = [];
         _nameTouched = false;
+        _emailTouched = false;
         _nameFormError = null;
         _submitting = false;
         _sectorsPickList = [];
@@ -489,6 +516,11 @@
         _nameDraft = e.Value?.ToString() ?? string.Empty;
     }
 
+    private void OnEmailInput(ChangeEventArgs e)
+    {
+        _emailDraft = e.Value?.ToString() ?? string.Empty;
+    }
+
     private bool IsSectorSelected(Guid sectorId) => _selectedSectorIds.Contains(sectorId);
 
     private void ToggleSectorSelection(Guid sectorId)
@@ -511,7 +543,13 @@
         _nameTouched = true;
         _nameFormError = null;
 
-        if (string.IsNullOrWhiteSpace(_nameDraft))
+        if (_nameFormOpen == FormMode.Create)
+        {
+            _emailTouched = true;
+        }
+
+        if (string.IsNullOrWhiteSpace(_nameDraft) ||
+            (_nameFormOpen == FormMode.Create && !IsValidEmail(_emailDraft)))
         {
             return;
         }
@@ -525,9 +563,9 @@
 
             if (_nameFormOpen == FormMode.Create)
             {
-                var id = await GuardsClient.CreateAsync(new CreateSecurityGuardRequestDto(name));
+                var id = await GuardsClient.CreateAsync(new CreateSecurityGuardRequestDto(name, _emailDraft.Trim()));
                 await GuardsClient.SetSectorsAsync(id, new SetSecurityGuardSectorsRequestDto(sectorIds));
-                _banner = new BannerState(BannerKind.Success, "Personnel created.");
+                _banner = new BannerState(BannerKind.Success, "Segurança convidada. Um e-mail foi enviado para definir a senha.");
             }
             else if (_nameFormOpen == FormMode.Edit && _editing is not null)
             {
@@ -663,4 +701,10 @@
     }
 
     private sealed record BannerState(BannerKind Kind, string Message);
+
+    private static bool IsValidEmail(string value) =>
+        !string.IsNullOrWhiteSpace(value) &&
+        value.Contains('@') &&
+        value.Contains('.') &&
+        value.Trim().Length <= 320;
 }

@@ -13,7 +13,7 @@ namespace SafetyScale.Api.Controllers;
 [Route("api/schedules")]
 public sealed class SchedulesController(ISender sender) : ControllerBase
 {
-    [Authorize(Roles = "Admin,Supervisor")]
+    [Authorize(Roles = "Admin,Supervisor,SecurityGuard")]
     [HttpGet("month/{month:int}/year/{year:int}")]
     public async Task<IActionResult> GetByMonthYear(
         [FromRoute] int month,
@@ -24,7 +24,7 @@ public sealed class SchedulesController(ISender sender) : ControllerBase
         return schedule is null ? NotFound() : Ok(schedule);
     }
 
-    [Authorize(Roles = "Admin,Supervisor")]
+    [Authorize(Roles = "Admin,Supervisor,SecurityGuard")]
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById([FromRoute] Guid id, CancellationToken cancellationToken)
     {

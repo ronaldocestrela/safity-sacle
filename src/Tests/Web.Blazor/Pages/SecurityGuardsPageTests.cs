@@ -182,6 +182,7 @@ public sealed class SecurityGuardsPageTests : BlazorComponentTestBase
 
         cut.Find("input[type='checkbox']").Change(true);
         cut.Find("#sg-name-input").Input("Maria Souza");
+        cut.Find("#sg-email-input").Input("maria.souza@example.com");
         cut.Find("form button.btn-primary").Click();
 
         cut.WaitForAssertion(() =>
@@ -189,6 +190,7 @@ public sealed class SecurityGuardsPageTests : BlazorComponentTestBase
             createBody.Should().NotBeNullOrEmpty();
             using var createDoc = JsonDocument.Parse(createBody!);
             createDoc.RootElement.GetProperty("name").GetString().Should().Be("Maria Souza");
+            createDoc.RootElement.GetProperty("email").GetString().Should().Be("maria.souza@example.com");
 
             sectorsBody.Should().NotBeNullOrEmpty();
             using var sectorsDoc = JsonDocument.Parse(sectorsBody!);

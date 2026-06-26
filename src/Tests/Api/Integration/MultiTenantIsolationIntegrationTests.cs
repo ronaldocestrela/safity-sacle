@@ -25,7 +25,7 @@ public class MultiTenantIsolationIntegrationTests
 
         using var clientT1 = CreateHttpsClient(factory);
         await AuthTestHelper.AuthenticateAsAdminAsync(clientT1);
-        var created = await clientT1.PostAsJsonAsync("/api/security-guards", new { name = "T1 Guard" });
+        var created = await clientT1.PostAsJsonAsync("/api/security-guards", new { name = "T1 Guard", email = "t1.guard@example.com" });
         created.EnsureSuccessStatusCode();
         var createdBody = await created.Content.ReadFromJsonAsync<CreateSecurityGuardResponse>();
         createdBody.Should().NotBeNull();
@@ -70,8 +70,8 @@ public class MultiTenantIsolationIntegrationTests
         using var clientT1 = CreateHttpsClient(factory);
         await AuthTestHelper.AuthenticateAsAdminAsync(clientT1);
 
-        await clientT1.PostAsJsonAsync("/api/security-guards", new { name = "T1 Gen A" });
-        await clientT1.PostAsJsonAsync("/api/security-guards", new { name = "T1 Gen B" });
+        await clientT1.PostAsJsonAsync("/api/security-guards", new { name = "T1 Gen A", email = "t1.gen.a@example.com" });
+        await clientT1.PostAsJsonAsync("/api/security-guards", new { name = "T1 Gen B", email = "t1.gen.b@example.com" });
 
         var gen = await clientT1.PostAsJsonAsync("/api/schedules/generate", new { month = 4, year = 2055 });
         gen.StatusCode.Should().Be(HttpStatusCode.Created);

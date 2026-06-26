@@ -2,17 +2,19 @@ using FluentAssertions;
 using SafetyScale.Application.Abstractions.Persistence;
 using SafetyScale.Application.UnavailableDays.Queries.GetUnavailableDays;
 using SafetyScale.Domain.Entities;
+using SafetyScale.Tests.Application.Common;
 
 namespace SafetyScale.Tests.Application.UnavailableDays;
 
 public class GetUnavailableDaysQueryHandlerTests
 {
+    private static readonly FakeCurrentUserContext UnrestrictedUser = FakeCurrentUserContext.Unrestricted;
     [Fact]
     public async Task GetQuery_ShouldReturnGuardNotExists_WhenGuardMissing()
     {
         var guardRepo = new InMemorySecurityGuardRepository();
         var unavailableRepo = new InMemoryUnavailableDayRepository();
-        var handler = new GetUnavailableDaysQueryHandler(guardRepo, unavailableRepo);
+        var handler = new GetUnavailableDaysQueryHandler(guardRepo, unavailableRepo, UnrestrictedUser);
 
         var result = await handler.Handle(new GetUnavailableDaysQuery(Guid.NewGuid()), CancellationToken.None);
 
@@ -26,7 +28,7 @@ public class GetUnavailableDaysQueryHandlerTests
         var guard = new SecurityGuard { Id = Guid.NewGuid(), Name = "Guard", IsActive = true };
         var guardRepo = new InMemorySecurityGuardRepository(guard);
         var unavailableRepo = new InMemoryUnavailableDayRepository();
-        var handler = new GetUnavailableDaysQueryHandler(guardRepo, unavailableRepo);
+        var handler = new GetUnavailableDaysQueryHandler(guardRepo, unavailableRepo, UnrestrictedUser);
 
         var result = await handler.Handle(new GetUnavailableDaysQuery(guard.Id), CancellationToken.None);
 
@@ -54,7 +56,7 @@ public class GetUnavailableDaysQueryHandlerTests
             Reason = "A",
         };
         var unavailableRepo = new InMemoryUnavailableDayRepository(d1, d0);
-        var handler = new GetUnavailableDaysQueryHandler(guardRepo, unavailableRepo);
+        var handler = new GetUnavailableDaysQueryHandler(guardRepo, unavailableRepo, UnrestrictedUser);
 
         var result = await handler.Handle(new GetUnavailableDaysQuery(guard.Id), CancellationToken.None);
 

@@ -3,11 +3,13 @@ using SafetyScale.Application.Abstractions.Persistence;
 using SafetyScale.Application.UnavailableDays.Commands.AddUnavailableDay;
 using SafetyScale.Application.UnavailableDays.Commands.RemoveUnavailableDay;
 using SafetyScale.Domain.Entities;
+using SafetyScale.Tests.Application.Common;
 
 namespace SafetyScale.Tests.Application.UnavailableDays;
 
 public class UnavailableDayCommandHandlersTests
 {
+    private static readonly FakeCurrentUserContext UnrestrictedUser = FakeCurrentUserContext.Unrestricted;
     [Fact]
     public async Task AddCommand_ShouldPersist_WhenGuardIsActiveAndDayIsFree()
     {
@@ -16,7 +18,7 @@ public class UnavailableDayCommandHandlersTests
         var unavailableRepo = new InMemoryUnavailableDayRepository();
         var unitOfWork = new FakeUnitOfWork();
 
-        var handler = new AddUnavailableDayCommandHandler(guardRepo, unavailableRepo, unitOfWork);
+        var handler = new AddUnavailableDayCommandHandler(guardRepo, unavailableRepo, UnrestrictedUser, unitOfWork);
 
         var date = new DateOnly(2030, 6, 15);
         var result = await handler.Handle(
@@ -38,7 +40,7 @@ public class UnavailableDayCommandHandlersTests
         var guardRepo = new InMemorySecurityGuardRepository(guard);
         var unavailableRepo = new InMemoryUnavailableDayRepository();
         var unitOfWork = new FakeUnitOfWork();
-        var handler = new AddUnavailableDayCommandHandler(guardRepo, unavailableRepo, unitOfWork);
+        var handler = new AddUnavailableDayCommandHandler(guardRepo, unavailableRepo, UnrestrictedUser, unitOfWork);
 
         var result = await handler.Handle(
             new AddUnavailableDayCommand(guard.Id, new DateOnly(2030, 7, 1), "   "),
@@ -54,7 +56,7 @@ public class UnavailableDayCommandHandlersTests
         var guardRepo = new InMemorySecurityGuardRepository();
         var unavailableRepo = new InMemoryUnavailableDayRepository();
         var unitOfWork = new FakeUnitOfWork();
-        var handler = new AddUnavailableDayCommandHandler(guardRepo, unavailableRepo, unitOfWork);
+        var handler = new AddUnavailableDayCommandHandler(guardRepo, unavailableRepo, UnrestrictedUser, unitOfWork);
 
         var result = await handler.Handle(
             new AddUnavailableDayCommand(Guid.NewGuid(), new DateOnly(2030, 8, 1), null),
@@ -72,7 +74,7 @@ public class UnavailableDayCommandHandlersTests
         var guardRepo = new InMemorySecurityGuardRepository(guard);
         var unavailableRepo = new InMemoryUnavailableDayRepository();
         var unitOfWork = new FakeUnitOfWork();
-        var handler = new AddUnavailableDayCommandHandler(guardRepo, unavailableRepo, unitOfWork);
+        var handler = new AddUnavailableDayCommandHandler(guardRepo, unavailableRepo, UnrestrictedUser, unitOfWork);
 
         var result = await handler.Handle(
             new AddUnavailableDayCommand(guard.Id, new DateOnly(2030, 9, 1), null),
@@ -99,7 +101,7 @@ public class UnavailableDayCommandHandlersTests
         var guardRepo = new InMemorySecurityGuardRepository(guard);
         var unavailableRepo = new InMemoryUnavailableDayRepository(existing);
         var unitOfWork = new FakeUnitOfWork();
-        var handler = new AddUnavailableDayCommandHandler(guardRepo, unavailableRepo, unitOfWork);
+        var handler = new AddUnavailableDayCommandHandler(guardRepo, unavailableRepo, UnrestrictedUser, unitOfWork);
 
         var result = await handler.Handle(
             new AddUnavailableDayCommand(guard.Id, date, "Second"),
@@ -115,7 +117,7 @@ public class UnavailableDayCommandHandlersTests
     {
         var unavailableRepo = new InMemoryUnavailableDayRepository();
         var unitOfWork = new FakeUnitOfWork();
-        var handler = new RemoveUnavailableDayCommandHandler(unavailableRepo, unitOfWork);
+        var handler = new RemoveUnavailableDayCommandHandler(unavailableRepo, UnrestrictedUser, unitOfWork);
 
         var result = await handler.Handle(new RemoveUnavailableDayCommand(Guid.NewGuid()), CancellationToken.None);
 
@@ -134,7 +136,7 @@ public class UnavailableDayCommandHandlersTests
         };
         var unavailableRepo = new InMemoryUnavailableDayRepository(item);
         var unitOfWork = new FakeUnitOfWork();
-        var handler = new RemoveUnavailableDayCommandHandler(unavailableRepo, unitOfWork);
+        var handler = new RemoveUnavailableDayCommandHandler(unavailableRepo, UnrestrictedUser, unitOfWork);
 
         var result = await handler.Handle(new RemoveUnavailableDayCommand(item.Id), CancellationToken.None);
 

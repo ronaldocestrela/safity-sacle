@@ -170,7 +170,8 @@ public class SchedulesQueryEndpointsTests
 
     private static async Task<Guid> CreateGuardAsync(HttpClient client, string name)
     {
-        var response = await client.PostAsJsonAsync("/api/security-guards", new { name });
+        var email = $"{name.Replace(' ', '.').ToLowerInvariant()}@example.com";
+        var response = await client.PostAsJsonAsync("/api/security-guards", new { name, email });
         response.EnsureSuccessStatusCode();
         var payload = await response.Content.ReadFromJsonAsync<IdResponse>();
         payload.Should().NotBeNull();

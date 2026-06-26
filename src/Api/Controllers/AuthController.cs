@@ -9,7 +9,8 @@ namespace SafetyScale.Api.Controllers;
 [Route("api/auth")]
 public class AuthController(
     IAuthService authService,
-    IEmailConfirmationService emailConfirmationService) : ControllerBase
+    IEmailConfirmationService emailConfirmationService,
+    ISetPasswordService setPasswordService) : ControllerBase
 {
     [AllowAnonymous]
     [HttpPost("login")]
@@ -65,6 +66,32 @@ public class AuthController(
             ConfirmEmailStatus.InvalidToken => BadRequest(new { message = "Link de confirmação inválido ou expirado." }),
             ConfirmEmailStatus.UserNotFound => NotFound(new { message = "Usuário não encontrado." }),
             _ => BadRequest(new { message = "Não foi possível confirmar o e-mail." }),
+        };
+    }
+
+    [AllowAnonymous]
+    [HttpPost("set-password")]
+    public async Task<IActionResult> SetPassword(
+        [FromBody] SetPasswordRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await setPasswordService.SetInitialPasswordAsync(
+            request.UserId,
+            request.Token,
+            request.Password,
+            cancellationToken);
+
+        return result.Status switch
+        {
+            SetPasswordStatus.Success => Ok(new { message = "Senha definida com sucesso." }),
+            SetPasswordStatus.InvalidPassword => BadRequest(new
+            {
+                message = "Senha inválida.",
+                errors = result.Errors,
+            }),
+            SetPasswordStatus.InvalidToken => BadRequest(new { message = "Link inválido ou expirado." }),
+            SetPasswordStatus.UserNotFound => NotFound(new { message = "Usuário não encontrado." }),
+            _ => BadRequest(new { message = "Não foi possível definir a senha." }),
         };
     }
 }

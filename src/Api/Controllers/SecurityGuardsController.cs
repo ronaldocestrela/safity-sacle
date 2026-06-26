@@ -21,7 +21,7 @@ public class SecurityGuardsController(ISender sender) : ControllerBase
         [FromBody] CreateSecurityGuardRequest request,
         CancellationToken cancellationToken)
     {
-        var id = await sender.Send(new CreateSecurityGuardCommand(request.Name), cancellationToken);
+        var id = await sender.Send(new CreateSecurityGuardCommand(request.Name, request.Email), cancellationToken);
         return Created($"/api/security-guards/{id}", new { id });
     }
 

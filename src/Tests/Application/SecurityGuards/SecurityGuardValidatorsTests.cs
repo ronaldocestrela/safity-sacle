@@ -3,17 +3,28 @@ using SafetyScale.Application.SecurityGuards.Commands.CreateSecurityGuard;
 using SafetyScale.Application.SecurityGuards.Commands.ActivateSecurityGuard;
 using SafetyScale.Application.SecurityGuards.Commands.InactivateSecurityGuard;
 using SafetyScale.Application.SecurityGuards.Commands.UpdateSecurityGuard;
+using SafetyScale.Tests.Application.Common;
 
 namespace SafetyScale.Tests.Application.SecurityGuards;
 
 public class SecurityGuardValidatorsTests
 {
     [Fact]
-    public void CreateValidator_ShouldFail_WhenNameIsEmpty()
+    public async Task CreateValidator_ShouldFail_WhenNameIsEmpty()
     {
-        var validator = new CreateSecurityGuardCommandValidator();
+        var validator = new CreateSecurityGuardCommandValidator(new FakeSecurityGuardInviteService());
 
-        var result = validator.Validate(new CreateSecurityGuardCommand(string.Empty));
+        var result = await validator.ValidateAsync(new CreateSecurityGuardCommand(string.Empty, "guard@example.com"));
+
+        result.IsValid.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task CreateValidator_ShouldFail_WhenEmailIsAlreadyUsed()
+    {
+        var validator = new CreateSecurityGuardCommandValidator(new FakeSecurityGuardInviteService { EmailAvailable = false });
+
+        var result = await validator.ValidateAsync(new CreateSecurityGuardCommand("Maria", "used@example.com"));
 
         result.IsValid.Should().BeFalse();
     }
