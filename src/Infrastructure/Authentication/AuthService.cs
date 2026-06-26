@@ -86,6 +86,11 @@ public class AuthService(
             claims.Add(new Claim(TenantClaimTypes.TenantId, user.TenantId.Value.ToString()));
         }
 
+        if (user.SecurityGuardId is not null)
+        {
+            claims.Add(new Claim(AuthClaimTypes.SecurityGuardId, user.SecurityGuardId.Value.ToString()));
+        }
+
         claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 
         var token = new JwtSecurityToken(

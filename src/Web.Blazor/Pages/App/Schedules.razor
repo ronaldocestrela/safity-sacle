@@ -245,7 +245,7 @@
     private const string StitchSupervisorAvatar =
         "https://lh3.googleusercontent.com/aida-public/AB6AXuB3nCVQo7BaVjs8Plm0dqDT-E72JA3LPXwRXpOy29LCTHdvE1U5-EfUrZ-8tZimS_qhsHFF3tbZ6vUGALNuRIHq8a5badgeFrh0VuT0tqtWlBDhJf5B5Sz-BuS67N70iHrMJCJ41gO9PFGy0Ga9TSdJapjQQgFQDMHxQkrg7PRBL7RegsZqWDyLHaWh-oG6vUTddUnGkCKhX-8Evg0_qkcqk07E1eOADjs_HqJVISLP6Auwqyg11YgZnaa2ozlYUht-0ThG-nIE8lY9UU";
 
-    private static readonly UserRole[] ModuleRoles = [UserRole.Admin, UserRole.Supervisor];
+    private static readonly UserRole[] ModuleRoles = [UserRole.Admin, UserRole.Supervisor, UserRole.SecurityGuard];
     private static readonly CultureInfo PtBr = CultureInfo.GetCultureInfo("pt-BR");
 
     private static readonly (int Value, string Label)[] MonthOptions =
@@ -274,6 +274,7 @@
 
     private AuthSession? _session;
     private bool IsAdmin => _session?.Roles.Contains(UserRole.Admin) == true;
+    private bool IsSecurityGuard => _session?.Roles.Contains(UserRole.SecurityGuard) == true;
 
     private int _month;
     private int _year;

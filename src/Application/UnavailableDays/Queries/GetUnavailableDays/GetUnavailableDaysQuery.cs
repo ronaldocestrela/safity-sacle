@@ -1,5 +1,7 @@
 using MediatR;
+using SafetyScale.Application.Abstractions.Authentication;
 using SafetyScale.Application.Abstractions.Persistence;
+using SafetyScale.Application.Common;
 using SafetyScale.Application.UnavailableDays.Common;
 
 namespace SafetyScale.Application.UnavailableDays.Queries.GetUnavailableDays;
@@ -10,11 +12,17 @@ public sealed record GetUnavailableDaysResult(bool GuardExists, IReadOnlyList<Un
 
 public sealed class GetUnavailableDaysQueryHandler(
     ISecurityGuardRepository securityGuardRepository,
-    IUnavailableDayRepository unavailableDayRepository)
+    IUnavailableDayRepository unavailableDayRepository,
+    ICurrentUserContext currentUser)
     : IRequestHandler<GetUnavailableDaysQuery, GetUnavailableDaysResult>
 {
     public async Task<GetUnavailableDaysResult> Handle(GetUnavailableDaysQuery request, CancellationToken cancellationToken)
     {
+        if (!CurrentUserScope.CanAccessSecurityGuard(currentUser, request.SecurityGuardId))
+        {
+            return new GetUnavailableDaysResult(false, Array.Empty<UnavailableDayDto>());
+        }
+
         var guard = await securityGuardRepository.GetByIdAsync(request.SecurityGuardId, cancellationToken);
         if (guard is null)
         {

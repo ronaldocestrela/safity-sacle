@@ -35,7 +35,7 @@
             </section>
         }
 
-        @if (!string.IsNullOrEmpty(_guardsError))
+        @if (!IsSecurityGuard && !string.IsNullOrEmpty(_guardsError))
         {
             <div role="alert" class="banner banner-error">
                 <span>@_guardsError</span>
@@ -72,16 +72,19 @@
             </p>
 
             <div class="kpi-grid">
+                @if (!IsSecurityGuard)
+                {
+                    <div class="kpi-card">
+                        <span class="kpi-label">Seguranças ativos</span>
+                        <span class="kpi-value" data-testid="kpi-active">@Kpis.Active</span>
+                    </div>
+                    <div class="kpi-card">
+                        <span class="kpi-label">Seguranças inativos</span>
+                        <span class="kpi-value" data-testid="kpi-inactive">@Kpis.Inactive</span>
+                    </div>
+                }
                 <div class="kpi-card">
-                    <span class="kpi-label">Seguranças ativos</span>
-                    <span class="kpi-value" data-testid="kpi-active">@Kpis.Active</span>
-                </div>
-                <div class="kpi-card">
-                    <span class="kpi-label">Seguranças inativos</span>
-                    <span class="kpi-value" data-testid="kpi-inactive">@Kpis.Inactive</span>
-                </div>
-                <div class="kpi-card">
-                    <span class="kpi-label">Agendamentos</span>
+                    <span class="kpi-label">@(IsSecurityGuard ? "Meus turnos" : "Agendamentos")</span>
                     <span class="kpi-value" data-testid="kpi-assignments">@Kpis.Assignments</span>
                 </div>
                 <div class="kpi-card">
@@ -208,27 +211,30 @@
                 }
             </section>
 
-            <section class="shortcuts-section" aria-label="Navegação rápida">
-                <h2 class="section-title">Atalhos</h2>
-                <div class="shortcuts-grid">
-                    <NavLink class="shortcut" href="/app/sectors">
-                        <span class="material-symbols-outlined shortcut-icon">map</span>
-                        <span class="shortcut-label">Setores</span>
-                    </NavLink>
-                    <NavLink class="shortcut" href="/app/security-guards">
-                        <span class="material-symbols-outlined shortcut-icon">shield_person</span>
-                        <span class="shortcut-label">Seguranças</span>
-                    </NavLink>
-                    <NavLink class="shortcut" href="/app/unavailable-days">
-                        <span class="material-symbols-outlined shortcut-icon">event_available</span>
-                        <span class="shortcut-label">Disponibilidade</span>
-                    </NavLink>
-                    <NavLink class="shortcut" href="/app/schedules">
-                        <span class="material-symbols-outlined shortcut-icon">settings_suggest</span>
-                        <span class="shortcut-label">Agendamentos</span>
-                    </NavLink>
-                </div>
-            </section>
+            @if (!IsSecurityGuard)
+            {
+                <section class="shortcuts-section" aria-label="Navegação rápida">
+                    <h2 class="section-title">Atalhos</h2>
+                    <div class="shortcuts-grid">
+                        <NavLink class="shortcut" href="/app/sectors">
+                            <span class="material-symbols-outlined shortcut-icon">map</span>
+                            <span class="shortcut-label">Setores</span>
+                        </NavLink>
+                        <NavLink class="shortcut" href="/app/security-guards">
+                            <span class="material-symbols-outlined shortcut-icon">shield_person</span>
+                            <span class="shortcut-label">Seguranças</span>
+                        </NavLink>
+                        <NavLink class="shortcut" href="/app/unavailable-days">
+                            <span class="material-symbols-outlined shortcut-icon">event_available</span>
+                            <span class="shortcut-label">Disponibilidade</span>
+                        </NavLink>
+                        <NavLink class="shortcut" href="/app/schedules">
+                            <span class="material-symbols-outlined shortcut-icon">settings_suggest</span>
+                            <span class="shortcut-label">Agendamentos</span>
+                        </NavLink>
+                    </div>
+                </section>
+            }
         }
     </main>
 </div>
@@ -257,6 +263,7 @@
     private Dictionary<string, int> _assignmentCountByDate = new(StringComparer.Ordinal);
 
     private bool IsAdmin => _session?.Roles.Contains(UserRole.Admin) == true;
+    private bool IsSecurityGuard => _session?.Roles.Contains(UserRole.SecurityGuard) == true;
 
     private string PeriodLabel => FormatMonthYear(_month, _year);
 
@@ -282,7 +289,33 @@
         _todayKey = MonthGrid.TodayKeyLocal();
         _calendarCells = MonthGrid.BuildMonthGrid(_year, _month - 1);
         _session = await AuthService.GetSessionAsync();
+        if (IsSecurityGuard)
+        {
+            _loading = false;
+            await RefreshScheduleOnlyAsync();
+            return;
+        }
+
         await RefreshAsync();
+    }
+
+    private async Task RefreshScheduleOnlyAsync()
+    {
+        var token = ++_loadToken;
+        _loading = true;
+        _scheduleError = null;
+
+        var scheduleResult = await LoadScheduleSafeAsync();
+        if (token != _loadToken)
+        {
+            return;
+        }
+
+        _schedule = scheduleResult.Schedule;
+        _scheduleError = scheduleResult.Error;
+        _selectedDateKey = InitialSelectedDateKey(_schedule, _month, _year);
+        RebuildAssignmentCounts();
+        _loading = false;
     }
 
     private async Task RefreshAsync()

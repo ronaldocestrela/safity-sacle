@@ -35,32 +35,40 @@
                 }
 
                 <div class="field">
-                    <label class="label-caps" for="personnel-select">Selecionar segurança</label>
-                    <div class="select-wrap">
-                        <span class="select-icon-left">
-                            <span class="material-symbols-outlined material-icon">search</span>
-                        </span>
-                        <select id="personnel-select"
-                                class="select"
-                                value="@_selectedGuardId"
-                                @onchange="HandleGuardChangedAsync"
-                                disabled="@(_guardsLoading || _guards.Count == 0)">
-                            @if (_guards.Count == 0)
-                            {
-                                <option value="">Nenhum segurança</option>
-                            }
-                            else
-                            {
-                                @foreach (var guard in _guards)
+                    @if (!IsSecurityGuard)
+                    {
+                        <label class="label-caps" for="personnel-select">Selecionar segurança</label>
+                        <div class="select-wrap">
+                            <span class="select-icon-left">
+                                <span class="material-symbols-outlined material-icon">search</span>
+                            </span>
+                            <select id="personnel-select"
+                                    class="select"
+                                    value="@_selectedGuardId"
+                                    @onchange="HandleGuardChangedAsync"
+                                    disabled="@(_guardsLoading || _guards.Count == 0)">
+                                @if (_guards.Count == 0)
                                 {
-                                    <option value="@guard.Id">@GuardOptionLabel(guard)</option>
+                                    <option value="">Nenhum segurança</option>
                                 }
-                            }
-                        </select>
-                        <span class="select-icon-right">
-                            <span class="material-symbols-outlined material-icon">arrow_drop_down</span>
-                        </span>
-                    </div>
+                                else
+                                {
+                                    @foreach (var guard in _guards)
+                                    {
+                                        <option value="@guard.Id">@GuardOptionLabel(guard)</option>
+                                    }
+                                }
+                            </select>
+                            <span class="select-icon-right">
+                                <span class="material-symbols-outlined material-icon">arrow_drop_down</span>
+                            </span>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="label-caps">Minhas indisponibilidades</p>
+                        <p class="card-location">Informe os dias em que você não pode trabalhar.</p>
+                    }
                 </div>
 
                 @if (_guardsLoading)
@@ -101,7 +109,7 @@
                             }
                             <button type="button"
                                     class="@cellClass"
-                                    disabled="@(!IsAdmin || _daysLoading || _daysError is not null)"
+                                    disabled="@(!CanEditAvailability || _daysLoading || _daysError is not null)"
                                     aria-pressed="@unav"
                                     aria-label="@cell.Key"
                                     @onclick="() => HandleDayClick(cell.Key)">
@@ -126,7 +134,7 @@
                         </p>
                     </div>
 
-                    @if (IsAdmin)
+                    @if (CanEditAvailability)
                     {
                         <div class="field">
                             <label class="label-caps" for="reason-optional">Motivo (opcional)</label>
@@ -141,7 +149,7 @@
             </div>
         </main>
 
-        @if (IsAdmin && ShowCalendar && _daysError is null)
+        @if (CanEditAvailability && ShowCalendar && _daysError is null)
         {
             <div class="save-bar">
                 <form @onsubmit="HandleSaveAsync" @onsubmit:preventDefault="true">
@@ -156,7 +164,7 @@
 </RoleAuthorizeView>
 
 @code {
-    private static readonly UserRole[] ModuleRoles = [UserRole.Admin, UserRole.Supervisor];
+    private static readonly UserRole[] ModuleRoles = [UserRole.Admin, UserRole.Supervisor, UserRole.SecurityGuard];
     private static readonly CultureInfo PtBr = CultureInfo.GetCultureInfo("pt-BR");
 
     private enum BannerKind
@@ -168,6 +176,8 @@
 
     private AuthSession? _session;
     private bool IsAdmin => _session?.Roles.Contains(UserRole.Admin) == true;
+    private bool IsSecurityGuard => _session?.Roles.Contains(UserRole.SecurityGuard) == true;
+    private bool CanEditAvailability => IsAdmin || IsSecurityGuard;
 
     private int _viewYear;
     private int _viewMonth0;
@@ -275,6 +285,20 @@
 
         try
         {
+            if (IsSecurityGuard)
+            {
+                if (_session?.SecurityGuardId is not Guid ownGuardId || ownGuardId == Guid.Empty)
+                {
+                    _guardsError = "Conta de segurança sem vínculo operacional.";
+                    return;
+                }
+
+                _guards = [];
+                _selectedGuardId = ownGuardId;
+                await RefreshDaysAsync();
+                return;
+            }
+
             var list = await GuardsClient.ListAsync(isActive: null);
             if (token != _loadGuardsToken)
             {
@@ -394,7 +418,7 @@
 
     private void HandleDayClick(string key)
     {
-        if (!IsAdmin || _selectedGuardId == Guid.Empty || _daysLoading)
+        if (!CanEditAvailability || _selectedGuardId == Guid.Empty || _daysLoading)
         {
             return;
         }
@@ -406,7 +430,7 @@
 
     private async Task HandleSaveAsync()
     {
-        if (!IsAdmin || _selectedGuardId == Guid.Empty || !HasPending)
+        if (!CanEditAvailability || _selectedGuardId == Guid.Empty || !HasPending)
         {
             return;
         }
@@ -476,7 +500,7 @@
             classes.Add("cell-muted");
         }
 
-        if (cell.InMonth && IsAdmin && !_daysLoading && _daysError is null)
+        if (cell.InMonth && CanEditAvailability && !_daysLoading && _daysError is null)
         {
             classes.Add("cell-clickable");
         }

@@ -19,6 +19,7 @@ public class IdentitySeeder(
     {
         public const string Admin = "Admin";
         public const string Supervisor = "Supervisor";
+        public const string SecurityGuard = "SecurityGuard";
     }
 
     public static class PlatformRoles
@@ -32,7 +33,7 @@ public class IdentitySeeder(
 
     public async Task SeedAsync(bool isDevelopment)
     {
-        var tenantRoles = new[] { Roles.Admin, Roles.Supervisor };
+        var tenantRoles = new[] { Roles.Admin, Roles.Supervisor, Roles.SecurityGuard };
         var allRoles = tenantRoles.Concat(PlatformRoles.All);
 
         foreach (var role in allRoles)

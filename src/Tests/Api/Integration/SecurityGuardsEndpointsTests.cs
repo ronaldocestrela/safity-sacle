@@ -13,7 +13,7 @@ public class SecurityGuardsEndpointsTests
         using var client = CreateHttpsClient(factory);
         await AuthTestHelper.AuthenticateAsAdminAsync(client);
 
-        var response = await client.PostAsJsonAsync("/api/security-guards", new { name = "Guard A" });
+        var response = await client.PostAsJsonAsync("/api/security-guards", new { name = "Guard A", email = "guard-a@example.com" });
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         var payload = await response.Content.ReadFromJsonAsync<CreateSecurityGuardResponse>();
@@ -27,7 +27,7 @@ public class SecurityGuardsEndpointsTests
         using var factory = new TestWebApplicationFactory();
         using var client = CreateHttpsClient(factory);
         await AuthTestHelper.AuthenticateAsAdminAsync(client);
-        await client.PostAsJsonAsync("/api/security-guards", new { name = "Guard B" });
+        await client.PostAsJsonAsync("/api/security-guards", new { name = "Guard B", email = "guard-b@example.com" });
 
         var response = await client.GetAsync("/api/security-guards");
 
@@ -44,7 +44,7 @@ public class SecurityGuardsEndpointsTests
         using var client = CreateHttpsClient(factory);
         await AuthTestHelper.AuthenticateAsAdminAsync(client);
 
-        var createResponse = await client.PostAsJsonAsync("/api/security-guards", new { name = "Guard C" });
+        var createResponse = await client.PostAsJsonAsync("/api/security-guards", new { name = "Guard C", email = "guard-c@example.com" });
         var created = await createResponse.Content.ReadFromJsonAsync<CreateSecurityGuardResponse>();
         created.Should().NotBeNull();
 
@@ -64,7 +64,7 @@ public class SecurityGuardsEndpointsTests
         using var client = CreateHttpsClient(factory);
         await AuthTestHelper.AuthenticateAsAdminAsync(client);
 
-        var createResponse = await client.PostAsJsonAsync("/api/security-guards", new { name = "Guard D" });
+        var createResponse = await client.PostAsJsonAsync("/api/security-guards", new { name = "Guard D", email = "guard-d@example.com" });
         var created = await createResponse.Content.ReadFromJsonAsync<CreateSecurityGuardResponse>();
         created.Should().NotBeNull();
 
@@ -84,7 +84,7 @@ public class SecurityGuardsEndpointsTests
         using var client = CreateHttpsClient(factory);
         await AuthTestHelper.AuthenticateAsAdminAsync(client);
 
-        var createResponse = await client.PostAsJsonAsync("/api/security-guards", new { name = "Guard E" });
+        var createResponse = await client.PostAsJsonAsync("/api/security-guards", new { name = "Guard E", email = "guard-e@example.com" });
         var created = await createResponse.Content.ReadFromJsonAsync<CreateSecurityGuardResponse>();
         created.Should().NotBeNull();
 
@@ -111,7 +111,7 @@ public class SecurityGuardsEndpointsTests
         var sector = await sectorResp.Content.ReadFromJsonAsync<SectorStubResponse>();
         sector.Should().NotBeNull();
 
-        var createResp = await client.PostAsJsonAsync("/api/security-guards", new { name = "Guard Sector" });
+        var createResp = await client.PostAsJsonAsync("/api/security-guards", new { name = "Guard Sector", email = "guard-sector@example.com" });
         var createdGuard = await createResp.Content.ReadFromJsonAsync<CreateSecurityGuardResponse>();
         createdGuard.Should().NotBeNull();
 

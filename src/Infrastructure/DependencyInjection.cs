@@ -30,7 +30,9 @@ public static class DependencyInjection
         services.Configure<SmtpOptions>(configuration.GetSection(SmtpOptions.SectionName));
         services.Configure<EmailQueueWorkerOptions>(configuration.GetSection(EmailQueueWorkerOptions.SectionName));
 
+        services.AddHttpContextAccessor();
         services.AddScoped<ITenantExecutionContext, TenantExecutionContext>();
+        services.AddScoped<ICurrentUserContext, HttpContextCurrentUserContext>();
 
         services.AddDbContext<ApplicationDbContext>((_, options) =>
             options.UseSqlServer(connectionString));
@@ -51,6 +53,8 @@ public static class DependencyInjection
 
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IEmailConfirmationService, EmailConfirmationService>();
+        services.AddScoped<ISetPasswordService, SetPasswordService>();
+        services.AddScoped<ISecurityGuardInviteService, SecurityGuardInviteService>();
         services.AddScoped<ITenantRegistrationService, TenantRegistrationService>();
         services.AddScoped<IPlatformTenantService, PlatformTenantService>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();

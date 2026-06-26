@@ -53,6 +53,13 @@ public class ApplicationDbContext(
                 .OnDelete(DeleteBehavior.Restrict)
                 .IsRequired(false);
 
+            entity.Property(u => u.SecurityGuardId).IsRequired(false);
+            entity.HasOne(u => u.SecurityGuard)
+                .WithMany()
+                .HasForeignKey(u => u.SecurityGuardId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired(false);
+
             // Intentionally no global query filter: Identity's UserStore queries must not be blocked
             // by tenant resolution during login/seed, and EF cannot reliably translate combined filters here.
         });

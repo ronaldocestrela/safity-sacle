@@ -1,5 +1,7 @@
 using MediatR;
+using SafetyScale.Application.Abstractions.Authentication;
 using SafetyScale.Application.Abstractions.Persistence;
+using SafetyScale.Application.Common;
 using SafetyScale.Domain.Entities;
 
 namespace SafetyScale.Application.UnavailableDays.Commands.AddUnavailableDay;
@@ -10,6 +12,7 @@ public enum AddUnavailableDayStatus
     GuardNotFound,
     GuardInactive,
     DuplicateDate,
+    Forbidden,
 }
 
 public sealed record AddUnavailableDayResult(AddUnavailableDayStatus Status, Guid? Id = null);
@@ -20,10 +23,16 @@ public sealed record AddUnavailableDayCommand(Guid SecurityGuardId, DateOnly Dat
 public sealed class AddUnavailableDayCommandHandler(
     ISecurityGuardRepository securityGuardRepository,
     IUnavailableDayRepository unavailableDayRepository,
+    ICurrentUserContext currentUser,
     IUnitOfWork unitOfWork) : IRequestHandler<AddUnavailableDayCommand, AddUnavailableDayResult>
 {
     public async Task<AddUnavailableDayResult> Handle(AddUnavailableDayCommand request, CancellationToken cancellationToken)
     {
+        if (!CurrentUserScope.CanAccessSecurityGuard(currentUser, request.SecurityGuardId))
+        {
+            return new AddUnavailableDayResult(AddUnavailableDayStatus.Forbidden);
+        }
+
         var guard = await securityGuardRepository.GetByIdAsync(request.SecurityGuardId, cancellationToken);
         if (guard is null)
         {
