@@ -13,4 +13,10 @@ public sealed class Tenant
     public bool IsActive { get; set; } = true;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public LeadStatus LeadStatus { get; set; } = LeadStatus.New;
+
+    public Guid? PlatformPlanId { get; set; }
+
+    public PlatformPlan? PlatformPlan { get; set; }
 }

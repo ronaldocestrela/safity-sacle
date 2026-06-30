@@ -17,7 +17,15 @@ public sealed class PlatformTenantsController(IPlatformTenantService platformTen
     {
         var tenants = await platformTenantService.ListAsync(cancellationToken);
         var response = tenants
-            .Select(t => new PlatformTenantResponse(t.Id, t.Name, t.Slug, t.IsActive, t.CreatedAt))
+            .Select(t => new PlatformTenantResponse(
+                t.Id,
+                t.Name,
+                t.Slug,
+                t.IsActive,
+                t.CreatedAt,
+                (LeadStatusContract)t.LeadStatus,
+                t.PlatformPlanId,
+                t.PlatformPlanName))
             .ToList();
 
         return Ok(response);
@@ -36,7 +44,9 @@ public sealed class PlatformTenantsController(IPlatformTenantService platformTen
             request.TenantName,
             request.AdminName,
             request.AdminEmail,
-            request.AdminPassword);
+            request.AdminPassword,
+            request.PlatformPlanId,
+            (LeadStatusDto)request.LeadStatus);
 
         var result = await platformTenantService.CreateAsync(input, cancellationToken);
 
@@ -58,6 +68,12 @@ public sealed class PlatformTenantsController(IPlatformTenantService platformTen
                 {
                     message = "Não foi possível gerar um identificador único para a empresa. Tente novamente.",
                 }),
+
+            CreatePlatformTenantStatus.PlanNotFound =>
+                BadRequest(new { message = "Plano não encontrado." }),
+
+            CreatePlatformTenantStatus.PlanInactive or CreatePlatformTenantStatus.ContractedRequiresPlan =>
+                BadRequest(new { errors = result.Errors ?? Array.Empty<string>() }),
 
             CreatePlatformTenantStatus.InvalidPassword or CreatePlatformTenantStatus.ValidationFailed =>
                 BadRequest(new { errors = result.Errors ?? Array.Empty<string>() }),
@@ -93,6 +109,36 @@ public sealed class PlatformTenantsController(IPlatformTenantService platformTen
             SetTenantActiveStatus.Success => NoContent(),
             SetTenantActiveStatus.NotFound => NotFound(new { message = "Tenant não encontrado." }),
             _ => throw new InvalidOperationException($"Unexpected tenant active status {result.Status}."),
+        };
+    }
+
+    [HttpPatch("{tenantId:guid}/commercial")]
+    [Authorize(Policy = AuthorizationPolicies.PlatformManagement)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateCommercial(
+        Guid tenantId,
+        [FromBody] UpdateTenantCommercialRequest request,
+        CancellationToken cancellationToken)
+    {
+        var input = new UpdateTenantCommercialInput(
+            request.PlatformPlanId,
+            (LeadStatusDto)request.LeadStatus);
+
+        var result = await platformTenantService.UpdateCommercialAsync(tenantId, input, cancellationToken);
+
+        return result.Status switch
+        {
+            UpdateTenantCommercialStatus.Success => NoContent(),
+            UpdateTenantCommercialStatus.NotFound => NotFound(new { message = "Tenant não encontrado." }),
+            UpdateTenantCommercialStatus.PlanNotFound =>
+                BadRequest(new { message = "Plano não encontrado." }),
+            UpdateTenantCommercialStatus.PlanInactive or UpdateTenantCommercialStatus.ContractedRequiresPlan or UpdateTenantCommercialStatus.PlanDowngradeNotAllowed =>
+                BadRequest(new { errors = result.Errors ?? Array.Empty<string>() }),
+            UpdateTenantCommercialStatus.ValidationFailed =>
+                BadRequest(new { errors = result.Errors ?? Array.Empty<string>() }),
+            _ => throw new InvalidOperationException($"Unexpected tenant commercial status {result.Status}."),
         };
     }
 }

@@ -95,6 +95,9 @@ public class SetSecurityGuardSectorsCommandHandlerTests
         public Task<IReadOnlyList<SecurityGuard>> GetActiveAsync(CancellationToken cancellationToken = default)
             => Task.FromResult((IReadOnlyList<SecurityGuard>)_items.Where(x => x.IsActive).OrderBy(x => x.Name).ToList());
 
+        public Task<int> CountAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult(_items.Count);
+
         public void Update(SecurityGuard securityGuard)
         {
         }
@@ -111,6 +114,9 @@ public class SetSecurityGuardSectorsCommandHandlerTests
 
         public Task<IReadOnlyList<Sector>> GetAllAsync(CancellationToken cancellationToken = default)
             => Task.FromResult((IReadOnlyList<Sector>)_items.ToList());
+
+        public Task<int> CountAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult(_items.Count);
 
         public void Update(Sector sector)
         {

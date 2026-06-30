@@ -1,3 +1,4 @@
+using System.Net.Http.Json;
 using SafetyScale.Web.Blazor.Models.Platform;
 
 namespace SafetyScale.Web.Blazor.Services.Api;
@@ -26,6 +27,18 @@ public sealed class PlatformTenantsApiClient(ApiHttpClient apiClient)
         using var response = await apiClient.PatchAsync(
             $"/api/platform/tenants/{tenantId}/deactivate",
             content: null,
+            cancellationToken: cancellationToken);
+        return response.IsSuccessStatusCode;
+    }
+
+    public async Task<bool> UpdateCommercialAsync(
+        Guid tenantId,
+        UpdateTenantCommercialRequestDto request,
+        CancellationToken cancellationToken = default)
+    {
+        using var response = await apiClient.PatchAsync(
+            $"/api/platform/tenants/{tenantId}/commercial",
+            JsonContent.Create(request, options: apiClient.JsonOptions),
             cancellationToken: cancellationToken);
         return response.IsSuccessStatusCode;
     }

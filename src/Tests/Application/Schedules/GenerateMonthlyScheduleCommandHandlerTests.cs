@@ -215,6 +215,9 @@ public class GenerateMonthlyScheduleCommandHandlerTests
         public Task<IReadOnlyList<Sector>> GetAllAsync(CancellationToken cancellationToken = default)
             => Task.FromResult((IReadOnlyList<Sector>)_workload.ToList());
 
+        public Task<int> CountAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult(_workload.Count);
+
         public void Update(Sector sector)
         {
         }
@@ -270,6 +273,9 @@ public class GenerateMonthlyScheduleCommandHandlerTests
 
         public Task<IReadOnlyList<SecurityGuard>> GetActiveAsync(CancellationToken cancellationToken = default)
             => Task.FromResult((IReadOnlyList<SecurityGuard>)_items.Where(x => x.IsActive).OrderBy(x => x.Name).ToList());
+
+        public Task<int> CountAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult(_items.Count);
 
         public void Update(SecurityGuard securityGuard)
         {

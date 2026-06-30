@@ -26,5 +26,8 @@ public class SecurityGuardRepository(ApplicationDbContext dbContext) : ISecurity
             .OrderBy(x => x.Name)
             .ToListAsync(cancellationToken);
 
+    public Task<int> CountAsync(CancellationToken cancellationToken = default)
+        => dbContext.SecurityGuards.CountAsync(cancellationToken);
+
     public void Update(SecurityGuard securityGuard) => dbContext.SecurityGuards.Update(securityGuard);
 }

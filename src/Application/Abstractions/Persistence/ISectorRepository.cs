@@ -7,6 +7,7 @@ public interface ISectorRepository
     Task AddAsync(Sector sector, CancellationToken cancellationToken = default);
     Task<Sector?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Sector>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<int> CountAsync(CancellationToken cancellationToken = default);
     void Update(Sector sector);
 
     Task<Guid?> GetDefaultSchedulingSectorIdAsync(CancellationToken cancellationToken = default);

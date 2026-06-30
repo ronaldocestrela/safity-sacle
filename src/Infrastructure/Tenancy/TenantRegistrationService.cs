@@ -88,6 +88,8 @@ public sealed class TenantRegistrationService(
                 Slug = slug,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow,
+                LeadStatus = (LeadStatus)input.LeadStatus,
+                PlatformPlanId = input.PlatformPlanId,
             };
 
             dbContext.Tenants.Add(tenant);

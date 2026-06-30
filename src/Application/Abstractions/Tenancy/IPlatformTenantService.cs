@@ -5,13 +5,27 @@ public sealed record PlatformTenantSummaryDto(
     string Name,
     string Slug,
     bool IsActive,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    LeadStatusDto LeadStatus,
+    Guid? PlatformPlanId,
+    string? PlatformPlanName);
+
+public enum LeadStatusDto
+{
+    New = 0,
+    Contacted = 1,
+    ProposalSent = 2,
+    Contracted = 3,
+    Lost = 4,
+}
 
 public sealed record CreatePlatformTenantInput(
     string TenantName,
     string AdminName,
     string AdminEmail,
-    string AdminPassword);
+    string AdminPassword,
+    Guid? PlatformPlanId = null,
+    LeadStatusDto LeadStatus = LeadStatusDto.New);
 
 public enum CreatePlatformTenantStatus
 {
@@ -20,6 +34,9 @@ public enum CreatePlatformTenantStatus
     AdminEmailAlreadyExists,
     TenantSlugConflict,
     InvalidPassword,
+    PlanNotFound,
+    PlanInactive,
+    ContractedRequiresPlan,
 }
 
 public sealed record CreatePlatformTenantResult(
@@ -37,6 +54,25 @@ public enum SetTenantActiveStatus
 
 public sealed record SetTenantActiveResult(SetTenantActiveStatus Status);
 
+public sealed record UpdateTenantCommercialInput(
+    Guid? PlatformPlanId,
+    LeadStatusDto LeadStatus);
+
+public enum UpdateTenantCommercialStatus
+{
+    Success,
+    NotFound,
+    ValidationFailed,
+    PlanNotFound,
+    PlanInactive,
+    ContractedRequiresPlan,
+    PlanDowngradeNotAllowed,
+}
+
+public sealed record UpdateTenantCommercialResult(
+    UpdateTenantCommercialStatus Status,
+    IReadOnlyList<string>? Errors = null);
+
 public interface IPlatformTenantService
 {
     Task<IReadOnlyList<PlatformTenantSummaryDto>> ListAsync(CancellationToken cancellationToken = default);
@@ -48,5 +84,10 @@ public interface IPlatformTenantService
     Task<SetTenantActiveResult> SetActiveAsync(
         Guid tenantId,
         bool isActive,
+        CancellationToken cancellationToken = default);
+
+    Task<UpdateTenantCommercialResult> UpdateCommercialAsync(
+        Guid tenantId,
+        UpdateTenantCommercialInput input,
         CancellationToken cancellationToken = default);
 }

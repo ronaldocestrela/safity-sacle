@@ -1,0 +1,331 @@
+@page "/platform/plans"
+@layout PlatformLayout
+@attribute [Authorize(Roles = "PlatformOwner,PlatformAdmin,PlatformSupport")]
+@inject PlatformAuthSessionService AuthService
+@inject PlatformPlansApiClient PlansClient
+
+<PageTitle>SafetyScale — Planos</PageTitle>
+
+<div class="page">
+    <header class="header">
+        <div>
+            <p class="eyebrow">Portal da plataforma</p>
+            <h1>Planos comerciais</h1>
+            <p class="subtitle">@_session?.Email</p>
+        </div>
+        <div class="header-actions">
+            <a href="/platform/tenants" class="nav-link">Tenants</a>
+            <button type="button" class="logout" @onclick="HandleLogoutAsync">Sair</button>
+        </div>
+    </header>
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <p class="error" role="alert">@_errorMessage</p>
+    }
+
+    @if (!string.IsNullOrEmpty(_successMessage))
+    {
+        <p class="success" role="status">@_successMessage</p>
+    }
+
+    <AuthorizeView Roles="PlatformOwner,PlatformAdmin" Context="managementAuth">
+        <section class="panel">
+            <h2>@(_editingPlanId is null ? "Novo plano" : "Editar plano")</h2>
+            <EditForm Model="_form" FormName="plan-form" OnValidSubmit="HandleSubmitAsync">
+                <div class="grid">
+                    <label>
+                        Nome
+                        <input @bind="_form.Name" class="input" disabled="@_busy" />
+                    </label>
+                    @if (_editingPlanId is null)
+                    {
+                        <label>
+                            Código
+                            <input @bind="_form.Code" class="input" disabled="@_busy" placeholder="ex: starter" />
+                        </label>
+                    }
+                    else
+                    {
+                        <label>
+                            Código
+                            <input value="@_form.Code" class="input" disabled />
+                        </label>
+                    }
+                    <label>
+                        Preço mensal (R$)
+                        <input @bind="_form.PriceMonthly" type="number" step="0.01" min="0" class="input" disabled="@_busy" />
+                    </label>
+                    <label>
+                        Máx. seguranças
+                        <input @bind="_form.MaxSecurityGuards" type="number" min="1" class="input" disabled="@_busy" />
+                    </label>
+                    <label>
+                        Máx. setores
+                        <input @bind="_form.MaxSectors" type="number" min="1" class="input" disabled="@_busy" />
+                    </label>
+                    <label class="full-width">
+                        Descrição
+                        <textarea @bind="_form.Description" class="input textarea" rows="3" disabled="@_busy"></textarea>
+                    </label>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="primary" disabled="@_busy">
+                        @(_editingPlanId is null ? "Criar plano" : "Salvar alterações")
+                    </button>
+                    @if (_editingPlanId is not null)
+                    {
+                        <button type="button" class="secondary" disabled="@_busy" @onclick="CancelEdit">Cancelar</button>
+                    }
+                </div>
+            </EditForm>
+        </section>
+    </AuthorizeView>
+
+    <section class="panel">
+        <div class="panel-head">
+            <h2>Planos cadastrados</h2>
+            <button type="button" class="secondary" disabled="@_busy" @onclick="LoadPlansAsync">Atualizar</button>
+        </div>
+
+        @if (_loading)
+        {
+            <p>Carregando…</p>
+        }
+        else if (_plans.Count == 0)
+        {
+            <p>Nenhum plano encontrado.</p>
+        }
+        else
+        {
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Código</th>
+                            <th>Preço/mês</th>
+                            <th>Seguranças</th>
+                            <th>Setores</th>
+                            <th>Status</th>
+                            <th>Criado em</th>
+                            <AuthorizeView Roles="PlatformOwner,PlatformAdmin" Context="rowActionsAuth">
+                                <th>Ações</th>
+                            </AuthorizeView>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var plan in _plans)
+                        {
+                            <tr>
+                                <td>@plan.Name</td>
+                                <td><code>@plan.Code</code></td>
+                                <td>@plan.PriceMonthly.ToString("C2")</td>
+                                <td>@plan.MaxSecurityGuards</td>
+                                <td>@plan.MaxSectors</td>
+                                <td>
+                                    <span class="@(plan.IsActive ? "badge-active" : "badge-inactive")">
+                                        @(plan.IsActive ? "Ativo" : "Inativo")
+                                    </span>
+                                </td>
+                                <td>@plan.CreatedAt.ToLocalTime().ToString("g")</td>
+                                <AuthorizeView Roles="PlatformOwner,PlatformAdmin" Context="rowActionsAuth">
+                                    <td class="actions">
+                                        <button type="button"
+                                                class="link-btn"
+                                                disabled="@_busy"
+                                                @onclick="() => StartEdit(plan)">
+                                            Editar
+                                        </button>
+                                        @if (plan.IsActive)
+                                        {
+                                            <button type="button"
+                                                    class="link-btn"
+                                                    disabled="@_busy"
+                                                    @onclick="() => SetActiveAsync(plan.Id, false)">
+                                                Desativar
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button type="button"
+                                                    class="link-btn"
+                                                    disabled="@_busy"
+                                                    @onclick="() => SetActiveAsync(plan.Id, true)">
+                                                Ativar
+                                            </button>
+                                        }
+                                    </td>
+                                </AuthorizeView>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+</div>
+
+@code {
+    private PlatformAuthSession? _session;
+    private readonly List<PlatformPlanDto> _plans = [];
+    private readonly PlanForm _form = new();
+    private Guid? _editingPlanId;
+    private bool _loading = true;
+    private bool _busy;
+    private string? _errorMessage;
+    private string? _successMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _session = await AuthService.GetSessionAsync();
+        await LoadPlansAsync();
+    }
+
+    private async Task LoadPlansAsync()
+    {
+        _loading = true;
+        _errorMessage = null;
+        try
+        {
+            var items = await PlansClient.ListAsync();
+            _plans.Clear();
+            _plans.AddRange(items);
+        }
+        catch (Exception)
+        {
+            _errorMessage = "Não foi possível carregar os planos.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task HandleSubmitAsync()
+    {
+        _busy = true;
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            if (_editingPlanId is null)
+            {
+                var result = await PlansClient.CreateAsync(new CreatePlatformPlanRequestDto(
+                    _form.Name.Trim(),
+                    _form.Code.Trim(),
+                    string.IsNullOrWhiteSpace(_form.Description) ? null : _form.Description.Trim(),
+                    _form.PriceMonthly,
+                    _form.MaxSecurityGuards,
+                    _form.MaxSectors));
+
+                if (!result.Ok)
+                {
+                    _errorMessage = result.Message ?? "Não foi possível criar o plano.";
+                    return;
+                }
+
+                _successMessage = "Plano criado com sucesso.";
+                _form.Clear();
+            }
+            else
+            {
+                var result = await PlansClient.UpdateAsync(
+                    _editingPlanId.Value,
+                    new UpdatePlatformPlanRequestDto(
+                        _form.Name.Trim(),
+                        string.IsNullOrWhiteSpace(_form.Description) ? null : _form.Description.Trim(),
+                        _form.PriceMonthly,
+                        _form.MaxSecurityGuards,
+                        _form.MaxSectors));
+
+                if (!result.Ok)
+                {
+                    _errorMessage = result.Message ?? "Não foi possível atualizar o plano.";
+                    return;
+                }
+
+                _successMessage = "Plano atualizado com sucesso.";
+                CancelEdit();
+            }
+
+            await LoadPlansAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void StartEdit(PlatformPlanDto plan)
+    {
+        _editingPlanId = plan.Id;
+        _form.Name = plan.Name;
+        _form.Code = plan.Code;
+        _form.Description = plan.Description ?? string.Empty;
+        _form.PriceMonthly = plan.PriceMonthly;
+        _form.MaxSecurityGuards = plan.MaxSecurityGuards;
+        _form.MaxSectors = plan.MaxSectors;
+        _errorMessage = null;
+        _successMessage = null;
+    }
+
+    private void CancelEdit()
+    {
+        _editingPlanId = null;
+        _form.Clear();
+    }
+
+    private async Task SetActiveAsync(Guid planId, bool isActive)
+    {
+        _busy = true;
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            var ok = isActive
+                ? await PlansClient.ActivateAsync(planId)
+                : await PlansClient.DeactivateAsync(planId);
+
+            if (!ok)
+            {
+                _errorMessage = "Não foi possível atualizar o status do plano.";
+                return;
+            }
+
+            _successMessage = isActive ? "Plano ativado." : "Plano desativado.";
+            await LoadPlansAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task HandleLogoutAsync()
+    {
+        await AuthService.LogoutAsync(navigateToLogin: true);
+    }
+
+    private sealed class PlanForm
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Code { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public decimal PriceMonthly { get; set; }
+        public int MaxSecurityGuards { get; set; } = 10;
+        public int MaxSectors { get; set; } = 5;
+
+        public void Clear()
+        {
+            Name = string.Empty;
+            Code = string.Empty;
+            Description = string.Empty;
+            PriceMonthly = 0;
+            MaxSecurityGuards = 10;
+            MaxSectors = 5;
+        }
+    }
+}

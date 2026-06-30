@@ -15,6 +15,7 @@ public class ApplicationDbContext(
     private readonly ITenantExecutionContext _tenant = tenantExecution;
 
     public DbSet<Tenant> Tenants => Set<Tenant>();
+    public DbSet<PlatformPlan> PlatformPlans => Set<PlatformPlan>();
     public DbSet<SecurityGuard> SecurityGuards => Set<SecurityGuard>();
     public DbSet<Sector> Sectors => Set<Sector>();
     public DbSet<SecurityGuardSector> SecurityGuardSectors => Set<SecurityGuardSector>();
@@ -27,6 +28,21 @@ public class ApplicationDbContext(
     {
         base.OnModelCreating(builder);
 
+        builder.Entity<PlatformPlan>(entity =>
+        {
+            entity.ToTable("PlatformPlans");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Name).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.Code).HasMaxLength(50).IsRequired();
+            entity.Property(x => x.Description).HasMaxLength(1000);
+            entity.Property(x => x.PriceMonthly).HasPrecision(18, 2).IsRequired();
+            entity.Property(x => x.MaxSecurityGuards).IsRequired();
+            entity.Property(x => x.MaxSectors).IsRequired();
+            entity.Property(x => x.IsActive).IsRequired();
+            entity.Property(x => x.CreatedAt).IsRequired();
+            entity.HasIndex(x => x.Code).IsUnique();
+        });
+
         builder.Entity<Tenant>(entity =>
         {
             entity.ToTable("Tenants");
@@ -35,7 +51,14 @@ public class ApplicationDbContext(
             entity.Property(x => x.Slug).HasMaxLength(100).IsRequired();
             entity.Property(x => x.CreatedAt).IsRequired();
             entity.Property(x => x.IsActive).IsRequired();
+            entity.Property(x => x.LeadStatus).IsRequired();
             entity.HasIndex(x => x.Slug).IsUnique();
+
+            entity.HasOne(x => x.PlatformPlan)
+                .WithMany()
+                .HasForeignKey(x => x.PlatformPlanId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired(false);
 
             entity.HasQueryFilter(t =>
                 !_tenant.IsTenantIsolationEnabled ||

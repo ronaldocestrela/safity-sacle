@@ -18,6 +18,9 @@ public sealed class SectorRepository(ApplicationDbContext dbContext) : ISectorRe
             .OrderBy(x => x.Name)
             .ToListAsync(cancellationToken);
 
+    public Task<int> CountAsync(CancellationToken cancellationToken = default)
+        => dbContext.Sectors.CountAsync(cancellationToken);
+
     public void Update(Sector sector) => dbContext.Sectors.Update(sector);
 
     public async Task<Guid?> GetDefaultSchedulingSectorIdAsync(CancellationToken cancellationToken = default)
