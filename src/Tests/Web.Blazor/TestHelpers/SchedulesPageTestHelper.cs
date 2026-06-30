@@ -43,6 +43,17 @@ internal static class SchedulesPageTestHelper
         }
         """;
 
+    internal const string EmptyItemsScheduleJson =
+        """
+        {
+          "id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+          "month": 5,
+          "year": 2026,
+          "generatedAt": "2026-05-01T10:00:00.000Z",
+          "items": []
+        }
+        """;
+
     public static void Register(
         IServiceCollection services,
         Func<HttpRequestMessage, HttpResponseMessage> responseFactory,
@@ -89,6 +100,8 @@ internal static class SchedulesPageTestHelper
                 Encoding.UTF8,
                 "application/json"),
         };
+
+    public static HttpResponseMessage ConflictResponse() => new(HttpStatusCode.Conflict);
 
     public static HttpResponseMessage CoverageFailureResponse(string message, string? failedDate = "2026-05-02") =>
         JsonResponse(

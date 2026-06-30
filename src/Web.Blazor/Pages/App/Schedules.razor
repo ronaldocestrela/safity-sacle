@@ -5,8 +5,10 @@
 @inject SchedulesApiClient SchedulesClient
 @inject IJSRuntime Js
 @using System.Globalization
+@using System.Net
 @using SafetyScale.Web.Blazor.Models.Auth
 @using SafetyScale.Web.Blazor.Models.Schedules
+@using SafetyScale.Web.Blazor.Services.Api
 
 <PageTitle>SafetyScale — Escalas</PageTitle>
 
@@ -63,7 +65,8 @@
                                 <label class="label-caps label-caps-muted" for="schedule-month">Mês</label>
                                 <select id="schedule-month"
                                         class="select"
-                                        @bind="_month">
+                                        @bind="_month"
+                                        @bind:after="OnPeriodChangedAsync">
                                     @foreach (var option in MonthOptions)
                                     {
                                         <option value="@option.Value">@option.Label</option>
@@ -77,7 +80,8 @@
                                        type="number"
                                        min="2000"
                                        max="2100"
-                                       @bind="_year" />
+                                       @bind="_year"
+                                       @bind:after="OnPeriodChangedAsync" />
                             </div>
                         </div>
                         @if (_periodError is not null)
@@ -170,9 +174,16 @@
                         else
                         {
                             <div class="empty-list">
-                                @if (_schedule?.Items.Count == 0)
+                                @if (_schedule is not null && _schedule.Items.Count == 0)
                                 {
-                                    @:Não há agendamentos para este agendamento.
+                                    @if (IsSecurityGuard)
+                                    {
+                                        @:Você não tem turnos atribuídos neste período.
+                                    }
+                                    else
+                                    {
+                                        @:Não há agendamentos para este agendamento.
+                                    }
                                 }
                                 else
                                 {
@@ -315,6 +326,19 @@
         await LoadScheduleAsync(_month, _year);
     }
 
+    private async Task OnPeriodChangedAsync()
+    {
+        _periodTouched = true;
+        var err = ValidatePeriod(_month, _year);
+        if (err is not null)
+        {
+            _schedule = null;
+            return;
+        }
+
+        await LoadScheduleAsync(_month, _year);
+    }
+
     private async Task HandleGenerateAsync()
     {
         _periodTouched = true;
@@ -332,7 +356,12 @@
         {
             await SchedulesClient.GenerateAsync(_month, _year);
             ShowSuccessBanner("Escala mensal gerada com sucesso.");
-            await LoadScheduleAsync(_month, _year);
+            await LoadScheduleAsync(_month, _year, preserveBanner: true);
+        }
+        catch (ApiException ex) when (ex.StatusCode == (int)HttpStatusCode.Conflict)
+        {
+            ShowSuccessBanner("Escala já gerada para este mês e ano. Carregando rotação existente.");
+            await LoadScheduleAsync(_month, _year, preserveBanner: true);
         }
         catch (ApiException ex)
         {
@@ -348,7 +377,7 @@
         }
     }
 
-    private async Task LoadScheduleAsync(int month, int year)
+    private async Task LoadScheduleAsync(int month, int year, bool preserveBanner = false)
     {
         var err = ValidatePeriod(month, year);
         if (err is not null)
@@ -360,7 +389,10 @@
 
         var token = ++_loadToken;
         _loading = true;
-        ClearBanner();
+        if (!preserveBanner)
+        {
+            ClearBanner();
+        }
 
         try
         {
@@ -371,7 +403,7 @@
             }
 
             _schedule = data;
-            if (data is null)
+            if (data is null && !preserveBanner)
             {
                 ShowErrorBanner($"Nenhuma escala encontrada para {month:D2}/{year}.");
             }

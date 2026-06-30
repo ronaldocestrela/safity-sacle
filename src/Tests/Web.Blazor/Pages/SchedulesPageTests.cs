@@ -153,6 +153,96 @@ public sealed class SchedulesPageTests : BlazorComponentTestBase
             doc.RootElement.GetProperty("month").GetInt32().Should().BeInRange(1, 12);
             doc.RootElement.GetProperty("year").GetInt32().Should().BeInRange(2000, 2100);
             getCallCount.Should().BeGreaterThanOrEqualTo(2);
+            cut.Find("[role='alert']").TextContent.Should().Contain("Escala mensal gerada com sucesso");
+            cut.Markup.Should().Contain("Pat Smith");
+        });
+    }
+
+    [Fact]
+    public void Admin_GenerateConflict_LoadsExistingSchedule()
+    {
+        var getCallCount = 0;
+
+        SchedulesPageTestHelper.Register(
+            Services,
+            request =>
+            {
+                if (SchedulesPageTestHelper.IsScheduleByMonthYearGet(request))
+                {
+                    getCallCount++;
+                    return getCallCount == 1
+                        ? SchedulesPageTestHelper.NotFoundResponse()
+                        : SchedulesPageTestHelper.JsonResponse(SchedulesPageTestHelper.SampleScheduleJson);
+                }
+
+                if (SchedulesPageTestHelper.IsScheduleGeneratePost(request))
+                {
+                    return SchedulesPageTestHelper.ConflictResponse();
+                }
+
+                return SchedulesPageTestHelper.NotFoundResponse();
+            },
+            roles: UserRole.Admin);
+
+        var cut = RenderPage();
+
+        cut.WaitForAssertion(() => getCallCount.Should().BeGreaterThanOrEqualTo(1));
+
+        cut.Find("button.btn-primary").Click();
+
+        cut.WaitForAssertion(() =>
+        {
+            getCallCount.Should().BeGreaterThanOrEqualTo(2);
+            cut.Find("[role='alert']").TextContent.Should().Contain("Escala já gerada para este mês e ano");
+            cut.Markup.Should().Contain("Pat Smith");
+        });
+    }
+
+    [Fact]
+    public void SecurityGuard_WithEmptyItems_ShowsNoShiftsMessage()
+    {
+        SchedulesPageTestHelper.Register(
+            Services,
+            request =>
+            {
+                if (SchedulesPageTestHelper.IsScheduleByMonthYearGet(request))
+                {
+                    return SchedulesPageTestHelper.JsonResponse(SchedulesPageTestHelper.EmptyItemsScheduleJson);
+                }
+
+                return SchedulesPageTestHelper.NotFoundResponse();
+            },
+            roles: UserRole.SecurityGuard);
+
+        var cut = RenderPage();
+
+        cut.WaitForAssertion(() =>
+        {
+            cut.Markup.Should().Contain("Você não tem turnos atribuídos neste período.");
+        });
+    }
+
+    [Fact]
+    public void Supervisor_WithEmptyItems_ShowsNoAssignmentsMessage()
+    {
+        SchedulesPageTestHelper.Register(
+            Services,
+            request =>
+            {
+                if (SchedulesPageTestHelper.IsScheduleByMonthYearGet(request))
+                {
+                    return SchedulesPageTestHelper.JsonResponse(SchedulesPageTestHelper.EmptyItemsScheduleJson);
+                }
+
+                return SchedulesPageTestHelper.NotFoundResponse();
+            },
+            roles: UserRole.Supervisor);
+
+        var cut = RenderPage();
+
+        cut.WaitForAssertion(() =>
+        {
+            cut.Markup.Should().Contain("Não há agendamentos para este agendamento.");
         });
     }
 

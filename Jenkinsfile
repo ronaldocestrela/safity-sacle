@@ -14,6 +14,13 @@
  *   safetyscale-cors-origins       → origens CORS da API (CSV; vazio = same-origin)
  *   safetyscale-api-base-url       → URL absoluta da API no build Blazor (vazio = /api via Nginx)
  *   safetyscale-public-web-base-url → URL pública do front (links em e-mail)
+ *   safetyscale-smtp-host            → host SMTP (vazio ou `-` = desabilita envio real)
+ *   safetyscale-smtp-port            → porta SMTP (padrão 587)
+ *   safetyscale-smtp-username        → usuário SMTP (vazio ou `-` se não aplicável)
+ *   safetyscale-smtp-password        → senha ou app password SMTP
+ *   safetyscale-smtp-from-address    → endereço remetente (From)
+ *   safetyscale-smtp-from-display-name → nome exibido do remetente (padrão SafetyScale)
+ *   safetyscale-smtp-enable-ssl      → true/false (padrão true)
  *   safetyscale-bootstrap-user-email → e-mail bootstrap do Platform Admin
  *   safetyscale-bootstrap-user-password → senha bootstrap do Platform Admin
  *
@@ -76,6 +83,13 @@ pipeline {
           string(credentialsId: 'safetyscale-cors-origins', variable: 'CRED_CORS_ORIGINS'),
           string(credentialsId: 'safetyscale-api-base-url', variable: 'CRED_API_BASE_URL'),
           string(credentialsId: 'safetyscale-public-web-base-url', variable: 'CRED_PUBLIC_WEB_BASE_URL'),
+          string(credentialsId: 'safetyscale-smtp-host', variable: 'CRED_SMTP_HOST'),
+          string(credentialsId: 'safetyscale-smtp-port', variable: 'CRED_SMTP_PORT'),
+          string(credentialsId: 'safetyscale-smtp-username', variable: 'CRED_SMTP_USERNAME'),
+          string(credentialsId: 'safetyscale-smtp-password', variable: 'CRED_SMTP_PASSWORD'),
+          string(credentialsId: 'safetyscale-smtp-from-address', variable: 'CRED_SMTP_FROM_ADDRESS'),
+          string(credentialsId: 'safetyscale-smtp-from-display-name', variable: 'CRED_SMTP_FROM_DISPLAY_NAME'),
+          string(credentialsId: 'safetyscale-smtp-enable-ssl', variable: 'CRED_SMTP_ENABLE_SSL'),
           string(credentialsId: 'safetyscale-bootstrap-user-email', variable: 'CRED_BOOTSTRAP_USER_EMAIL'),
           string(credentialsId: 'safetyscale-bootstrap-user-password', variable: 'CRED_BOOTSTRAP_USER_PASSWORD'),
         ]) {
@@ -88,6 +102,17 @@ pipeline {
             }
             def cors = normalizeOptionalCred(env.CRED_CORS_ORIGINS)
             def apiBase = normalizeOptionalCred(env.CRED_API_BASE_URL)
+            def smtpHost = normalizeOptionalCred(env.CRED_SMTP_HOST)
+            def smtpPortRaw = (env.CRED_SMTP_PORT ?: '587').toString().trim()
+            def smtpPort = (smtpPortRaw.isEmpty() || smtpPortRaw == '-') ? '587' : smtpPortRaw
+            def smtpUsername = normalizeOptionalCred(env.CRED_SMTP_USERNAME)
+            def smtpFromAddress = normalizeOptionalCred(env.CRED_SMTP_FROM_ADDRESS)
+            def smtpFromDisplayName = normalizeOptionalCred(env.CRED_SMTP_FROM_DISPLAY_NAME)
+            if (smtpFromDisplayName.isEmpty()) {
+              smtpFromDisplayName = 'SafetyScale'
+            }
+            def smtpEnableSslRaw = normalizeOptionalCred(env.CRED_SMTP_ENABLE_SSL)
+            def smtpEnableSsl = smtpEnableSslRaw.isEmpty() ? 'true' : smtpEnableSslRaw
             def content =
               ('MSSQL_SA_PASSWORD=' + (env.CRED_MSSQL_SA_PASSWORD ?: '') + '\n'
                 + 'SQLSERVER_PORT=' + (env.CRED_SQLSERVER_PORT ?: '') + '\n'
@@ -102,13 +127,13 @@ pipeline {
                 + 'API_BASE_URL=' + apiBase + '\n')
                 + 'MSSQL_PID=Developer\n'
                 + 'PUBLIC_WEB_BASE_URL=' + (env.CRED_PUBLIC_WEB_BASE_URL ?: '') + '\n'
-                + 'SMTP_HOST=\n'
-                + 'SMTP_PORT=587\n'
-                + 'SMTP_USERNAME=\n'
-                + 'SMTP_PASSWORD=\n'
-                + 'SMTP_FROM_ADDRESS=\n'
-                + 'SMTP_FROM_DISPLAY_NAME=SafetyScale\n'
-                + 'SMTP_ENABLE_SSL=true\n'
+                + 'SMTP_HOST=' + smtpHost + '\n'
+                + 'SMTP_PORT=' + smtpPort + '\n'
+                + 'SMTP_USERNAME=' + smtpUsername + '\n'
+                + 'SMTP_PASSWORD=' + (env.CRED_SMTP_PASSWORD ?: '') + '\n'
+                + 'SMTP_FROM_ADDRESS=' + smtpFromAddress + '\n'
+                + 'SMTP_FROM_DISPLAY_NAME=' + smtpFromDisplayName + '\n'
+                + 'SMTP_ENABLE_SSL=' + smtpEnableSsl + '\n'
                 + 'EMAIL_QUEUE_ENABLED=true\n'
                 + 'EMAIL_QUEUE_POLL_INTERVAL_SECONDS=5\n'
                 + 'EMAIL_QUEUE_BATCH_SIZE=10\n'
