@@ -166,10 +166,11 @@ pipeline {
         sh '''
           set -eu
           docker compose -f "${COMPOSE_FILE}" ps
-          set -a
-          # shellcheck disable=SC1091
-          . ./.env
-          set +a
+          WEB_PORT="$(awk -F= '/^WEB_PORT=/{print $2; exit}' ./.env)"
+          if [ -z "${WEB_PORT:-}" ]; then
+            echo "ERROR: WEB_PORT nao encontrado no arquivo .env"
+            exit 1
+          fi
           ok=0
           i=0
           while [ "$i" -lt 30 ]; do

@@ -53,3 +53,5 @@ src/Api/*.db-shm
 
 .cursor/
 src/Api/appsettings.Development.json
+
+jenkins-logs/
