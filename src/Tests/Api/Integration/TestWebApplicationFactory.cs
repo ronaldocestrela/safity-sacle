@@ -82,6 +82,9 @@ public sealed class TestWebApplicationFactory : WebApplicationFactory<ApiApplica
     {
         builder.UseEnvironment("Development");
         builder.UseSetting("ConnectionStrings:DefaultConnection", _connectionString);
+        builder.UseSetting("BootstrapUser:Email", string.Empty);
+        builder.UseSetting("BootstrapUser:Password", string.Empty);
+        builder.UseSetting("BootstrapUser:DisplayName", string.Empty);
     }
 
     protected override void Dispose(bool disposing)

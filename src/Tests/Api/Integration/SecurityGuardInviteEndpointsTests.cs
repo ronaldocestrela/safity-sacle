@@ -99,14 +99,26 @@ public sealed class SecurityGuardInviteEndpointsTests
         var guardAId = await CreateGuardAsync(client, "Scope Guard A", "scope.a@example.com");
         var guardBId = await CreateGuardAsync(client, "Scope Guard B", "scope.b@example.com");
 
-        await client.PostAsJsonAsync("/api/sectors", new { name = "Scope Sector", description = (string?)null });
+        var createSector = await client.PostAsJsonAsync(
+            "/api/sectors",
+            new { name = "Scope Sector", description = (string?)null });
+        createSector.EnsureSuccessStatusCode();
+        var sectorsResponse = await client.GetAsync("/api/sectors");
+        sectorsResponse.EnsureSuccessStatusCode();
+        var sectors = await sectorsResponse.Content.ReadFromJsonAsync<List<SectorResponse>>();
+        sectors.Should().NotBeNull();
+        var sectorIds = sectors!.Select(s => s.Id).ToArray();
+        sectorIds.Should().NotBeEmpty();
 
-        await client.PutAsJsonAsync(
+        var linkGuardAResponse = await client.PutAsJsonAsync(
             $"/api/security-guards/{guardAId}/sectors",
-            new { sectorIds = Array.Empty<Guid>() });
-        await client.PutAsJsonAsync(
+            new { sectorIds });
+        linkGuardAResponse.EnsureSuccessStatusCode();
+
+        var linkGuardBResponse = await client.PutAsJsonAsync(
             $"/api/security-guards/{guardBId}/sectors",
-            new { sectorIds = Array.Empty<Guid>() });
+            new { sectorIds });
+        linkGuardBResponse.EnsureSuccessStatusCode();
 
         var generate = await client.PostAsJsonAsync("/api/schedules/generate", new { month = 8, year = 2035 });
         generate.EnsureSuccessStatusCode();
@@ -151,6 +163,7 @@ public sealed class SecurityGuardInviteEndpointsTests
         factory.CreateClient(new() { BaseAddress = new Uri("https://localhost") });
 
     private sealed record CreateSecurityGuardResponse(Guid Id);
+    private sealed record SectorResponse(Guid Id);
 
     private sealed record LoginResponse(string Token);
 
