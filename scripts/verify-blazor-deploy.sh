@@ -39,19 +39,28 @@ log "Verificando deploy Blazor em ${BASE_URL}"
 check_http "/" "200"
 check_http "/api/health" "401"
 
-# Asset WASM ou bootstrap Blazor
-WASM_CODE="$(curl -s -o /dev/null -w '%{http_code}' "${BASE_URL}/_framework/blazor.webassembly.js" || true)"
-BOOT_CODE="$(curl -s -o /dev/null -w '%{http_code}' "${BASE_URL}/_framework/dotnet.js" || true)"
-
-if [ "$WASM_CODE" != "200" ] && [ "$BOOT_CODE" != "200" ]; then
-  fail "_framework: blazor.webassembly.js (${WASM_CODE}) e dotnet.js (${BOOT_CODE}) — esperado 200 em pelo menos um"
+# Assets _framework sao fingerprintados no publish (.NET 10+); descobrir paths em index.html
+INDEX_HTML="$(curl -s "${BASE_URL}/" || true)"
+if [ -z "$INDEX_HTML" ]; then
+  fail "nao foi possivel obter index.html de ${BASE_URL}/"
 fi
 
-if [ "$WASM_CODE" = "200" ]; then
-  log "/_framework/blazor.webassembly.js OK (HTTP 200)"
+BLAZOR_SCRIPT="$(printf '%s' "$INDEX_HTML" | sed -n 's/.*<script src="\(_framework\/blazor\.webassembly[^"]*\.js\)".*/\1/p' | head -1)"
+DOTNET_SCRIPT="$(printf '%s' "$INDEX_HTML" | sed -n 's|.*"\./_framework/dotnet\.js": "\./\(_framework/[^"]*\.js\)".*|\1|p' | head -1)"
+
+if [ -z "$BLAZOR_SCRIPT" ]; then
+  fail "index.html nao referencia _framework/blazor.webassembly*.js"
 fi
-if [ "$BOOT_CODE" = "200" ]; then
-  log "/_framework/dotnet.js OK (HTTP 200)"
+
+check_http "/${BLAZOR_SCRIPT}" "200"
+
+if [ -n "$DOTNET_SCRIPT" ]; then
+  DOTNET_CODE="$(curl -s -o /dev/null -w '%{http_code}' "${BASE_URL}/${DOTNET_SCRIPT}" || true)"
+  if [ "$DOTNET_CODE" = "200" ]; then
+    log "/${DOTNET_SCRIPT} OK (HTTP 200)"
+  else
+    fail "/${DOTNET_SCRIPT} esperado HTTP 200, obteve ${DOTNET_CODE:-000}"
+  fi
 fi
 
 log "Verificacao Blazor concluida com sucesso"
