@@ -142,6 +142,7 @@ Usuários Identity (`AppUser`) possuem `TenantId` (um tenant por usuário) e `Di
 - `POST /api/schedules/generate` (requer role `Admin`; `201` em sucesso com `Location` apontando para `GET .../{id}`; `409` mes/ano duplicado; **`400`** sem guardas ativos (corpo sem payload detalhado); **`400`** sem setores ativos com carga configurada / sem pool elegível suficiente (**validação de aplicação — corpo simples**); **`400`** quando a geração não cobre um dia: JSON **`code`**: `ScheduleCoverageFailed`, **`message`** (português), **`failedDate`** — ver [`ScheduleCoverageFailureResponse`](src/Api/Contracts/Schedules/ScheduleCoverageFailureResponse.cs))
 - `GET /api/schedules/{id}` (requer role `Admin` ou `Supervisor`; `404` se id inexistente)
 - `GET /api/schedules/month/{month}/year/{year}` (requer role `Admin` ou `Supervisor`; `404` se nao houver escala gerada para o periodo)
+- **Billing (Stripe):** `GET /api/billing/plans`, `GET /api/billing/status`, `POST /api/billing/checkout-session`, `POST /api/billing/portal-session` (requer role `Admin`); webhook `POST /api/stripe/webhook` (assinatura Stripe). Ver [`docs/stripe-billing.md`](docs/stripe-billing.md).
 
 ## Pendencias na API relacionadas ao roadmap
 

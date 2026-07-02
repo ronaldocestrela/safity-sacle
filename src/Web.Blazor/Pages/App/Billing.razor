@@ -1,0 +1,239 @@
+@page "/app/billing"
+@layout AppLayout
+@attribute [Authorize(Roles = "Admin")]
+@using System.Globalization
+@inject BillingApiClient BillingClient
+@inject NavigationManager Navigation
+@inject AuthSessionService AuthService
+
+<PageTitle>SafetyScale — Assinatura</PageTitle>
+
+<div class="page">
+    <AppHeader Title="Assinatura"
+               Subtitle="Gerencie o plano e pagamentos da sua empresa."
+               Email="@_session?.Email"
+               ShowLogout="true"
+               OnLogout="HandleLogoutAsync" />
+
+    <main class="main">
+        @if (!string.IsNullOrEmpty(_bannerMessage))
+        {
+            <div role="status" class="banner banner-success">@_bannerMessage</div>
+        }
+
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <div role="alert" class="banner banner-error">@_errorMessage</div>
+        }
+
+        @if (_loading)
+        {
+            <p class="loading">Carregando…</p>
+        }
+        else
+        {
+            <section class="status-card" aria-labelledby="billing-status-heading">
+                <h2 id="billing-status-heading" class="section-title">Status atual</h2>
+                @if (_status is not null)
+                {
+                    <dl class="status-grid">
+                        <div>
+                            <dt>Plano</dt>
+                            <dd>@(_status.PlatformPlanName ?? "Nenhum")</dd>
+                        </div>
+                        <div>
+                            <dt>Cobrança</dt>
+                            <dd>@FormatBillingStatus(_status.BillingStatus)</dd>
+                        </div>
+                        <div>
+                            <dt>Contrato</dt>
+                            <dd>@FormatLeadStatus(_status.LeadStatus)</dd>
+                        </div>
+                        <div>
+                            <dt>Próximo ciclo</dt>
+                            <dd>@FormatPeriodEnd(_status.CurrentPeriodEnd)</dd>
+                        </div>
+                    </dl>
+
+                    @if (_status.CanManageSubscription)
+                    {
+                        <button type="button"
+                                class="cta-secondary"
+                                disabled="@_busy"
+                                @onclick="OpenPortalAsync">
+                            Gerenciar assinatura
+                        </button>
+                    }
+                }
+            </section>
+
+            <section class="plans-section" aria-labelledby="plans-heading">
+                <h2 id="plans-heading" class="section-title">Planos disponíveis</h2>
+
+                @if (_plans.Count == 0)
+                {
+                    <p class="empty">Nenhum plano disponível no momento.</p>
+                }
+                else
+                {
+                    <div class="plans-grid">
+                        @foreach (var plan in _plans)
+                        {
+                            <article class="plan-card">
+                                <h3 class="plan-name">@plan.Name</h3>
+                                <p class="plan-price">@plan.PriceMonthly.ToString("C2", PtBr)<span>/mês</span></p>
+                                @if (!string.IsNullOrWhiteSpace(plan.Description))
+                                {
+                                    <p class="plan-desc">@plan.Description</p>
+                                }
+                                <ul class="plan-limits">
+                                    <li>Até @plan.MaxSecurityGuards seguranças</li>
+                                    <li>Até @plan.MaxSectors setores</li>
+                                </ul>
+                                <button type="button"
+                                        class="cta-primary"
+                                        disabled="@(_busy || !plan.HasStripePrice)"
+                                        @onclick="() => SubscribeAsync(plan.Id)">
+                                    @(plan.HasStripePrice ? "Assinar plano" : "Indisponível")
+                                </button>
+                            </article>
+                        }
+                    </div>
+                }
+            </section>
+        }
+    </main>
+</div>
+
+@code {
+    private static readonly CultureInfo PtBr = CultureInfo.GetCultureInfo("pt-BR");
+
+    private AuthSession? _session;
+    private TenantBillingStatusDto? _status;
+    private IReadOnlyList<BillingPlanDto> _plans = [];
+    private bool _loading = true;
+    private bool _busy;
+    private string? _errorMessage;
+    private string? _bannerMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _session = await AuthService.GetSessionAsync();
+        ParseQueryBanner();
+        await LoadAsync();
+    }
+
+    private void ParseQueryBanner()
+    {
+        var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
+        if (uri.Query.Contains("checkout=success", StringComparison.OrdinalIgnoreCase))
+        {
+            _bannerMessage = "Pagamento recebido. A assinatura será atualizada em instantes.";
+        }
+        else if (uri.Query.Contains("checkout=canceled", StringComparison.OrdinalIgnoreCase))
+        {
+            _bannerMessage = "Checkout cancelado. Você pode tentar novamente quando quiser.";
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _errorMessage = null;
+
+        try
+        {
+            var statusTask = BillingClient.GetStatusAsync();
+            var plansTask = BillingClient.ListPlansAsync();
+            await Task.WhenAll(statusTask, plansTask);
+            _status = await statusTask;
+            _plans = await plansTask;
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            _errorMessage = "Não foi possível conectar à API.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task SubscribeAsync(Guid planId)
+    {
+        _busy = true;
+        _errorMessage = null;
+
+        try
+        {
+            var url = await BillingClient.CreateCheckoutSessionAsync(planId);
+            Navigation.NavigateTo(url, forceLoad: true);
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            _errorMessage = "Não foi possível conectar à API.";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task OpenPortalAsync()
+    {
+        _busy = true;
+        _errorMessage = null;
+
+        try
+        {
+            var url = await BillingClient.CreatePortalSessionAsync();
+            Navigation.NavigateTo(url, forceLoad: true);
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            _errorMessage = "Não foi possível conectar à API.";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private Task HandleLogoutAsync() => AuthService.LogoutAsync(navigateToLogin: true);
+
+    private static string FormatBillingStatus(string status) => status switch
+    {
+        "None" => "Sem assinatura",
+        "Trialing" => "Período de teste",
+        "Active" => "Ativa",
+        "PastDue" => "Pagamento pendente",
+        "Canceled" => "Cancelada",
+        "Incomplete" => "Incompleta",
+        _ => status,
+    };
+
+    private static string FormatLeadStatus(string status) => status switch
+    {
+        "Contracted" => "Contratado",
+        "New" => "Novo",
+        "Contacted" => "Contatado",
+        "ProposalSent" => "Proposta enviada",
+        "Lost" => "Perdido",
+        _ => status,
+    };
+
+    private static string FormatPeriodEnd(DateTime? value) =>
+        value.HasValue ? value.Value.ToLocalTime().ToString("g", PtBr) : "—";
+}

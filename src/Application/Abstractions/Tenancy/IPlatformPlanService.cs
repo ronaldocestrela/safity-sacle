@@ -11,7 +11,9 @@ public sealed record PlatformPlanSummaryDto(
     int MaxSecurityGuards,
     int MaxSectors,
     bool IsActive,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    string? StripeProductId,
+    string? StripePriceId);
 
 public sealed record CreatePlatformPlanInput(
     string Name,

@@ -48,6 +48,13 @@
                 <span class="material-icon material-symbols-outlined" aria-hidden="true">settings_suggest</span>
                 <span class="bottom-label">Escalas</span>
             </NavLink>
+            @if (_session?.Roles.Contains(UserRole.Admin) == true)
+            {
+                <NavLink href="/app/billing" class="bottom-link" ActiveClass="bottom-link-active">
+                    <span class="material-icon material-symbols-outlined" aria-hidden="true">payments</span>
+                    <span class="bottom-label">Assinatura</span>
+                </NavLink>
+            }
         }
     </nav>
 </div>
@@ -66,7 +73,8 @@
                 or "/app/sectors"
                 or "/app/security-guards"
                 or "/app/unavailable-days"
-                or "/app/schedules";
+                or "/app/schedules"
+                or "/app/billing";
         }
     }
 

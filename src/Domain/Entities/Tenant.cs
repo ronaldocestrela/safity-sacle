@@ -19,4 +19,12 @@ public sealed class Tenant
     public Guid? PlatformPlanId { get; set; }
 
     public PlatformPlan? PlatformPlan { get; set; }
+
+    public string? StripeCustomerId { get; set; }
+
+    public string? StripeSubscriptionId { get; set; }
+
+    public BillingStatus BillingStatus { get; set; } = BillingStatus.None;
+
+    public DateTime? CurrentPeriodEnd { get; set; }
 }

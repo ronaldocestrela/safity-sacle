@@ -54,6 +54,9 @@ services:
       BootstrapUser__Password: ${BOOTSTRAP_USER_PASSWORD:?define BOOTSTRAP_USER_PASSWORD in .env}
       BootstrapUser__DisplayName: ${BOOTSTRAP_USER_DISPLAY_NAME:-Platform Admin}
       BootstrapUser__Role: ${BOOTSTRAP_USER_ROLE:-PlatformOwner}
+      Stripe__SecretKey: ${STRIPE_SECRET_KEY:-}
+      Stripe__WebhookSecret: ${STRIPE_WEBHOOK_SECRET:-}
+      Stripe__ApiVersion: ${STRIPE_API_VERSION:-2026-06-24.dahlia}
     ports:
       - "${API_PORT:-8081}:8080"
     depends_on:

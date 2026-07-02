@@ -23,6 +23,7 @@ public class ApplicationDbContext(
     public DbSet<MonthlySchedule> MonthlySchedules => Set<MonthlySchedule>();
     public DbSet<ScheduleItem> ScheduleItems => Set<ScheduleItem>();
     public DbSet<EmailQueueMessage> EmailQueueMessages => Set<EmailQueueMessage>();
+    public DbSet<StripeWebhookEvent> StripeWebhookEvents => Set<StripeWebhookEvent>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -40,6 +41,8 @@ public class ApplicationDbContext(
             entity.Property(x => x.MaxSectors).IsRequired();
             entity.Property(x => x.IsActive).IsRequired();
             entity.Property(x => x.CreatedAt).IsRequired();
+            entity.Property(x => x.StripeProductId).HasMaxLength(255);
+            entity.Property(x => x.StripePriceId).HasMaxLength(255);
             entity.HasIndex(x => x.Code).IsUnique();
         });
 
@@ -52,7 +55,12 @@ public class ApplicationDbContext(
             entity.Property(x => x.CreatedAt).IsRequired();
             entity.Property(x => x.IsActive).IsRequired();
             entity.Property(x => x.LeadStatus).IsRequired();
+            entity.Property(x => x.StripeCustomerId).HasMaxLength(255);
+            entity.Property(x => x.StripeSubscriptionId).HasMaxLength(255);
+            entity.Property(x => x.BillingStatus).IsRequired();
             entity.HasIndex(x => x.Slug).IsUnique();
+            entity.HasIndex(x => x.StripeCustomerId);
+            entity.HasIndex(x => x.StripeSubscriptionId);
 
             entity.HasOne(x => x.PlatformPlan)
                 .WithMany()
@@ -248,6 +256,16 @@ public class ApplicationDbContext(
             entity.Property(x => x.LastError).HasMaxLength(2000);
             entity.Property(x => x.CreatedAtUtc).IsRequired();
             entity.HasIndex(x => new { x.Status, x.AvailableAtUtc });
+        });
+
+        builder.Entity<StripeWebhookEvent>(entity =>
+        {
+            entity.ToTable("StripeWebhookEvents");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.StripeEventId).HasMaxLength(255).IsRequired();
+            entity.Property(x => x.EventType).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.ProcessedAtUtc).IsRequired();
+            entity.HasIndex(x => x.StripeEventId).IsUnique();
         });
     }
 

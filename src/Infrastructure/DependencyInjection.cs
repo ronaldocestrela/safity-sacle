@@ -1,10 +1,12 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SafetyScale.Application.Abstractions.Authentication;
+using SafetyScale.Application.Abstractions.Billing;
 using SafetyScale.Application.Abstractions.Messaging;
 using SafetyScale.Application.Abstractions.Persistence;
 using SafetyScale.Application.Abstractions.Tenancy;
 using SafetyScale.Infrastructure.Authentication;
+using SafetyScale.Infrastructure.Billing;
 using SafetyScale.Infrastructure.Identity;
 using SafetyScale.Infrastructure.Messaging.Email;
 using SafetyScale.Infrastructure.Persistence;
@@ -29,6 +31,7 @@ public static class DependencyInjection
         services.Configure<PublicUrlsOptions>(configuration.GetSection(PublicUrlsOptions.SectionName));
         services.Configure<SmtpOptions>(configuration.GetSection(SmtpOptions.SectionName));
         services.Configure<EmailQueueWorkerOptions>(configuration.GetSection(EmailQueueWorkerOptions.SectionName));
+        services.Configure<StripeOptions>(configuration.GetSection(StripeOptions.SectionName));
 
         services.AddHttpContextAccessor();
         services.AddScoped<ITenantExecutionContext, TenantExecutionContext>();
@@ -59,6 +62,8 @@ public static class DependencyInjection
         services.AddScoped<IPlatformTenantService, PlatformTenantService>();
         services.AddScoped<IPlatformPlanService, PlatformPlanService>();
         services.AddScoped<IPlanLimitEvaluator, PlanLimitEvaluator>();
+        services.AddScoped<IBillingService, BillingService>();
+        services.AddSingleton<IStripeBillingGateway, StripeBillingGateway>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IdentitySeeder>();
         services.AddScoped<ISecurityGuardRepository, SecurityGuardRepository>();

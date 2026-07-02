@@ -24,4 +24,6 @@ public sealed record PlatformPlanResponse(
     int MaxSecurityGuards,
     int MaxSectors,
     bool IsActive,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    string? StripeProductId,
+    string? StripePriceId);

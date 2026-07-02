@@ -85,6 +85,8 @@ public sealed class TestWebApplicationFactory : WebApplicationFactory<ApiApplica
         builder.UseSetting("BootstrapUser:Email", string.Empty);
         builder.UseSetting("BootstrapUser:Password", string.Empty);
         builder.UseSetting("BootstrapUser:DisplayName", string.Empty);
+        builder.UseSetting("Stripe:SecretKey", string.Empty);
+        builder.UseSetting("Stripe:WebhookSecret", string.Empty);
     }
 
     protected override void Dispose(bool disposing)

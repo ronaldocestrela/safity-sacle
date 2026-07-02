@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SafetyScale.Api.Authorization;
+using SafetyScale.Api.Contracts.Billing;
 using SafetyScale.Api.Contracts.Platform;
+using SafetyScale.Application.Abstractions.Billing;
 using SafetyScale.Application.Abstractions.Tenancy;
 
 namespace SafetyScale.Api.Controllers;
@@ -9,7 +11,9 @@ namespace SafetyScale.Api.Controllers;
 [ApiController]
 [Route("api/platform/plans")]
 [Authorize(Policy = AuthorizationPolicies.PlatformRead)]
-public sealed class PlatformPlansController(IPlatformPlanService platformPlanService) : ControllerBase
+public sealed class PlatformPlansController(
+    IPlatformPlanService platformPlanService,
+    IBillingService billingService) : ControllerBase
 {
     [HttpGet]
     [ProducesResponseType(typeof(IReadOnlyList<PlatformPlanResponse>), StatusCodes.Status200OK)]
@@ -60,7 +64,9 @@ public sealed class PlatformPlansController(IPlatformPlanService platformPlanSer
                         request.MaxSecurityGuards,
                         request.MaxSectors,
                         true,
-                        DateTime.UtcNow)),
+                        DateTime.UtcNow,
+                        null,
+                        null)),
 
             CreatePlatformPlanStatus.CodeAlreadyExists =>
                 Conflict(new { message = "Já existe um plano com este código." }),
@@ -131,6 +137,31 @@ public sealed class PlatformPlansController(IPlatformPlanService platformPlanSer
         };
     }
 
+    [HttpPatch("{planId:guid}/stripe")]
+    [Authorize(Policy = AuthorizationPolicies.PlatformManagement)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> LinkStripe(
+        Guid planId,
+        [FromBody] LinkPlanStripeRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await billingService.LinkPlanStripeAsync(
+            planId,
+            new LinkPlanStripeInput(request.StripePriceId, request.StripeProductId),
+            cancellationToken);
+
+        return result.Status switch
+        {
+            LinkPlanStripeStatus.Success => NoContent(),
+            LinkPlanStripeStatus.NotFound => NotFound(new { message = "Plano não encontrado." }),
+            LinkPlanStripeStatus.ValidationFailed =>
+                BadRequest(new { errors = result.Errors ?? Array.Empty<string>() }),
+            _ => throw new InvalidOperationException($"Unexpected link stripe status {result.Status}."),
+        };
+    }
+
     private static PlatformPlanResponse Map(PlatformPlanSummaryDto plan) =>
         new(
             plan.Id,
@@ -141,5 +172,7 @@ public sealed class PlatformPlansController(IPlatformPlanService platformPlanSer
             plan.MaxSecurityGuards,
             plan.MaxSectors,
             plan.IsActive,
-            plan.CreatedAt);
+            plan.CreatedAt,
+            plan.StripeProductId,
+            plan.StripePriceId);
 }

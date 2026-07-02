@@ -20,4 +20,10 @@ public sealed class PlatformPlan
     public bool IsActive { get; set; } = true;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>Stripe Product ID (prod_...).</summary>
+    public string? StripeProductId { get; set; }
+
+    /// <summary>Stripe Price ID (price_...) used for Checkout subscription mode.</summary>
+    public string? StripePriceId { get; set; }
 }

@@ -26,6 +26,7 @@ builder.Services.AddScoped<PlatformAuthSessionService>();
 builder.Services.AddScoped<TenantsRegistrationClient>();
 builder.Services.AddScoped<PlatformTenantsApiClient>();
 builder.Services.AddScoped<PlatformPlansApiClient>();
+builder.Services.AddScoped<BillingApiClient>();
 builder.Services.AddScoped<SecurityGuardsApiClient>();
 builder.Services.AddScoped<SchedulesApiClient>();
 builder.Services.AddScoped<SectorsApiClient>();

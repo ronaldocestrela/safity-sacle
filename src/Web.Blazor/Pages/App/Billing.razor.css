@@ -1,0 +1,143 @@
+.page {
+    width: 100%;
+    min-height: 100%;
+    background: #f7fafc;
+    padding-bottom: 7rem;
+    color: #181c1e;
+}
+
+.main {
+    padding: 1rem 1.5rem 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.loading {
+    color: #74777d;
+}
+
+.banner {
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    font-size: 0.875rem;
+}
+
+.banner-success {
+    background: #e8f5e9;
+    color: #1b5e20;
+    border: 1px solid #a5d6a7;
+}
+
+.banner-error {
+    background: #ffebee;
+    color: #b71c1c;
+    border: 1px solid #ef9a9a;
+}
+
+.section-title {
+    margin: 0 0 0.75rem;
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.status-card,
+.plans-section {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+    padding: 1.25rem;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+}
+
+.status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.75rem 1rem;
+    margin: 0 0 1rem;
+}
+
+.status-grid dt {
+    font-size: 0.75rem;
+    color: #74777d;
+    margin-bottom: 0.15rem;
+}
+
+.status-grid dd {
+    margin: 0;
+    font-weight: 600;
+}
+
+.plans-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+}
+
+.plan-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 0.875rem;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.plan-name {
+    margin: 0;
+    font-size: 1.05rem;
+}
+
+.plan-price {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.plan-price span {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #74777d;
+}
+
+.plan-desc {
+    margin: 0;
+    color: #4a5568;
+    font-size: 0.875rem;
+}
+
+.plan-limits {
+    margin: 0;
+    padding-left: 1.1rem;
+    color: #4a5568;
+    font-size: 0.875rem;
+}
+
+.cta-primary,
+.cta-secondary {
+    margin-top: auto;
+    border: none;
+    border-radius: 0.625rem;
+    padding: 0.65rem 1rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.cta-primary {
+    background: #041627;
+    color: #fff;
+}
+
+.cta-primary:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.cta-secondary {
+    background: #edf2f7;
+    color: #041627;
+}
+
+.empty {
+    color: #74777d;
+}

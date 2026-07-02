@@ -128,7 +128,9 @@ public sealed partial class PlatformPlanService(ApplicationDbContext dbContext) 
             p.MaxSecurityGuards,
             p.MaxSectors,
             p.IsActive,
-            p.CreatedAt);
+            p.CreatedAt,
+            p.StripeProductId,
+            p.StripePriceId);
 
     private static List<string> ValidateCreateInput(CreatePlatformPlanInput input)
     {

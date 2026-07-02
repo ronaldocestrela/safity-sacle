@@ -108,6 +108,7 @@
                             <th>Seguranças</th>
                             <th>Setores</th>
                             <th>Status</th>
+                            <th>Stripe Price</th>
                             <th>Criado em</th>
                             <AuthorizeView Roles="PlatformOwner,PlatformAdmin" Context="rowActionsAuth">
                                 <th>Ações</th>
@@ -128,6 +129,16 @@
                                         @(plan.IsActive ? "Ativo" : "Inativo")
                                     </span>
                                 </td>
+                                <td>
+                                    @if (string.IsNullOrWhiteSpace(plan.StripePriceId))
+                                    {
+                                        <span class="badge-inactive">Não vinculado</span>
+                                    }
+                                    else
+                                    {
+                                        <code>@plan.StripePriceId</code>
+                                    }
+                                </td>
                                 <td>@plan.CreatedAt.ToLocalTime().ToString("g")</td>
                                 <AuthorizeView Roles="PlatformOwner,PlatformAdmin" Context="rowActionsAuth">
                                     <td class="actions">
@@ -136,6 +147,12 @@
                                                 disabled="@_busy"
                                                 @onclick="() => StartEdit(plan)">
                                             Editar
+                                        </button>
+                                        <button type="button"
+                                                class="link-btn"
+                                                disabled="@_busy"
+                                                @onclick="() => StartStripeLink(plan)">
+                                            Stripe
                                         </button>
                                         @if (plan.IsActive)
                                         {
@@ -164,6 +181,27 @@
             </div>
         }
     </section>
+
+    @if (_linkingPlanId is Guid linkingPlanId)
+    {
+        <section class="panel">
+            <h2>Vincular Stripe — @_linkingPlanName</h2>
+            <div class="grid">
+                <label>
+                    Stripe Price ID
+                    <input @bind="_stripePriceId" class="input" placeholder="price_..." disabled="@_busy" />
+                </label>
+                <label>
+                    Stripe Product ID (opcional)
+                    <input @bind="_stripeProductId" class="input" placeholder="prod_..." disabled="@_busy" />
+                </label>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="primary" disabled="@_busy" @onclick="SaveStripeLinkAsync">Salvar vínculo</button>
+                <button type="button" class="secondary" disabled="@_busy" @onclick="CancelStripeLink">Cancelar</button>
+            </div>
+        </section>
+    }
 </div>
 
 @code {
@@ -171,6 +209,10 @@
     private readonly List<PlatformPlanDto> _plans = [];
     private readonly PlanForm _form = new();
     private Guid? _editingPlanId;
+    private Guid? _linkingPlanId;
+    private string? _linkingPlanName;
+    private string _stripePriceId = string.Empty;
+    private string _stripeProductId = string.Empty;
     private bool _loading = true;
     private bool _busy;
     private string? _errorMessage;
@@ -275,6 +317,59 @@
     {
         _editingPlanId = null;
         _form.Clear();
+    }
+
+    private void StartStripeLink(PlatformPlanDto plan)
+    {
+        _linkingPlanId = plan.Id;
+        _linkingPlanName = plan.Name;
+        _stripePriceId = plan.StripePriceId ?? string.Empty;
+        _stripeProductId = plan.StripeProductId ?? string.Empty;
+        _errorMessage = null;
+        _successMessage = null;
+    }
+
+    private void CancelStripeLink()
+    {
+        _linkingPlanId = null;
+        _linkingPlanName = null;
+        _stripePriceId = string.Empty;
+        _stripeProductId = string.Empty;
+    }
+
+    private async Task SaveStripeLinkAsync()
+    {
+        if (_linkingPlanId is not Guid planId)
+        {
+            return;
+        }
+
+        _busy = true;
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            var result = await PlansClient.LinkStripeAsync(
+                planId,
+                new LinkPlanStripeRequestDto(
+                    _stripePriceId.Trim(),
+                    string.IsNullOrWhiteSpace(_stripeProductId) ? null : _stripeProductId.Trim()));
+
+            if (!result.Ok)
+            {
+                _errorMessage = result.Message ?? "Não foi possível vincular o Stripe.";
+                return;
+            }
+
+            _successMessage = "Vínculo Stripe salvo.";
+            CancelStripeLink();
+            await LoadPlansAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
     }
 
     private async Task SetActiveAsync(Guid planId, bool isActive)

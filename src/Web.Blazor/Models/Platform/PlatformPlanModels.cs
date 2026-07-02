@@ -9,7 +9,9 @@ public sealed record PlatformPlanDto(
     int MaxSecurityGuards,
     int MaxSectors,
     bool IsActive,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    string? StripeProductId,
+    string? StripePriceId);
 
 public sealed record CreatePlatformPlanRequestDto(
     string Name,

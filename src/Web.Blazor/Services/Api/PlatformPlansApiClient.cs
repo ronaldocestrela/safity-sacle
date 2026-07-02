@@ -1,3 +1,4 @@
+using SafetyScale.Web.Blazor.Models.Billing;
 using SafetyScale.Web.Blazor.Models.Platform;
 
 namespace SafetyScale.Web.Blazor.Services.Api;
@@ -109,6 +110,42 @@ public sealed class PlatformPlansApiClient(ApiHttpClient apiClient)
             cancellationToken: cancellationToken);
         return response.IsSuccessStatusCode;
     }
+
+    public async Task<LinkPlanStripeOutcome> LinkStripeAsync(
+        Guid planId,
+        LinkPlanStripeRequestDto request,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var response = await apiClient.PatchJsonAsync(
+                $"/api/platform/plans/{planId}/stripe",
+                request,
+                cancellationToken: cancellationToken);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return LinkPlanStripeOutcome.Success();
+            }
+
+            if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+            {
+                var message = await ApiErrorReader.ReadMessageAsync(response, cancellationToken);
+                return LinkPlanStripeOutcome.Fail(message ?? "Dados inválidos.");
+            }
+
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                return LinkPlanStripeOutcome.Fail("Plano não encontrado.");
+            }
+
+            return LinkPlanStripeOutcome.Fail("Não foi possível vincular o Stripe.");
+        }
+        catch (HttpRequestException)
+        {
+            return LinkPlanStripeOutcome.Fail("Não foi possível conectar à API.");
+        }
+    }
 }
 
 public sealed record CreatePlatformPlanOutcome(bool Ok, string? Message = null)
@@ -123,4 +160,11 @@ public sealed record UpdatePlatformPlanOutcome(bool Ok, string? Message = null)
     public static UpdatePlatformPlanOutcome Success() => new(true);
 
     public static UpdatePlatformPlanOutcome Fail(string message) => new(false, message);
+}
+
+public sealed record LinkPlanStripeOutcome(bool Ok, string? Message = null)
+{
+    public static LinkPlanStripeOutcome Success() => new(true);
+
+    public static LinkPlanStripeOutcome Fail(string message) => new(false, message);
 }
