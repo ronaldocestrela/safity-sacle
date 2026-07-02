@@ -18,13 +18,15 @@ public sealed class AppLayoutNavTests : BlazorComponentTestBase
             .Add(p => p.Body, (RenderFragment)(builder => builder.AddMarkupContent(0, "<p>Body</p>"))));
 
         var links = cut.FindAll("nav.bottom-nav a");
-        links.Should().HaveCount(5);
+        links.Should().HaveCount(6);
 
         var dashboard = links.Single(l => l.GetAttribute("href") == "/app");
         var sectors = links.Single(l => l.GetAttribute("href") == "/app/sectors");
+        var billing = links.Single(l => l.GetAttribute("href") == "/app/billing");
 
         HasActiveClass(dashboard).Should().BeTrue();
         HasActiveClass(sectors).Should().BeFalse();
+        HasActiveClass(billing).Should().BeFalse();
         links.Where(HasActiveClass).Should().ContainSingle();
     }
 
@@ -59,8 +61,22 @@ public sealed class AppLayoutNavTests : BlazorComponentTestBase
         markup.Should().Contain("Seguranças");
         markup.Should().Contain("Disponibilidade");
         markup.Should().Contain("Escalas");
+        markup.Should().Contain("Assinatura");
         markup.Should().NotContain(">Dashboard<");
         markup.Should().NotContain(">Schedules<");
+    }
+
+    [Fact]
+    public void BottomNav_ForSupervisor_DoesNotShowBillingLink()
+    {
+        RegisterAuthSessionServices("/app", UserRole.Supervisor);
+
+        var cut = RenderComponent<AppLayout>(parameters => parameters
+            .Add(p => p.Body, (RenderFragment)(builder => builder.AddMarkupContent(0, "<p>Body</p>"))));
+
+        var links = cut.FindAll("nav.bottom-nav a");
+        links.Should().HaveCount(5);
+        cut.Markup.Should().NotContain("/app/billing");
     }
 
     [Fact]
