@@ -14,6 +14,12 @@ fail() {
   exit 1
 }
 
+require_command() {
+  if ! command -v "$1" >/dev/null 2>&1; then
+    fail "comando \"$1\" nao encontrado no PATH"
+  fi
+}
+
 require_command curl
 
 check_http() {
