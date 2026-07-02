@@ -64,8 +64,16 @@ Credenciais → `./.env` via `writeFile` (seguro para caracteres especiais). **`
 | `WEB_PORT` | `safetyscale-web-port` |
 | `CORS_ORIGINS` | `safetyscale-cors-origins` |
 | `API_BASE_URL` | `safetyscale-api-base-url` |
+| `PUBLIC_WEB_BASE_URL` | `safetyscale-public-web-base-url` |
+| `SMTP_*` | `safetyscale-smtp-*` |
+| `BOOTSTRAP_USER_*` | `safetyscale-bootstrap-user-*` |
+| `STRIPE_SECRET_KEY` | `safetyscale-stripe-secret-key` |
+| `STRIPE_WEBHOOK_SECRET` | `safetyscale-stripe-webhook-secret` |
+| `STRIPE_API_VERSION` | `safetyscale-stripe-api-version` |
 
-Use **`-`** como sentinel em credenciais opcionais (`CORS_ORIGINS`, `API_BASE_URL`) se o Jenkins não aceitar valor vazio.
+Use **`-`** como sentinel em credenciais opcionais (`CORS_ORIGINS`, `API_BASE_URL`, `STRIPE_*`) se o Jenkins não aceitar valor vazio.
+
+Para billing Stripe em produção, configure `STRIPE_SECRET_KEY` (`sk_...` ou `rk_...`) e `STRIPE_WEBHOOK_SECRET` (`whsec_...`). O webhook no Stripe Dashboard deve apontar para `https://<seu-dominio>/api/stripe/webhook` com API version **`2026-06-24.dahlia`**. Ver [`docs/stripe-billing.md`](docs/stripe-billing.md).
 
 ### 5. `Deploy`
 

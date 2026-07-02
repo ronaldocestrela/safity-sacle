@@ -23,6 +23,9 @@
  *   safetyscale-smtp-enable-ssl      → true/false (padrão true)
  *   safetyscale-bootstrap-user-email → e-mail bootstrap do Platform Admin
  *   safetyscale-bootstrap-user-password → senha bootstrap do Platform Admin
+ *   safetyscale-stripe-secret-key      → Stripe Secret Key (sk_... ou rk_...; vazio ou `-` = billing desabilitado)
+ *   safetyscale-stripe-webhook-secret  → Stripe Webhook Secret (whsec_...; vazio ou `-` se billing desabilitado)
+ *   safetyscale-stripe-api-version     → versão da API Stripe (padrão 2026-06-24.dahlia; vazio ou `-` usa padrão)
  *
  * Opcional: JWT_EXPIRY_MINUTES e MSSQL_PID no estágio Prepare Env.
  */
@@ -92,6 +95,9 @@ pipeline {
           string(credentialsId: 'safetyscale-smtp-enable-ssl', variable: 'CRED_SMTP_ENABLE_SSL'),
           string(credentialsId: 'safetyscale-bootstrap-user-email', variable: 'CRED_BOOTSTRAP_USER_EMAIL'),
           string(credentialsId: 'safetyscale-bootstrap-user-password', variable: 'CRED_BOOTSTRAP_USER_PASSWORD'),
+          string(credentialsId: 'safetyscale-stripe-secret-key', variable: 'CRED_STRIPE_SECRET_KEY'),
+          string(credentialsId: 'safetyscale-stripe-webhook-secret', variable: 'CRED_STRIPE_WEBHOOK_SECRET'),
+          string(credentialsId: 'safetyscale-stripe-api-version', variable: 'CRED_STRIPE_API_VERSION'),
         ]) {
           script {
             def normalizeOptionalCred = { raw ->
@@ -113,6 +119,10 @@ pipeline {
             }
             def smtpEnableSslRaw = normalizeOptionalCred(env.CRED_SMTP_ENABLE_SSL)
             def smtpEnableSsl = smtpEnableSslRaw.isEmpty() ? 'true' : smtpEnableSslRaw
+            def stripeSecretKey = normalizeOptionalCred(env.CRED_STRIPE_SECRET_KEY)
+            def stripeWebhookSecret = normalizeOptionalCred(env.CRED_STRIPE_WEBHOOK_SECRET)
+            def stripeApiVersionRaw = normalizeOptionalCred(env.CRED_STRIPE_API_VERSION)
+            def stripeApiVersion = stripeApiVersionRaw.isEmpty() ? '2026-06-24.dahlia' : stripeApiVersionRaw
             def content =
               'MSSQL_SA_PASSWORD=' + (env.CRED_MSSQL_SA_PASSWORD ?: '') + '\n' +
               'SQLSERVER_PORT=' + (env.CRED_SQLSERVER_PORT ?: '') + '\n' +
@@ -144,7 +154,10 @@ pipeline {
               'BOOTSTRAP_USER_EMAIL=' + (env.CRED_BOOTSTRAP_USER_EMAIL ?: '') + '\n' +
               'BOOTSTRAP_USER_PASSWORD=' + (env.CRED_BOOTSTRAP_USER_PASSWORD ?: '') + '\n' +
               'BOOTSTRAP_USER_DISPLAY_NAME=Platform Admin\n' +
-              'BOOTSTRAP_USER_ROLE=PlatformOwner\n'
+              'BOOTSTRAP_USER_ROLE=PlatformOwner\n' +
+              'STRIPE_SECRET_KEY=' + stripeSecretKey + '\n' +
+              'STRIPE_WEBHOOK_SECRET=' + stripeWebhookSecret + '\n' +
+              'STRIPE_API_VERSION=' + stripeApiVersion + '\n'
             writeFile file: '.env', text: content, encoding: 'UTF-8'
             sh 'chmod 600 .env'
           }
