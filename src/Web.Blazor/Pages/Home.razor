@@ -1,49 +1,142 @@
 ﻿@page "/"
-@implements IAsyncDisposable
-@inject ApiHttpClient ApiClient
 
-<PageTitle>SafetyScale</PageTitle>
+<PageTitle>EscalaX</PageTitle>
 
-<main class="main">
-    <h1 class="title">SafetyScale</h1>
-    <p class="lead">SPA Blazor — autenticação JWT e perfis.</p>
-    <p class="actions">
-        <a class="link" href="/login">Ir para login</a>
-        <span class="link-separator" aria-hidden="true">·</span>
-        <a class="link" href="/signup">Cadastrar minha empresa</a>
-    </p>
+<div class="landing">
+    <header class="navbar">
+        <div class="navbar-container">
+            <a class="navbar-brand" href="/" aria-label="EscalaX — início">
+                <img src="images/home/logo-escalax.png" alt="" width="22" height="22" class="navbar-logo-icon" />
+                <span class="navbar-logo-text">EscalaX</span>
+            </a>
 
-    <section class="panel" aria-live="polite">
-        <h2 class="panel-title">Smoke da API</h2>
-        @if (_smoke.State == HomeSmokeState.Loading)
-        {
-            <p class="status">Verificando conexão…</p>
-        }
-        else if (_smoke.State == HomeSmokeState.Ok)
-        {
-            <p class="status ok">@_smoke.Message</p>
-        }
-        else
-        {
-            <p class="status error">@_smoke.Message</p>
-        }
-    </section>
-</main>
+            <button type="button"
+                    class="navbar-toggle"
+                    aria-label="@(_menuOpen ? "Fechar menu" : "Abrir menu")"
+                    aria-expanded="@_menuOpen"
+                    aria-controls="navbar-menu"
+                    @onclick="ToggleMenu">
+                <span class="navbar-toggle-bar"></span>
+                <span class="navbar-toggle-bar"></span>
+                <span class="navbar-toggle-bar"></span>
+            </button>
+
+            <nav id="navbar-menu" class="navbar-menu @(_menuOpen ? "open" : null)">
+                <a class="navbar-link" href="#produto" @onclick="CloseMenu">Produto</a>
+                <a class="navbar-link" href="#vantagens" @onclick="CloseMenu">Vantagens</a>
+                <a class="navbar-link" href="#quem-somos" @onclick="CloseMenu">Quem somos?</a>
+                <a class="btn btn-primary btn-sm" href="/signup" @onclick="CloseMenu">Sign Up</a>
+                <a class="btn btn-outline btn-sm" href="/login" @onclick="CloseMenu">Login</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="landing-body">
+        <section id="produto" class="hero">
+            <div class="hero-container">
+                <div class="hero-content">
+                    <h1 class="hero-title">
+                        Gestão de escalas rápida, moderna e dinâmica.
+                    </h1>
+                    <div class="hero-description">
+                        <p>EscalaX é a forma inteligente de organizar equipes.</p>
+                        <p>
+                            Crie, gerencie e compartilhe escalas de maneira rápida, intuitiva e profissional.
+                            Com uma interface moderna e dinâmica, o EscalaX simplifica o planejamento, reduz erros
+                            e mantém todos alinhados em tempo real. Menos tempo organizando, mais tempo fazendo acontecer.
+                        </p>
+                    </div>
+                    <div class="hero-actions">
+                        <a class="btn btn-primary" href="/signup">Inscrever-se</a>
+                        <a class="btn btn-outline" href="#cta">Fale com um atendente</a>
+                    </div>
+                </div>
+                <div class="hero-media" aria-hidden="true"></div>
+            </div>
+        </section>
+
+        <section class="empresas">
+            <p class="empresas-label">Empresas que confiam no nosso serviço</p>
+            <div class="empresas-logos">
+                <img src="images/home/logo-mansao.png" alt="Mansão Green" width="130" height="130" />
+            </div>
+        </section>
+
+        <section id="vantagens" class="vantagens">
+            <div class="vantagens-header">
+                <img src="images/home/section-title.png" alt="" class="vantagens-bg" aria-hidden="true" />
+                <div class="vantagens-title-wrap">
+                    <h2 class="vantagens-title">
+                        <span>Transforme sua</span>
+                        <strong>gestão de escalas</strong>
+                    </h2>
+                </div>
+                <p class="vantagens-subtitle">
+                    Descubra tudo o que o EscalaX oferece e transforme a gestão da sua equipe.
+                </p>
+            </div>
+
+            <div class="vantagens-grid">
+                @foreach (var card in _featureCards)
+                {
+                    <article class="feature-card">
+                        <div class="feature-icon @card.IconClass">
+                            <img src="@card.IconSrc" alt="" width="50" height="50" />
+                        </div>
+                        <div class="feature-content">
+                            <h3 class="feature-title">@card.Title</h3>
+                            <p class="feature-description">@card.Description</p>
+                            <a class="feature-link" href="#vantagens">Saiba mais</a>
+                        </div>
+                    </article>
+                }
+            </div>
+        </section>
+
+        <section id="quem-somos" class="cta" aria-labelledby="cta-heading">
+            <div class="cta-container">
+                <div class="cta-content">
+                    <h2 id="cta-heading" class="cta-title">
+                        A gestão de escalas <span class="cta-title-light">do jeito que</span> sua equipe precisa.
+                    </h2>
+                    <p class="cta-description">
+                        Organize, atualize e compartilhe escalas com rapidez e praticidade. O EscalaX centraliza
+                        todas as informações em uma plataforma moderna, reduz erros, melhora a comunicação e torna
+                        a gestão da sua equipe muito mais eficiente.
+                    </p>
+                    <a id="cta" class="btn btn-outline btn-bold" href="/signup">Conheça o EscalaX</a>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
 
 @code {
-    private HomeSmokeResult _smoke = new(HomeSmokeState.Loading, string.Empty);
-    private CancellationTokenSource? _cts;
+    private bool _menuOpen;
 
-    protected override async Task OnInitializedAsync()
-    {
-        _cts = new CancellationTokenSource();
-        _smoke = await HomeApiSmoke.RunAsync(ApiClient, _cts.Token);
-    }
+    private readonly FeatureCard[] _featureCards =
+    [
+        new("Organização Inteligente",
+            "Crie e gerencie escalas de forma rápida, com uma interface intuitiva que simplifica o planejamento da equipe.",
+            "images/home/icon-purple.png",
+            "icon-purple"),
+        new("Comunicação Centralizada",
+            "Compartilhe escalas e atualizações em tempo real, mantendo todos informados e reduzindo falhas de comunicação.",
+            "images/home/icon-pink.png",
+            "icon-pink"),
+        new("Mais Produtividade",
+            "Automatize processos, economize tempo na gestão e foque no que realmente importa: o desempenho da sua equipe.",
+            "images/home/icon-purple.png",
+            "icon-purple"),
+        new("Visual Moderno",
+            "Acompanhe escalas em um ambiente dinâmico e profissional, proporcionando uma experiência prática para toda a equipe.",
+            "images/home/icon-pink.png",
+            "icon-pink"),
+    ];
 
-    public ValueTask DisposeAsync()
-    {
-        _cts?.Cancel();
-        _cts?.Dispose();
-        return ValueTask.CompletedTask;
-    }
+    private void ToggleMenu() => _menuOpen = !_menuOpen;
+
+    private void CloseMenu() => _menuOpen = false;
+
+    private sealed record FeatureCard(string Title, string Description, string IconSrc, string IconClass);
 }
